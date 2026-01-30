@@ -1,4 +1,4 @@
-# v2.0 RC
+# v2.0 RC Hotfix
 import streamlit as st
 import json
 import math
@@ -12,7 +12,9 @@ from datetime import datetime, timedelta, timezone, time as dt_time
 from curl_cffi import requests as c_requests
 from streamlit_js_eval import get_geolocation, set_cookie, get_cookie
 
-IS_CLOUD = "STREAMLIT_SERVER_ENABLE_XSRF_PROTECTION" in os.environ
+#IS_CLOUD = "STREAMLIT_SERVER_ENABLE_XSRF_PROTECTION" in os.environ
+IS_CLOUD = True
+
 debug_mode = st.query_params.get("debug") if st.query_params.get("debug") else False
 
 # --- Resource Path Resolution for Desktop Executable ---
@@ -52,6 +54,8 @@ st.markdown("""
 
 # --- Constants & Headers ---
 THEATERS_FILE = get_resource_path("theater_list.json")
+proxy_zip_code = None
+
 
 AJAX_HEADERS = {
     "Host": "www.regmovies.com",
@@ -79,7 +83,7 @@ def get_proxy_health():
         p_user = st.secrets["proxy"]["username"]
         p_pass = st.secrets["proxy"]["password"]
         p_addr = st.secrets["proxy"]["address"]
-        port = st.session_state.get('current_proxy_port', 10001)
+        port = st.session_state.get('current_proxy_port', 10000)
         
         auth_user = f"user-{p_user}-session-healthcheck"
         proxy_url = f"http://{auth_user}:{p_pass}@{p_addr}:{port}"
@@ -202,17 +206,25 @@ def fetch_data(api_url, path_name, status_context, max_retries=3):
         if "current_proxy_port" not in st.session_state:
             st.session_state.current_proxy_port = 10001
             if "proxy_session_id" not in st.session_state:
-                st.session_state.proxy_session_id = os.urandom(4).hex()
+                #st.session_state.proxy_session_id = os.urandom(4).hex()
+                st.session_state.proxy_session_id = f"sess_{path_name}_{datetime.now().strftime('%H%M')}"
         try:
             p = st.secrets["proxy"]
         except KeyError:
             st.error("Proxy secrets not configured!")
             return None
+    
+    minimal_headers = {
+            "Accept": "application/json, text/plain, */*",
+            "Referer": f"https://www.regmovies.com/theatres/{path_name}",
+            "X-Requested-With": "XMLHttpRequest" # Keep this ONLY if Regal requires it for API hits
+        }
 
     for attempt in range(max_retries):
         if IS_CLOUD:
-            auth = f"user-{p['username']}-session-{st.session_state.proxy_session_id}"
-            proxy_url = f"http://{auth}:{p['password']}@{p['address']}:{st.session_state.current_proxy_port}"
+            #auth = f"user-{p['username']}-session-{st.session_state.proxy_session_id}"
+            auth = f"user-{p['username']}-country-us-zip-{proxy_zip_code}-session-{st.session_state.proxy_session_id}"
+            proxy_url = f"https://{auth}:{p['password']}@{p['address']}:{st.session_state.current_proxy_port}"
             proxies = {"http": proxy_url, "https": proxy_url}
 
         if "api_session" not in st.session_state:
@@ -221,6 +233,8 @@ def fetch_data(api_url, path_name, status_context, max_retries=3):
         st.session_state.api_session.proxies = proxies
         api_headers = AJAX_HEADERS.copy()
         api_headers["Referer"] = f"https://www.regmovies.com/theatres/{path_name}"
+        theater_url = f"https://www.regmovies.com/theatres/{path_name}"
+        st.session_state.api_session.get(theater_url, impersonate="chrome124", proxies=proxies)
 
         if debug_mode:
             with status_context:
@@ -234,7 +248,7 @@ def fetch_data(api_url, path_name, status_context, max_retries=3):
         try:
             response = st.session_state.api_session.get(
                 api_url, 
-                headers=api_headers, 
+                headers=minimal_headers, 
                 impersonate="chrome124",
                 proxies=proxies,
                 timeout=30
@@ -242,6 +256,10 @@ def fetch_data(api_url, path_name, status_context, max_retries=3):
             if response.status_code == 200: 
                 return response.json()
             if response.status_code == 403:
+                if debug_mode:
+                    with status_context:
+                        with st.expander("🛠️ Response", expanded=False):
+                            st.write(response)
                 st.session_state.current_proxy_port = 10001 + (st.session_state.current_proxy_port - 10001 + 1) % 10
                 st.session_state.proxy_session_id = os.urandom(4).hex()
                 del st.session_state.api_session
@@ -254,7 +272,9 @@ def fetch_data(api_url, path_name, status_context, max_retries=3):
                     st.error("Access Denied (403). Regal is blocking the request.")
                     return None
             response.raise_for_status()
-        except:
+        except Exception as e:
+            if debug_mode:
+                st.error(f"Proxy Connection Error: {str(e)}")
             if attempt < max_retries - 1: time.sleep(1)
             continue
     return None
@@ -867,6 +887,7 @@ if selected_theater:
     cluster_theaters = {t_item['theatre_code']: t_item['name']}
     master_name_map = {t['item']['theatre_code']: t['item']['name'] for t in theaters}
     drive_map = {t_item['theatre_code']: {'time': 0, 'dist': 0}}
+    proxy_zip_code = t_item['zip'] or default_zip_code or "46201"
 
     if 'nearby_theaters' in t_item:
         for nt in t_item['nearby_theaters']:
@@ -878,7 +899,7 @@ if selected_theater:
                     'dist': nt.get('road_miles', 0)
                 }
 
-    q_date = st.sidebar.date_input("Select Date", value="today", format="MM/DD/YYYY")
+    q_date = st.sidebar.date_input("Select Date", value="today", min_value="today", format="MM/DD/YYYY")
 
     t_lon = t_item.get('longitude')
     t_state = t_item.get('state_code')
