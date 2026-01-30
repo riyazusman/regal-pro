@@ -270,7 +270,7 @@ def fetch_data(api_url, path_name, status_context, max_retries=3):
                     time.sleep(random.uniform(7, 12))
                     continue
                 else:
-                    st.error("Access Denied (403). Regal is blocking the request.")
+                    st.error("Access Denied (403). Regal is blocking the request. Please try refreshing the page after a few seconds.")
                     return None
             response.raise_for_status()
         except Exception as e:
