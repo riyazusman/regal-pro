@@ -12,8 +12,8 @@ from datetime import datetime, timedelta, timezone, time as dt_time
 from curl_cffi import requests as c_requests
 from streamlit_js_eval import get_geolocation, set_cookie, get_cookie
 
-#IS_CLOUD = "STREAMLIT_SERVER_ENABLE_XSRF_PROTECTION" in os.environ
-IS_CLOUD = True
+IS_CLOUD = "STREAMLIT_SERVER_ENABLE_XSRF_PROTECTION" in os.environ
+#IS_CLOUD = True # For local Proxy Testing
 
 debug_mode = st.query_params.get("debug") if st.query_params.get("debug") else False
 
@@ -337,11 +337,9 @@ def flatten_data(data):
                     "master_code": m_code
                 })
                 
-    future_scheduled_date_map = {}
-    future_formatted_date_map = {}
-
     theater_future_map = {}
-    primary_t = data.get('shows', [{}])[0].get('TheatreCode')
+    shows_list = data.get('shows', [])
+    primary_t = shows_list[0].get('TheatreCode') if shows_list else None
     
     if primary_t:
         theater_future_map[primary_t] = []
@@ -899,7 +897,10 @@ if selected_theater:
                     'dist': nt.get('road_miles', 0)
                 }
 
-    q_date = st.sidebar.date_input("Select Date", value="today", min_value="today", format="MM/DD/YYYY")
+    tz_off = st.session_state.get('auto_tz_offset', -5)
+    local_today = (datetime.now(timezone.utc) + timedelta(hours=tz_off)).date()
+
+    q_date = st.sidebar.date_input("Select Date", value=local_today, min_value=local_today, format="MM/DD/YYYY")
 
     t_lon = t_item.get('longitude')
     t_state = t_item.get('state_code')
@@ -1329,85 +1330,89 @@ if selected_theater and current_day_data:
         sel_movie = st.session_state.selected_movie
         if sel_movie:
             m_data = [s for s in all_flat_data if s['Title'] == sel_movie]
-            meta = movie_meta.get(m_data[0]['master_code'], {})
-            new_tag = " | 🔴 NEW RELEASE" if meta.get('is_new') else ""
-            st.markdown(f"## {sel_movie}", unsafe_allow_html=True)
-            st.markdown(f"#### <small style='color:grey'>({meta.get('rating', 'NR')} | {meta.get('duration', 0)} min {new_tag})</small>", unsafe_allow_html=True)
-            
-            with st.expander("🔍 Advanced Filters", expanded=False):
-                f_col1, f_col2, f_col3 = st.columns(3)
-                with f_col1:
-                    m_formats = sorted(list(set(s['ScreenType'] for s in m_data)))
-                    f_fmt = st.multiselect("Format", options=m_formats, placeholder="All")
-                with f_col2:
-                    t_ranges = {"8AM-12N": (8, 12), "12N-4PM": (12, 16), "4PM-8PM": (16, 20), "8PM-12M": (20, 24)}
-                    f_win = st.multiselect("Time Window", options=list(t_ranges.keys()))
-                with f_col3:
-                    all_m_attrs = set(a for s in m_data for a in s['raw_attrs'])
-                    f_extra = st.multiselect("Attributes", options=sorted(list(all_m_attrs - set(m_formats))))
-                    f_hide = st.checkbox("Hide Past Shows", value=True)
-
-            filtered_m = [s for s in m_data if 
-                      (not f_fmt or s['ScreenType'] in f_fmt) and
-                      (not f_win or any(t_ranges[w][0] <= s['Showtime'].hour < t_ranges[w][1] for w in f_win)) and
-                      (not f_extra or set(f_extra).issubset(s['raw_attrs'])) and
-                      (not f_hide or (s['Showtime'] > current_local_time if q_date == current_local_time.date() else True))]
-
-            fmts_to_show = sorted(list(set(s['ScreenType'] for s in filtered_m)))
-            
-            for fmt in fmts_to_show:
-                fmt_shows = [s for s in filtered_m if s['ScreenType'] == fmt]
+            if m_data:
+                meta = movie_meta.get(m_data[0]['master_code'], {})
+                new_tag = " | 🔴 NEW RELEASE" if meta.get('is_new') else ""
+                st.markdown(f"## {sel_movie}", unsafe_allow_html=True)
+                st.markdown(f"#### <small style='color:grey'>({meta.get('rating', 'NR')} | {meta.get('duration', 0)} min {new_tag})</small>", unsafe_allow_html=True)
                 
-                with st.expander(f"✨ {fmt}", expanded=True):
-                    t_codes = sorted(list(set(s['TheaterCode'] for s in fmt_shows)), 
-                                    key=lambda x: theater_info.get(x, {}).get('time', 999))
+                with st.expander("🔍 Advanced Filters", expanded=False):
+                    f_col1, f_col2, f_col3 = st.columns(3)
+                    with f_col1:
+                        m_formats = sorted(list(set(s['ScreenType'] for s in m_data)))
+                        f_fmt = st.multiselect("Format", options=m_formats, placeholder="All")
+                    with f_col2:
+                        t_ranges = {"8AM-12N": (8, 12), "12N-4PM": (12, 16), "4PM-8PM": (16, 20), "8PM-12M": (20, 24)}
+                        f_win = st.multiselect("Time Window", options=list(t_ranges.keys()))
+                    with f_col3:
+                        all_m_attrs = set(a for s in m_data for a in s['raw_attrs'])
+                        f_extra = st.multiselect("Attributes", options=sorted(list(all_m_attrs - set(m_formats))))
+                        f_hide = st.checkbox("Hide Past Shows", value=True)
+
+                filtered_m = [s for s in m_data if 
+                        (not f_fmt or s['ScreenType'] in f_fmt) and
+                        (not f_win or any(t_ranges[w][0] <= s['Showtime'].hour < t_ranges[w][1] for w in f_win)) and
+                        (not f_extra or set(f_extra).issubset(s['raw_attrs'])) and
+                        (not f_hide or (s['Showtime'] > current_local_time if q_date == current_local_time.date() else True))]
+
+                fmts_to_show = sorted(list(set(s['ScreenType'] for s in filtered_m)))
+                
+                for fmt in fmts_to_show:
+                    fmt_shows = [s for s in filtered_m if s['ScreenType'] == fmt]
                     
-                    for tc in t_codes:
-                        t_shows = sorted([s for s in fmt_shows if s['TheaterCode'] == tc], key=lambda x: x['Showtime'])
-                        info = theater_info.get(tc, {"name": f"Theater {tc}", "dist": 0, "time": 0})
+                    with st.expander(f"✨ {fmt}", expanded=True):
+                        t_codes = sorted(list(set(s['TheaterCode'] for s in fmt_shows)), 
+                                        key=lambda x: theater_info.get(x, {}).get('time', 999))
                         
-                        is_primary = (tc == t_item['theatre_code'])
-                        t_icon = "📍" if is_primary else "🚗"
-                        dist_txt = "(Current)" if is_primary else f"({info['time']}m / {info['dist']}mi)"
-                        
-                        st.markdown(f"**{t_icon} {info['name']}** <small style='color:grey'>{dist_txt}</small>", unsafe_allow_html=True)
-                        
-                        playing_on_dates = []
-                        for d_str, d_data in st.session_state.multi_day_raw.items():
-                            for theater_show in d_data.get('shows', []):
-                                if theater_show.get('TheatreCode') == tc:
-                                    for movie in theater_show.get('Film', []):
-                                        if movie.get('Title') == sel_movie:
-                                            day_fmts = set(p.get('PerformanceGroup') or "2D" for p in movie.get('Performances', []))
-                                            if fmt in day_fmts:
-                                                playing_on_dates.append(datetime.strptime(d_str, "%m-%d-%Y").strftime("%b %d"))
-                        
-                        t_common = set.intersection(*(s['raw_attrs'] for s in t_shows)) if t_shows else set()
-                        common_attribs = sorted(t_common - {fmt})
-                        st.markdown(f"<p style='color:grey; font-size:0.8rem; margin-top:-10px; margin-bottom:5px;'>({', '.join(common_attribs) if common_attribs else ""})</p>", unsafe_allow_html=True)
-
-                        row_items = []
-                        for s in t_shows:
-                            t_str = s['Showtime'].strftime('%I:%M %p')
-                            delta_attribs = get_attr_diff(s['Attributes'], t_common)
+                        for tc in t_codes:
+                            t_shows = sorted([s for s in fmt_shows if s['TheaterCode'] == tc], key=lambda x: x['Showtime'])
+                            info = theater_info.get(tc, {"name": f"Theater {tc}", "dist": 0, "time": 0})
                             
-                            is_past = (q_date == current_local_time.date() and s['Showtime'] < current_local_time)
-                            if is_past:
-                                final_time = f"<del>{t_str}</del>" 
-                                meta_text = f" <small style='color:grey'><del>(Audi {s['Auditorium']}) {delta_attribs}</del></small>"
-                            else:    
-                                final_time = f"**{t_str}**"
-                                meta_text = f" <small style='color:grey'>(Audi {s['Auditorium']}) {delta_attribs}</small>"
+                            is_primary = (tc == t_item['theatre_code'])
+                            t_icon = "📍" if is_primary else "🚗"
+                            dist_txt = "(Current)" if is_primary else f"({info['time']}m / {info['dist']}mi)"
+                            
+                            st.markdown(f"**{t_icon} {info['name']}** <small style='color:grey'>{dist_txt}</small>", unsafe_allow_html=True)
+                            
+                            playing_on_dates = []
+                            for d_str, d_data in st.session_state.multi_day_raw.items():
+                                for theater_show in d_data.get('shows', []):
+                                    if theater_show.get('TheatreCode') == tc:
+                                        for movie in theater_show.get('Film', []):
+                                            if movie.get('Title') == sel_movie:
+                                                day_fmts = set(p.get('PerformanceGroup') or "2D" for p in movie.get('Performances', []))
+                                                if fmt in day_fmts:
+                                                    playing_on_dates.append(datetime.strptime(d_str, "%m-%d-%Y").strftime("%b %d"))
+                            
+                            t_common = set.intersection(*(s['raw_attrs'] for s in t_shows)) if t_shows else set()
+                            common_attribs = sorted(t_common - {fmt})
+                            st.markdown(f"<p style='color:grey; font-size:0.8rem; margin-top:-10px; margin-bottom:5px;'>({', '.join(common_attribs) if common_attribs else ""})</p>", unsafe_allow_html=True)
 
-                            row_items.append(f"{final_time}{meta_text}")
-                        
-                        st.markdown(f"&nbsp;&nbsp;&nbsp;&nbsp;{' | '.join(row_items)}", unsafe_allow_html=True)
+                            row_items = []
+                            for s in t_shows:
+                                t_str = s['Showtime'].strftime('%I:%M %p')
+                                delta_attribs = get_attr_diff(s['Attributes'], t_common)
+                                
+                                is_past = (q_date == current_local_time.date() and s['Showtime'] < current_local_time)
+                                if is_past:
+                                    final_time = f"<del>{t_str}</del>" 
+                                    meta_text = f" <small style='color:grey'><del>(Audi {s['Auditorium']}) {delta_attribs}</del></small>"
+                                else:    
+                                    final_time = f"**{t_str}**"
+                                    meta_text = f" <small style='color:grey'>(Audi {s['Auditorium']}) {delta_attribs}</small>"
 
-                        if playing_on_dates:
-                            date_str = ", ".join(sorted(list(set(playing_on_dates))))
-                            st.markdown(f"<p style='font-size: 0.8rem; color: #e67e22; margin-top: -5px;'>🗓️ <b>Scheduled Dates:</b> {date_str}</p>", unsafe_allow_html=True)
+                                row_items.append(f"{final_time}{meta_text}")
+                            
+                            st.markdown(f"&nbsp;&nbsp;&nbsp;&nbsp;{' | '.join(row_items)}", unsafe_allow_html=True)
 
-                        st.divider()
+                            if playing_on_dates:
+                                date_str = ", ".join(sorted(list(set(playing_on_dates))))
+                                st.markdown(f"<p style='font-size: 0.8rem; color: #e67e22; margin-top: -5px;'>🗓️ <b>Scheduled Dates:</b> {date_str}</p>", unsafe_allow_html=True)
+
+                            st.divider()
+            else:
+                st.warning(f"No showtimes found for **{sel_movie}** on {q_date.strftime('%b %d')}.")
+                st.info("Try selecting a different date or theater in the sidebar.")
                         
     elif nav_tab == "🗓️ Smart Scheduler":
         st.subheader("🗓️ Smart Scheduler")
