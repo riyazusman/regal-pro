@@ -84,7 +84,7 @@ def get_proxy_health():
         p_user = st.secrets["proxy"]["username"]
         p_pass = st.secrets["proxy"]["password"]
         p_addr = st.secrets["proxy"]["address"]
-        port = st.session_state.get('current_proxy_port', 10000)
+        port = st.session_state.get('current_proxy_port', 10001)
         
         auth_user = f"user-{p_user}-session-healthcheck"
         proxy_url = f"http://{auth_user}:{p_pass}@{p_addr}:{port}"
@@ -261,8 +261,9 @@ def fetch_data(api_url, path_name, status_context, max_retries=3):
                     with status_context:
                         with st.expander("🛠️ Response", expanded=False):
                             st.write(response)
-                st.session_state.current_proxy_port = 10001 + (st.session_state.current_proxy_port - 10001 + 1) % 10
-                st.session_state.proxy_session_id = os.urandom(4).hex()
+                if IS_CLOUD:
+                    st.session_state.current_proxy_port = 10001 + (st.session_state.current_proxy_port - 10001 + 1) % 10
+                    st.session_state.proxy_session_id = os.urandom(4).hex()
                 del st.session_state.api_session
 
                 if attempt < max_retries - 1:
@@ -309,8 +310,16 @@ def flatten_data(data):
         for movie in theater_show.get("Film", []):
             m_code = movie.get('MasterMovieCode')
             active_movie_codes.add(m_code)
+
+            if m_code not in st.session_state.global_movie_catalog:
+                st.session_state.global_movie_catalog[m_code] = {
+                    'title': movie.get('Title', 'Unknown Title'),
+                    'rating': 'NR', 
+                    'duration': 120, # Default fallback
+                    'is_new': False
+                }
             
-            meta = st.session_state.global_movie_catalog.get(m_code)
+            meta = st.session_state.global_movie_catalog[m_code]
             
             if meta:
                 title_to_use = movie.get('Title') if len(movie.get('Title', '')) > len(meta['title']) else meta['title']
@@ -1448,6 +1457,7 @@ if selected_theater and current_day_data:
                     default=[f_date])
             
             with r1_c2:
+                # 1. Collect MasterMovieCodes instead of titles
                 global_reactive_codes = set()
                 for d_str in target_days:
                     day_data = st.session_state.multi_day_raw.get(d_str)
@@ -1455,20 +1465,20 @@ if selected_theater and current_day_data:
                         for theater_show in day_data.get('shows', []):
                             if theater_show.get('TheatreCode') in target_theaters:
                                 for movie in theater_show.get('Film', []):
-                                    global_reactive_codes.add(movie.get('MasterMovieCode'))
-
-                # 2. Define a formatter that injects the Title and NEW tag
+                                    if movie.get('MasterMovieCode'):
+                                        global_reactive_codes.add(movie.get('MasterMovieCode'))
+                
+                # 2. Formatter that pulls Title and NEW tag from the catalog
                 def format_movie_label(m_code):
                     meta = st.session_state.global_movie_catalog.get(m_code, {})
-                    title = meta.get('title', 'Unknown Title')
-                    is_new = meta.get('is_new', False)
-                    return f"{title} (🔴 NEW)" if is_new else title
-
-                # 3. Sort options by title for better UX
+                    title = meta.get('title', f"Unknown ({m_code})")
+                    return f"{title} (🔴 NEW)" if meta.get('is_new') else title
+                
+                # 3. Sort codes based on their actual titles in the catalog
                 sorted_codes = sorted(list(global_reactive_codes), 
                                      key=lambda x: st.session_state.global_movie_catalog.get(x, {}).get('title', ''))
-
-                # 4. Multiselect now returns CODES, not TITLES
+                
+                # 4. Multiselect now handles CODES
                 target_movies = st.multiselect(
                     "3\\. Select Movies (Ordered by Preference)", 
                     options=sorted_codes,
