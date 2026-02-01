@@ -9,9 +9,11 @@ import time
 import os
 import sys
 import random
+import re
 from datetime import datetime, timedelta, timezone, time as dt_time
 from curl_cffi import requests as c_requests
 from streamlit_js_eval import get_geolocation, set_cookie, get_cookie
+from supabase import create_client, Client
 
 IS_CLOUD = "STREAMLIT_SERVER_ENABLE_XSRF_PROTECTION" in os.environ
 #IS_CLOUD = True # For local Proxy Testing
@@ -57,7 +59,6 @@ st.markdown("""
 THEATERS_FILE = get_resource_path("theater_list.json")
 proxy_zip_code = None
 
-
 AJAX_HEADERS = {
     "Host": "www.regmovies.com",
     "sec-ch-ua": '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
@@ -79,6 +80,18 @@ minimal_headers = {
     }
 
 # --- Utility Functions ---
+
+@st.cache_resource
+def init_supabase() -> Client:
+    return create_client(st.secrets["supabase"]["url"], st.secrets["supabase"]["key"])
+
+db = init_supabase()
+
+def get_db_metadata(codes):
+    """Batch fetch movie data from Supabase"""
+    if not codes: return {}
+    response = db.table("movie_metadata").select("*").in_("master_movie_code", list(codes)).execute()
+    return {row['master_movie_code']: row for row in response.data}
 
 @st.cache_data(ttl=300)
 def get_proxy_health():
@@ -208,6 +221,7 @@ def calculate_haversine_distance(lat1, lon1, lat2, lon2):
 
 def fetch_data(api_url, path_name, status_context, msg, max_retries=3):
     proxies = None
+    tier_label = "Local"
     if IS_CLOUD:
         if "current_proxy_port" not in st.session_state:
             st.session_state.current_proxy_port = 10001
@@ -222,14 +236,13 @@ def fetch_data(api_url, path_name, status_context, msg, max_retries=3):
             return None
 
     for attempt in range(max_retries):
-        tier_label = "Local"
         if IS_CLOUD:
-            if attempt < 2:
+            if attempt == 0:
                 p = p_res
-                tier_label = "Residential PAYG"
-            elif attempt == 2:
+                tier_label = "Residential Proxy"
+            elif attempt == 1:
                 p = p_mob
-                tier_label = "Mobile PAYG"
+                tier_label = "Mobile Proxy"
             else:
                 tier_label = "Scraping API"
                 break 
@@ -244,19 +257,21 @@ def fetch_data(api_url, path_name, status_context, msg, max_retries=3):
             st.session_state.api_session = c_requests.Session()
         
         st.session_state.api_session.proxies = proxies
-        api_headers = AJAX_HEADERS.copy()
+        #api_headers = AJAX_HEADERS.copy()
+        api_headers = minimal_headers.copy()
         api_headers["Referer"] = f"https://www.regmovies.com/theatres/{path_name}"
         theater_url = f"https://www.regmovies.com/theatres/{path_name}"
 
-        if debug_mode:
+        if status_context:
             with status_context:
-                with st.expander("🛠️ Outgoing Request Log", expanded=False):
-                    st.json({
-                        "API_URL": api_url,
-                        "Proxy": proxies["https"] if proxies else "None",
-                        "Tier": tier_label,
-                        "Attempt":attempt+1
-                    })
+                #with st.expander("🛠️ Outgoing Request Log", expanded=False):
+                st.write("🛠️ Outgoing Request Log")
+                st.json({
+                    "API_URL": api_url,
+                    "Proxy": proxies["https"] if proxies else "None",
+                    "Tier": tier_label,
+                    "Attempt":attempt+1
+                })
     
         try:
             st.session_state.api_session.get(theater_url, impersonate="chrome124", proxies=proxies, timeout=15)
@@ -273,25 +288,26 @@ def fetch_data(api_url, path_name, status_context, msg, max_retries=3):
                 retry_after = response.headers.get("Retry-After")
                 wait_time = int(retry_after) if retry_after and retry_after.isdigit() else 10
                 
-                msg.toast(f"⏳ Rate Limited (429). Sleeping for {wait_time}s...", duration="infinite")
+                log_msg = "⏳ Rate Limited (429). Sleeping for {wait_time}s..."
+                msg.toast(log_msg, duration="infinite")
                 if status_context: status_context.write(log_msg)
                 time.sleep(wait_time)
                 
                 st.session_state.proxy_session_id = os.urandom(4).hex()
                 continue
             if response.status_code == 403:
-                if debug_mode:
-                    with status_context:
-                        with st.expander("🛠️ Response", expanded=False):
-                            st.write(response)
+                with status_context:
+                    with st.expander("🛠️ Response", expanded=False):
+                        st.write(response)
                 if IS_CLOUD:
                     st.session_state.current_proxy_port = 10001 + (st.session_state.current_proxy_port - 10001 + 1) % 10
                     st.session_state.proxy_session_id = os.urandom(4).hex()
                 del st.session_state.api_session
 
-                msg.toast(f"⚠️ {tier_label} Blocked. Regal 403 detected. Rotating...", duration="infinite")
+                log_msg = f"⚠️ {tier_label} Blocked. Regal 403 detected. Rotating..."
+                msg.toast(log_msg, duration="infinite")
                 if status_context: status_context.write(log_msg)
-                time.sleep(random.uniform(7, 12))
+                time.sleep(2)
 
             response.raise_for_status()
         except Exception as e:
@@ -299,15 +315,31 @@ def fetch_data(api_url, path_name, status_context, msg, max_retries=3):
                 with status_context:
                     st.error(f"Proxy Connection Error: {str(e)}")
             continue
+    
 
     if tier_label == "Scraping API":
-        msg.toast("🚀 Engaging Scraping API Fallback...", duration="infinite")
+        log_msg = "🚀 Engaging Scraping API Fallback..."
+        msg.toast(log_msg, duration="infinite")
         if status_context: status_context.write(log_msg)
+        scraping_payload = {"url": api_url, "geo": "United States", "device_type": "desktop_chrome"}
+        headers = {"accept": "application/json","content-type": "application/json","authorization": f"Basic {scraping_key}"}
+        
+        if status_context:
+            with status_context:
+                with st.expander("🛠️ Outgoing Request Log", expanded=False):
+                    st.json({
+                        "API_URL": api_url,
+                        "Headers": headers,
+                        "Tier": tier_label,
+                    })
         try:
-            scraping_payload = {"url": api_url, "country": "us", "render_js": False}
-            s_resp = c_requests.post("https://api.decodo.com/v2/scrape", json=scraping_payload, auth=(scraping_key, ""), timeout=45)
+            s_resp = c_requests.post("https://scraper-api.decodo.com/v2/scrape", json=scraping_payload, headers=headers, timeout=45)
             if s_resp.status_code == 200:
                 return s_resp.json()
+            else:
+                with status_context:
+                    with st.expander("🛠️ Response", expanded=False):
+                        st.write(s_resp)
         except Exception as e:
             if debug_mode:
                 st.error(f"Scraping API Error: {str(e)}")
@@ -445,6 +477,7 @@ def get_attr_diff(screening_attrs, common_attrs):
     return diff_str
 
 def get_time_options():
+
     times = []
     start = datetime.strptime("00:00", "%H:%M")
     for _ in range(288): 
@@ -772,6 +805,11 @@ def generate_batch_ics(multi_itinerary, theater_name_map):
     ics_lines.append("END:VCALENDAR")
     return "\n".join(ics_lines)
 
+def clean_movie_title(title):
+    if not title: return ""
+    title = re.sub(r'^[A-Z0-9\s]+:\s*', '', title)
+    return title.split('(')[0].strip()
+
 # --- Main App ---
 if "global_movie_catalog" not in st.session_state:
     st.session_state.global_movie_catalog = {}
@@ -916,6 +954,7 @@ if selected_theater:
                     if d.strftime('%m-%d-%Y') not in st.session_state.multi_day_raw]
 
     status_context = st.status("🛠️ Debug: Detailed Sync Log", expanded=True) if debug_mode else None
+    data = None
 
     if days_to_fetch:
         msg = st.toast(f"🔍 Synchronizing 7-Day Data for {t_item['name']}...", duration="infinite")
@@ -944,43 +983,59 @@ if selected_theater:
                 all_week_flat.extend(day_flat)
                 st.session_state.multi_day_raw[d_str] = data
 
-                st.session_state.multi_day_raw[d_str] = data
-
-        sweep_msg = "🩹 Checking for weekly metadata gaps..."
-        msg.toast(sweep_msg, duration="infinite")
-        if status_context: status_context.write(sweep_msg)
-        
-        for d_str in st.session_state.multi_day_raw:
-            day_flat, _, _, _ = flatten_data(st.session_state.multi_day_raw[d_str])
-            all_week_flat.extend(day_flat)
-        
-        gaps = check_metadata_gaps(all_week_flat)
-      
-        if gaps:
-            sweep_queue = {}
-            for m_code in gaps:
-                for s in all_week_flat:
-                    if s['master_code'] == m_code:
-                        key = (s['TheaterCode'], s['Showtime'].strftime('%m-%d-%Y'))
-                        if key not in sweep_queue: sweep_queue[key] = []
-                        sweep_queue[key].append(m_code)
-                        break
-
-            for (t_code, d_str), m_codes in sweep_queue.items():
-                t_name = cluster_theaters.get(t_code, t_code)
-                sweep_msg = f"🩹 Metadata gap fill via {t_name} on {d_str}"
-                msg.toast(sweep_msg, duration="infinite")
-                if status_context: status_context.write(sweep_msg)
-                rotated = [t_code] + [c for c in target_codes if c != t_code]
-                sweep_url = f"https://www.regmovies.com/api/getShowtimes?theatres={','.join(rotated)}&date={d_str}"
-                sweep_data = fetch_data(sweep_url, t_item['path_name'],status_context, msg)
-                if sweep_data:
-                    log_msg = f"👍 {t_name} gap fill successful."
-                    msg.toast(log_msg, duration="infinite")
-                    if status_context: status_context.write(log_msg)
-                    flatten_data(sweep_data)
+        if data:
+            sweep_msg = "🩹 Checking for weekly metadata gaps..."
+            msg.toast(sweep_msg, duration="infinite")
+            if status_context: status_context.write(sweep_msg)
             
-        msg.toast("🎉 7-Day Sync Complete!", duration="short")
+            for d_str in st.session_state.multi_day_raw:
+                day_flat, _, _, _ = flatten_data(st.session_state.multi_day_raw[d_str])
+                all_week_flat.extend(day_flat)
+            
+            gaps = check_metadata_gaps(all_week_flat)
+        
+            if gaps:
+                if status_context: status_context.write("🩹 Filling weekly gaps from DB")
+                db_results = get_db_metadata(gaps.keys())
+                for m_code, m_info in db_results.items():
+                    st.session_state.global_movie_catalog[m_code] = {
+                        'title': m_info['title'], 'rating': m_info['rating'], 
+                        'duration': m_info['duration'], 'is_new': is_new_release(m_info['opening_date'])
+                    }
+                
+                still_missing = [m for m in gaps if m not in db_results]
+
+                if still_missing:
+                    sweep_targets = {}
+
+                    for m_code in still_missing:
+                        for s in all_week_flat:
+                            if s['master_code'] == m_code:
+                                key = (s['TheaterCode'], s['Showtime'].strftime('%m-%d-%Y'))
+                                if key not in sweep_targets: sweep_targets[key] = []
+                                sweep_targets[key].append(m_code)
+                                break
+
+                    for (t_code, d_str), m_codes in sweep_targets.items():
+                        t_name = cluster_theaters.get(t_code, t_code)
+                        sweep_msg = f"🩹 Metadata gap fill via {t_name} on {d_str}"
+                        msg.toast(sweep_msg, duration="infinite")
+                        if status_context: status_context.write(sweep_msg)
+
+                        rotated = [t_code] + [c for c in target_codes if c != t_code]
+                        sweep_url = f"https://www.regmovies.com/api/getShowtimes?theatres={','.join(rotated)}&date={d_str}"
+                        sweep_data = fetch_data(sweep_url, t_item['path_name'],status_context, msg)
+                        if sweep_data:
+                            log_msg = f"👍 {t_name} gap fill successful."
+                            msg.toast(log_msg, duration="infinite")
+                            if status_context: status_context.write(log_msg)
+
+                            _, meta_found, _, _ = flatten_data(sweep_data)
+                else:
+                    if status_context: status_context.write("🎉 All weekly gaps filled from DB. No additional fetch required.")
+            else:
+                if status_context: status_context.write("🎉 No Weekly gaps Found")    
+            msg.toast("🎉 7-Day Sync Complete!", duration="short")
         if status_context: status_context.update(label="Sync Log Finished", state="complete", expanded=False)
 
     current_day_data = st.session_state.multi_day_raw.get(f_date)
@@ -1014,7 +1069,7 @@ if selected_theater:
         st.divider()
         if st.button("🔄 Force Refresh"): st.session_state.last_fetch_key = None
         print_mode = st.checkbox("🖨️ Print View")
-        debug_mode = st.checkbox("🐞 Debug Mode", value=debug_mode, help="Show raw API responses for troubleshooting.")
+        #debug_mode = st.checkbox("🐞 Debug Mode", value=debug_mode, help="Show raw API responses for troubleshooting.")
         status_label, ext_ip = get_proxy_health()
         
         if status_label == "Active":

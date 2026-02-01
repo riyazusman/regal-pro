@@ -3,3 +3,5 @@ archived/
 build/
 dist/
 venv/
+local_sweep.py
+failed_theaters.json
