@@ -3,3 +3,4 @@ pgeocode
 curl-cffi
 geopy
 streamlit_js_eval
+supabase
