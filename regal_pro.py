@@ -1,4 +1,4 @@
-# v2.0 RC Hotfix
+# v2.1 RC 
 import streamlit as st
 import json
 import math
@@ -73,6 +73,11 @@ AJAX_HEADERS = {
     "Accept-Language": "en-US,en;q=0.9",
 }
 
+minimal_headers = {
+        "Accept": "application/json, text/plain, */*",
+        "X-Requested-With": "XMLHttpRequest"
+    }
+
 # --- Utility Functions ---
 
 @st.cache_data(ttl=300)
@@ -81,9 +86,9 @@ def get_proxy_health():
         return "Local Bypass", "System IP"
     
     try:
-        p_user = st.secrets["proxy"]["username"]
-        p_pass = st.secrets["proxy"]["password"]
-        p_addr = st.secrets["proxy"]["address"]
+        p_user = st.secrets["proxy_res"]["username"]
+        p_pass = st.secrets["proxy_res"]["password"]
+        p_addr = st.secrets["proxy_res"]["address"]
         port = st.session_state.get('current_proxy_port', 10001)
         
         auth_user = f"user-{p_user}-session-healthcheck"
@@ -201,31 +206,38 @@ def calculate_haversine_distance(lat1, lon1, lat2, lon2):
     a = math.sin(dphi/2)**2 + math.cos(phi1)*math.cos(phi2)*math.sin(dlam/2)**2
     return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
 
-def fetch_data(api_url, path_name, status_context, max_retries=3):
+def fetch_data(api_url, path_name, status_context, msg, max_retries=3):
     proxies = None
     if IS_CLOUD:
         if "current_proxy_port" not in st.session_state:
             st.session_state.current_proxy_port = 10001
             if "proxy_session_id" not in st.session_state:
-                #st.session_state.proxy_session_id = os.urandom(4).hex()
                 st.session_state.proxy_session_id = f"sess_{path_name}_{datetime.now().strftime('%H%M')}"
         try:
-            p = st.secrets["proxy"]
+            p_res = st.secrets.get("proxy_res") 
+            p_mob = st.secrets.get("proxy_mob") 
+            scraping_key = st.secrets.get("decodo", {}).get("api_key")
         except KeyError:
             st.error("Proxy secrets not configured!")
             return None
-    
-    minimal_headers = {
-            "Accept": "application/json, text/plain, */*",
-            "Referer": f"https://www.regmovies.com/theatres/{path_name}",
-            "X-Requested-With": "XMLHttpRequest" # Keep this ONLY if Regal requires it for API hits
-        }
 
     for attempt in range(max_retries):
+        tier_label = "Local"
         if IS_CLOUD:
-            #auth = f"user-{p['username']}-session-{st.session_state.proxy_session_id}"
+            if attempt < 2:
+                p = p_res
+                tier_label = "Residential PAYG"
+            elif attempt == 2:
+                p = p_mob
+                tier_label = "Mobile PAYG"
+            else:
+                tier_label = "Scraping API"
+                break 
+
+            if not p: continue
+
             auth = f"user-{p['username']}-country-us-zip-{proxy_zip_code}-session-{st.session_state.proxy_session_id}"
-            proxy_url = f"https://{auth}:{p['password']}@{p['address']}:{st.session_state.current_proxy_port}"
+            proxy_url = f"http://{auth}:{p['password']}@{p['address']}:{st.session_state.current_proxy_port}"
             proxies = {"http": proxy_url, "https": proxy_url}
 
         if "api_session" not in st.session_state:
@@ -241,21 +253,32 @@ def fetch_data(api_url, path_name, status_context, max_retries=3):
                 with st.expander("🛠️ Outgoing Request Log", expanded=False):
                     st.json({
                         "API_URL": api_url,
-                        "API_Headers": api_headers,
-                        "Proxy": proxies["https"] if proxies else "None"
+                        "Proxy": proxies["https"] if proxies else "None",
+                        "Tier": tier_label,
+                        "Attempt":attempt+1
                     })
     
         try:
-            st.session_state.api_session.get(theater_url, impersonate="chrome124", proxies=proxies)
+            st.session_state.api_session.get(theater_url, impersonate="chrome124", proxies=proxies, timeout=15)
             response = st.session_state.api_session.get(
                 api_url, 
-                headers=minimal_headers, 
+                headers=api_headers, 
                 impersonate="chrome124",
                 proxies=proxies,
                 timeout=30
             )
-            if response.status_code == 200: 
+            if response.status_code == 200:
                 return response.json()
+            if response.status_code == 429:
+                retry_after = response.headers.get("Retry-After")
+                wait_time = int(retry_after) if retry_after and retry_after.isdigit() else 10
+                
+                msg.toast(f"⏳ Rate Limited (429). Sleeping for {wait_time}s...", duration="infinite")
+                if status_context: status_context.write(log_msg)
+                time.sleep(wait_time)
+                
+                st.session_state.proxy_session_id = os.urandom(4).hex()
+                continue
             if response.status_code == 403:
                 if debug_mode:
                     with status_context:
@@ -266,19 +289,30 @@ def fetch_data(api_url, path_name, status_context, max_retries=3):
                     st.session_state.proxy_session_id = os.urandom(4).hex()
                 del st.session_state.api_session
 
-                if attempt < max_retries - 1:
-                    st.toast("Regal 403 detected. Rotating IP and retrying...")
-                    time.sleep(random.uniform(7, 12))
-                    continue
-                else:
-                    st.error("Access Denied (403). Regal is blocking the request. Please try refreshing the page after a few seconds.")
-                    return None
+                msg.toast(f"⚠️ {tier_label} Blocked. Regal 403 detected. Rotating...", duration="infinite")
+                if status_context: status_context.write(log_msg)
+                time.sleep(random.uniform(7, 12))
+
             response.raise_for_status()
         except Exception as e:
             if debug_mode:
-                st.error(f"Proxy Connection Error: {str(e)}")
-            if attempt < max_retries - 1: time.sleep(1)
+                with status_context:
+                    st.error(f"Proxy Connection Error: {str(e)}")
             continue
+
+    if tier_label == "Scraping API":
+        msg.toast("🚀 Engaging Scraping API Fallback...", duration="infinite")
+        if status_context: status_context.write(log_msg)
+        try:
+            scraping_payload = {"url": api_url, "country": "us", "render_js": False}
+            s_resp = c_requests.post("https://api.decodo.com/v2/scrape", json=scraping_payload, auth=(scraping_key, ""), timeout=45)
+            if s_resp.status_code == 200:
+                return s_resp.json()
+        except Exception as e:
+            if debug_mode:
+                st.error(f"Scraping API Error: {str(e)}")
+            else:
+                st.error("Regal is blocking request. Try again after sometime.")
     return None
 
 def flatten_data(data):
@@ -309,18 +343,19 @@ def flatten_data(data):
         t_code = theater_show.get("TheatreCode")
         for movie in theater_show.get("Film", []):
             m_code = movie.get('MasterMovieCode')
+            if not m_code: continue
             active_movie_codes.add(m_code)
 
             if m_code not in st.session_state.global_movie_catalog:
                 st.session_state.global_movie_catalog[m_code] = {
                     'title': movie.get('Title', 'Unknown Title'),
                     'rating': 'NR', 
-                    'duration': 120, # Default fallback
+                    'duration': 0,
                     'is_new': False
                 }
             
             meta = st.session_state.global_movie_catalog[m_code]
-            
+           
             if meta:
                 title_to_use = movie.get('Title') if len(movie.get('Title', '')) > len(meta['title']) else meta['title']
                 rating_to_use = meta['rating']
@@ -328,7 +363,7 @@ def flatten_data(data):
             else:
                 title_to_use = movie.get('Title', 'Unknown')
                 rating_to_use = 'NR'
-                duration_to_use = 120
+                duration_to_use = 0
             
             for perf in movie.get("Performances", []):
                 try:
@@ -360,15 +395,16 @@ def flatten_data(data):
         theater_future_map[primary_t] = []
         for fs in data.get("futureShows", []):
             m_code = fs.get('hoCode')
-            formatted_dates = []
+            raw_dates = []
             for d_entry in fs.get('dates', []):
                 raw_date = d_entry.get('date')
                 if raw_date:
                     try:
-                        dt_obj = datetime.strptime(raw_date[:10], "%m-%d-%Y")
-                        formatted_dates.append(dt_obj.strftime("%b %d"))
+                        raw_dates.append(datetime.strptime(raw_date[:10], "%m-%d-%Y"))
                     except ValueError: continue
-            
+
+            formatted_dates = [d.strftime("%b %d") for d in sorted(raw_dates)]
+
             meta = st.session_state.global_movie_catalog.get(m_code, {})
             if meta:
                 meta_copy = meta.copy()
@@ -443,7 +479,8 @@ def find_itineraries(current_path, remaining_codes, screenings, p, selected_date
         
         for s in potential_shows:
             show_start = s['Showtime']
-            show_end = show_start + timedelta(minutes=s['Duration'])
+            calc_dur = s['Duration'] if s['Duration'] > 0 else 120
+            show_end = show_start + timedelta(minutes=calc_dur)
             if show_start < window_start or show_end > window_end: 
                 continue
             
@@ -480,54 +517,49 @@ def find_itineraries(current_path, remaining_codes, screenings, p, selected_date
 
     return valid_paths
 
-def find_multi_day_itineraries(target_movies, target_days, params, drive_map, anchor_show=None):
+def find_multi_day_itineraries(target_codes, target_days, params, drive_map, anchor_show=None):
     itinerary_by_day = {}
-    remaining_movies = list(target_movies)
-    max_per_day = params.get('max_per_day', len(target_movies))
+    remaining_codes = list(target_codes)
+    max_per_day = params.get('max_per_day', len(target_codes))
 
     if anchor_show:
         a_day_str = anchor_show['Showtime'].strftime('%m-%d-%Y')
-        
-        anchor_day_options = run_anchored_search(anchor_show, target_movies, a_day_str, params, drive_map)
+        anchor_day_options = run_anchored_search(anchor_show, target_codes, a_day_str, params, drive_map)
         
         if anchor_day_options:
             best_a_path = sorted(anchor_day_options, key=lambda x: -calculate_path_score(x, params['primary_code'], drive_map)['score'])[0]
             itinerary_by_day[a_day_str] = best_a_path
             
             for s in best_a_path:
-                if s['Title'] in remaining_movies:
-                    remaining_movies.remove(s['Title'])
+                if s['master_code'] in remaining_codes:
+                    remaining_codes.remove(s['master_code'])
     
     sorted_days = sorted([d for d in target_days if d != (anchor_show['Showtime'].strftime('%m-%d-%Y') if anchor_show else None)],
                         key=lambda x: datetime.strptime(x, '%m-%d-%Y'))
     
     if params.get('strategy') == "Minimize Days":
         for i, d_str in enumerate(sorted_days):
-            if not remaining_movies: break
+            if not remaining_codes: break
             
             d_obj = datetime.strptime(d_str, '%m-%d-%Y').date()
             day_data = st.session_state.multi_day_raw.get(d_str)
             if not day_data: continue
             day_flat, _, _, _ = flatten_data(day_data)
 
-            # Find all valid paths for today
-            all_paths = find_itineraries([], remaining_movies, day_flat, params, d_obj, drive_map)
+            all_paths = find_itineraries([], remaining_codes, day_flat, params, d_obj, drive_map)
             if not all_paths: continue
 
-            # Limit candidates to the top 5 most diverse/high-scoring paths to manage performance
             candidates = sorted([p for p in all_paths if len(p) <= max_per_day], 
                                 key=lambda x: (-len(x), -calculate_path_score(x, params['primary_code'], drive_map)['score']))[:5]
 
             best_path_for_today = None
             max_future_yield = -1
 
-            # Simulation: If there are future days, see which candidate today yields the most movies overall
             if i < len(sorted_days) - 1:
                 for cand in candidates:
-                    cand_titles = [s['Title'] for s in cand]
-                    mock_remaining = [m for m in remaining_movies if m not in cand_titles]
+                    cand_codes = [s['master_code'] for s in cand]
+                    mock_remaining = [m for m in remaining_codes if m not in cand_codes]
                     
-                    # Mock the next day only for a fast "one-step look-ahead"
                     next_day_str = sorted_days[i+1]
                     nd_obj = datetime.strptime(next_day_str, '%m-%d-%Y').date()
                     nd_data = st.session_state.multi_day_raw.get(next_day_str)
@@ -538,137 +570,89 @@ def find_multi_day_itineraries(target_movies, target_days, params, drive_map, an
                     else:
                         next_day_yield = 0
                     
-                    total_yield = len(cand) + next_day_yield
-                    if total_yield > max_future_yield:
-                        max_future_yield = total_yield
+                    if (len(cand) + next_day_yield) > max_future_yield:
+                        max_future_yield = len(cand) + next_day_yield
                         best_path_for_today = cand
             else:
-                # Last day, no look-ahead needed
                 best_path_for_today = candidates[0]
 
             if best_path_for_today:
                 itinerary_by_day[d_str] = best_path_for_today
                 for s in best_path_for_today:
-                    remaining_movies.remove(s['Title'])
+                    remaining_codes.remove(s['master_code'])
                     
-                                        
-    else: # Strategy: Maximize Compactness
+    else: # Maximize Compactness
         global_pool = []
         for d_str in sorted_days:
             d_obj = datetime.strptime(d_str, '%m-%d-%Y').date()
             day_data = st.session_state.multi_day_raw.get(d_str)
             day_flat, _, _, _ = flatten_data(day_data)
-
-            paths = find_itineraries([], target_movies, day_flat, params, d_obj, drive_map)
+            paths = find_itineraries([], remaining_codes, day_flat, params, d_obj, drive_map)
             for p in paths:
                 if len(p) <= max_per_day:
                     stats = calculate_path_score(p, params['primary_code'], drive_map)
-                    global_pool.append({
-                        'date': d_str, 
-                        'path': p, 
-                        'score': stats['score'], 
-                        'count': len(p)
-                    })
+                    global_pool.append({'date': d_str, 'path': p, 'score': stats['score']})
         
         global_pool.sort(key=lambda x: -x['score'])
-        
         assigned_dates = set()
         for entry in global_pool:
-            if not remaining_movies: break
+            if not remaining_codes: break
             if entry['date'] in assigned_dates: continue
             
-            needed_in_path = [s for s in entry['path'] if s['Title'] in remaining_movies]
+            needed_in_path = [s for s in entry['path'] if s['master_code'] in remaining_codes]
             
             if len(needed_in_path) == len(entry['path']):
                 itinerary_by_day[entry['date']] = entry['path']
                 assigned_dates.add(entry['date'])
                 for s in entry['path']:
-                    remaining_movies.remove(s['Title'])
+                    remaining_codes.remove(s['master_code'])
 
     return itinerary_by_day
 
-def run_anchored_search(anchor_show, target_movies, day_str, params, drive_map):
+def run_anchored_search(anchor_show, target_codes, day_str, params, drive_map):
     day_data = st.session_state.multi_day_raw.get(day_str)
-    if not day_data:
-        return []
+    if not day_data: return []
     
     day_flat, _, _, _ = flatten_data(day_data)
     d_obj = datetime.strptime(day_str, '%m-%d-%Y').date()
-    total_max = params.get('max_per_day', 99)
+    
+    wing_codes = [c for c in target_codes if c != anchor_show['master_code']]
+    
+    after_paths = find_itineraries([anchor_show], wing_codes, day_flat, params, d_obj, drive_map)
+    if not after_paths: after_paths = [[anchor_show]]
 
-    wing_titles = [t for t in target_movies if t != anchor_show['Title']]
-    
-    after_paths = find_itineraries([anchor_show], wing_titles, day_flat, params, d_obj, drive_map)
-    if not after_paths:
-        after_paths = [[anchor_show]]
-
-    before_params = params.copy()
-    before_params['max_per_day'] = total_max - 1
-    latest_cutoff = anchor_show['Showtime'] - timedelta(minutes=params['buffer'])
-    before_params['end'] = latest_cutoff.time()
-    
-    raw_before = find_itineraries([], wing_titles, day_flat, before_params, d_obj, drive_map)
-    
-    valid_before = []
-
-    if not raw_before:
-        valid_before = [[]]
-    else:
-        for b_path in raw_before:
-            if not b_path:
-                valid_before.append([])
-                continue
-            
-            last_m = b_path[-1]
-            last_m_end = last_m['Showtime'] + timedelta(minutes=last_m['Duration'])
-            
-            travel_time = 0
-            if last_m['TheaterCode'] != anchor_show['TheaterCode']:
-                nb_code = last_m['TheaterCode'] if last_m['TheaterCode'] != params['primary_code'] else anchor_show['TheaterCode']
-                travel_time = drive_map.get(nb_code, {}).get('time', 20)
-            
-            # Ensure the last movie in the morning wing ends before the anchor starts
-            if last_m_end + timedelta(minutes=travel_time + params['buffer']) <= anchor_show['Showtime']:
-                valid_before.append(b_path)
-    
-    # If the travel/buffer checks above filtered everything out, revert to [[]] 
-    # so the anchor can still be scheduled alone or with future shows.
-    if not valid_before:
-        valid_before = [[]]
-            
     combined_itineraries = []
-    search_before = valid_before if valid_before else [[]]
-
-    for b_path in search_before:
-        for a_path in after_paths:
-            full_path = b_path + a_path 
+    for a_path in after_paths:
+        before_params = params.copy()
+        before_params['max_per_day'] = params['max_per_day'] - len(a_path)
+        latest_cutoff = anchor_show['Showtime'] - timedelta(minutes=params['buffer'])
+        before_params['end'] = latest_cutoff.time()
+        
+        raw_before = find_itineraries([], wing_codes, day_flat, before_params, d_obj, drive_map)
+        
+        valid_before = []
+        if not raw_before:
+            valid_before = [[]]
+        else:
+            for b_path in raw_before:
+                last_m = b_path[-1]
+                last_m_end = last_m['Showtime'] + timedelta(minutes=last_m['Duration'])
+                travel = 0
+                if last_m['TheaterCode'] != anchor_show['TheaterCode']:
+                    nb = last_m['TheaterCode'] if last_m['TheaterCode'] != params['primary_code'] else anchor_show['TheaterCode']
+                    travel = drive_map.get(nb, {}).get('time', 20)
+                
+                if last_m_end + timedelta(minutes=travel + params['buffer']) <= anchor_show['Showtime']:
+                    valid_before.append(b_path)
+        
+        if not valid_before: valid_before = [[]]
+        
+        for b_path in valid_before:
+            full_path = b_path + a_path
             if len(full_path) <= params['max_per_day']:
-                titles = [s['Title'] for s in full_path]
-                if len(titles) == len(set(titles)):
-                    combined_itineraries.append(full_path)
+                combined_itineraries.append(full_path)
+                
     return combined_itineraries
-
-    first_day = target_days[0]
-    day_flat, _, _, _ = flatten_data(first_day)
-    
-    candidates = find_itineraries([], target_movies, day_flat, params, first_day, drive_map)
-    
-    best_overall_plan = {}
-    max_total_movies = -1
-
-    for path in candidates[:5]:
-        current_plan = {first_day: path}
-        remaining = [m for m in target_movies if m not in [s['Title'] for s in path]]
-        
-        rest_of_week = find_multi_day_itineraries(remaining, target_days[1:], params, drive_map)
-        
-        total_count = len(path) + sum(len(p) for p in rest_of_week.values())
-        
-        if total_count > max_total_movies:
-            max_total_movies = total_count
-            best_overall_plan = {**current_plan, **rest_of_week}
-            
-    return best_overall_plan
 
 def calculate_path_score(path, primary_code, drive_map):
     movie_count = len(path)
@@ -716,27 +700,22 @@ def get_conflict_report(path, missing_codes, all_screenings, p, anchor_show=None
             ms_end = ms_start + timedelta(minutes=ms['Duration'])
             reasons = []
 
-            # 2. Daily Limit Check
             if len(path) >= p.get('max_per_day', 99):
                 reasons.append((10, f"Exceeds daily limit of {p['max_per_day']} movies."))
 
-            # 3. Anchor Check (Highest Priority)
             if anchor_show:
                 a_start, a_end = anchor_show['Showtime'], anchor_show['Showtime'] + timedelta(minutes=anchor_show['Duration'])
                 if not (ms_end <= a_start or ms_start >= a_end):
                     reasons.append((1, f"Overlaps with your **Anchor Show** ({anchor_show['Title']})."))
 
-            # 4. Detailed Path Linkage
             for ps in path:
                 ps_start = ps['Showtime']
                 ps_end = ps_start + timedelta(minutes=ps['Duration'])
                 
-                # Check Physical Overlap
                 if not (ms_end <= ps_start or ms_start >= ps_end):
                     reasons.append((1, f"Overlaps with **{ps['Title']}** ({ps_start.strftime('%I:%M %p')})."))
-                    break # Immediate exit for physical impossibility
-                
-                # Check Logical Constraints
+                    break
+
                 if ms_start >= ps_end:
                     gap = int((ms_start - ps_end).total_seconds() / 60)
                     travel = 0
@@ -753,12 +732,10 @@ def get_conflict_report(path, missing_codes, all_screenings, p, anchor_show=None
                 any_valid = True
                 break
             else:
-                # Store the most "urgent" reason for this specific showtime (lowest rank number)
                 reasons.sort() 
                 failure_details.append(reasons[0])
 
         if not any_valid:
-            # Pick the most logical reason across all showtimes (prioritizing Overlaps > Buffers > Gaps)
             failure_details.sort()
             detail = failure_details[0][1]
             conflicts.append(f"❌ **{m_title}**: {detail}")
@@ -941,35 +918,70 @@ if selected_theater:
     status_context = st.status("🛠️ Debug: Detailed Sync Log", expanded=True) if debug_mode else None
 
     if days_to_fetch:
-        msg = st.toast(f"🔍 Synchronizing 7-Day Data for {t_item['name']}...")
+        msg = st.toast(f"🔍 Synchronizing 7-Day Data for {t_item['name']}...", duration="infinite")
+        all_week_flat = []
         for d_str in days_to_fetch:
             log_msg = f"🌐 Fetching {d_str}..."
-            msg.toast(log_msg)
+            msg.toast(log_msg, duration="infinite")
             if status_context: status_context.write(log_msg)
             api_url = f"https://www.regmovies.com/api/getShowtimes?theatres={','.join(target_codes)}&date={d_str}"
-            data = fetch_data(api_url, t_item['path_name'],status_context)
-            
-            if data:
-                all_flat_data, _, _, _ = flatten_data(data)
-                gaps = check_metadata_gaps(all_flat_data)
-                
-                if gaps:
-                    anchor_theaters = list(set(gaps.values()))
-                    for anchor in anchor_theaters:
-                        t_name = cluster_theaters.get(anchor, anchor)
-                        sweep_msg = f"🩹 Metadata gap fill: {d_str} via {t_name}"
-                        msg.toast(sweep_msg)
-                        if status_context: status_context.write(sweep_msg)
-                        rotated = [anchor] + [c for c in target_codes if c != anchor]
-                        sweep_url = f"https://www.regmovies.com/api/getShowtimes?theatres={','.join(rotated)}&date={d_str}"
-                        sweep_data = fetch_data(sweep_url, t_item['path_name'],status_context)
-                        if sweep_data:
-                            flatten_data(sweep_data)
-                
+            data = fetch_data(api_url, t_item['path_name'],status_context, msg)
+
+            if not data:
+                if d_str == f_date: 
+                    st.error(f"🚨 Connection Failure: Could not retrieve current data for {t_item['name']}. Aborting sync.")
+                    break
+                else:
+                    st.warning(f"Skipping {d_str} due to connection error.")
+                    continue
+            else:
+                log_msg = f"👍 {d_str} fetch successful."
+                msg.toast(log_msg, duration="infinite")
+                if status_context: status_context.write(log_msg)
+
+                day_flat, _, _, day_future_map = flatten_data(data)
+                st.session_state.theater_future_cache.update(day_future_map)
+                all_week_flat.extend(day_flat)
                 st.session_state.multi_day_raw[d_str] = data
+
+                st.session_state.multi_day_raw[d_str] = data
+
+        sweep_msg = "🩹 Checking for weekly metadata gaps..."
+        msg.toast(sweep_msg, duration="infinite")
+        if status_context: status_context.write(sweep_msg)
+        
+        for d_str in st.session_state.multi_day_raw:
+            day_flat, _, _, _ = flatten_data(st.session_state.multi_day_raw[d_str])
+            all_week_flat.extend(day_flat)
+        
+        gaps = check_metadata_gaps(all_week_flat)
+      
+        if gaps:
+            sweep_queue = {}
+            for m_code in gaps:
+                for s in all_week_flat:
+                    if s['master_code'] == m_code:
+                        key = (s['TheaterCode'], s['Showtime'].strftime('%m-%d-%Y'))
+                        if key not in sweep_queue: sweep_queue[key] = []
+                        sweep_queue[key].append(m_code)
+                        break
+
+            for (t_code, d_str), m_codes in sweep_queue.items():
+                t_name = cluster_theaters.get(t_code, t_code)
+                sweep_msg = f"🩹 Metadata gap fill via {t_name} on {d_str}"
+                msg.toast(sweep_msg, duration="infinite")
+                if status_context: status_context.write(sweep_msg)
+                rotated = [t_code] + [c for c in target_codes if c != t_code]
+                sweep_url = f"https://www.regmovies.com/api/getShowtimes?theatres={','.join(rotated)}&date={d_str}"
+                sweep_data = fetch_data(sweep_url, t_item['path_name'],status_context, msg)
+                if sweep_data:
+                    log_msg = f"👍 {t_name} gap fill successful."
+                    msg.toast(log_msg, duration="infinite")
+                    if status_context: status_context.write(log_msg)
+                    flatten_data(sweep_data)
             
-            msg.toast("🎉 7-Day Sync Complete!")
-            if status_context: status_context.update(label="Sync Log Finished", state="complete", expanded=False)
+        msg.toast("🎉 7-Day Sync Complete!", duration="short")
+        if status_context: status_context.update(label="Sync Log Finished", state="complete", expanded=False)
 
     current_day_data = st.session_state.multi_day_raw.get(f_date)
 
@@ -980,11 +992,11 @@ if selected_theater:
 
     if current_t_code not in st.session_state.theater_future_cache:
         log_msg = f"📡 Fetching upcoming schedule for {selected_theater['item']['name']}..."
-        st.toast(log_msg)
+        msg = st.toast(log_msg)
         if status_context: status_context.write(log_msg)
 
         api_url = f"https://www.regmovies.com/api/getShowtimes?theatres={current_t_code}&date={f_date}"
-        future_data = fetch_data(api_url, selected_theater['item']['path_name'],status_context)
+        future_data = fetch_data(api_url, selected_theater['item']['path_name'],status_context,msg)
         
         if future_data:
             _, _, _, new_future_map = flatten_data(future_data)
@@ -1020,9 +1032,9 @@ st.sidebar.link_button("☕ Buy Me a Coffee","https://buymeacoffee.com/riyazusma
 st.sidebar.link_button("📃 Source on Github","https://github.com/riyazusman/regal-pro")
 
 if selected_theater and current_day_data:
-    if debug_mode:
-        with st.expander("🛠️ Raw API Debug Output", expanded=False):
-            st.json(current_day_data)
+    #if debug_mode:
+    #    with st.expander("🛠️ Raw API Debug Output", expanded=False):
+    #        st.json(current_day_data)
 
     all_flat_data, movie_meta, attr_map, future_movies = flatten_data(current_day_data)        
     flat_data = [s for s in all_flat_data if s['TheaterCode'] == t_item['theatre_code']]
@@ -1148,17 +1160,21 @@ if selected_theater and current_day_data:
                             col_t.markdown(t_str)
                             col_info.markdown(d_str)
             else: # Group by Movie
-                for title in list(dict.fromkeys([s['Title'] for s in filtered])):
-                    m_shows = [s for s in filtered if s['Title'] == title]
+                for m_code in list(dict.fromkeys([s['master_code'] for s in filtered])):
+                    m_shows = [s for s in filtered if s['master_code'] == m_code]
+                    title = m_shows[0]['Title']
                     
                     other_t = sorted([cluster_theaters.get(tc, f"Theater {tc}") 
-                                    for tc in set(s['TheaterCode'] for s in all_flat_data if s['Title'] == title) 
+                                    for tc in set(s['TheaterCode'] for s in all_flat_data if s['master_code'] == m_code) 
                                     if tc != t_item['theatre_code']])
                     
-                    scheduled_days = sorted([datetime.strptime(d_str, "%m-%d-%Y").strftime("%b %d") for d_str, d_data in st.session_state.multi_day_raw.items() 
-                                       if any(m.get('Title') == title for m in d_data.get('movies', []))])
+                    valid_date_objs = [datetime.strptime(d_str, "%m-%d-%Y") 
+                                    for d_str, d_data in st.session_state.multi_day_raw.items() 
+                                    if any(m.get('MasterMovieCode') == m_code for m in d_data.get('movies', []))]
                     
-                    meta = movie_meta.get(m_shows[0]['master_code'], {})
+                    scheduled_days = [d.strftime("%b %d") for d in sorted(valid_date_objs)]
+                    
+                    meta = movie_meta.get(m_code, {})
                     new_tag = "🔴 NEW" if meta.get('is_new') else ""
 
                     with st.expander(f"🍿 {title} ({m_shows[0]['Rating']}) — {m_shows[0]['Duration']} min {new_tag}", expanded=True):
@@ -1192,57 +1208,53 @@ if selected_theater and current_day_data:
 
                         with link_col:
                             if other_t or scheduled_days:
-                                if st.button("📅 Full Schedule", key=f"link_{title}_{t_item['theatre_code']}", use_container_width=True):
+                                if st.button("📅 Full Schedule", key=f"link_{m_code}_{t_item['theatre_code']}", use_container_width=True):
                                     st.session_state.nav_redirect = "🎬 Movie Explorer"
-                                    st.session_state.selected_movie = title
+                                    st.session_state.selected_movie_code = m_code
                                     st.rerun()
 
         with tab_nearby:
-            primary_titles_week = set()
-            all_titles_week = set()
+            primary_codes_week = set()
+            all_codes_week = set()
             
             for d_str, d_data in st.session_state.multi_day_raw.items():
                 for theater_show in d_data.get('shows', []):
                     t_code = theater_show.get('TheatreCode')
-                    titles = [m.get('Title') for m in theater_show.get('Film', [])]
+                    codes = [m.get('MasterMovieCode') for m in theater_show.get('Film', [])]
                     if t_code == t_item['theatre_code']:
-                        primary_titles_week.update(titles)
-                    all_titles_week.update(titles)
+                        primary_codes_week.update(codes)
+                    all_codes_week.update(codes)
             
-            nearby_only_titles = sorted(list(all_titles_week - primary_titles_week))
+            nearby_only_codes = sorted(list(all_codes_week - primary_codes_week))
 
-            if nearby_only_titles:
+            if nearby_only_codes:
                 st.subheader("🚗 Exclusive Nearby This Week")
                 st.caption(f"These movies are NOT playing at {t_item['name']} any time this week.")
                 
                 nearby_cols = st.columns(3)
-                for idx, title in enumerate(nearby_only_titles):
+                for idx, m_code in enumerate(nearby_only_codes):
                     theater_dates = {}
-                    master_code = None
                     
                     for d_str, d_data in st.session_state.multi_day_raw.items():
                         for theater_show in d_data.get('shows', []):
                             t_code = theater_show.get('TheatreCode')
                             for movie in theater_show.get('Film', []):
-                                if movie.get('Title') == title:
-                                    if not master_code: master_code = movie.get('MasterMovieCode')
+                                if movie.get('MasterMovieCode') == m_code:
                                     t_name = cluster_theaters.get(t_code, f"Theater {t_code}")
-                                    date_label = datetime.strptime(d_str, "%m-%d-%Y").strftime("%b %d")
-                                    if t_name not in theater_dates:
-                                        theater_dates[t_name] = []
-                                    if date_label not in theater_dates[t_name]:
-                                        theater_dates[t_name].append(date_label)
+                                    if t_name not in theater_dates: theater_dates[t_name] = []
+                                    if d_str not in theater_dates[t_name]: 
+                                        theater_dates[t_name].append(d_str)
                     
-                    meta = st.session_state.global_movie_catalog.get(master_code, {'rating': 'NR', 'duration': 0, 'is_new':False})
-                    
+                    meta = st.session_state.global_movie_catalog.get(m_code, {'title': 'Unknown', 'rating': 'NR', 'duration': 0, 'is_new':False})
                     new_tag = "<small style='font-size: 0.8rem; color:red;'>🔴 NEW</small>" if meta.get('is_new') else ""
 
                     with nearby_cols[idx % 3]:
                         with st.container(border=True):
-                            st.markdown(f"**{title}** ({meta['rating']}) {new_tag}", unsafe_allow_html=True)
+                            st.markdown(f"**{meta['title']}** ({meta['rating']}) {new_tag}", unsafe_allow_html=True)
                             
                             for t_name, dates in theater_dates.items():
-                                date_str = ", ".join(sorted(dates))
+                                sorted_date_objs = sorted([datetime.strptime(d, "%m-%d-%Y") for d in dates])
+                                date_str = ", ".join([d.strftime("%b %d") for d in sorted_date_objs])
                                 st.markdown(f"<p style='font-size: 0.8rem; margin-bottom: 2px;'>📍 <b>{t_name}</b></p>", unsafe_allow_html=True)
                                 st.markdown(f"<p style='font-size: 0.8rem; color: #e67e22; margin-top: -5px;'>🗓️ {date_str}</p>", unsafe_allow_html=True)
                             
@@ -1254,12 +1266,12 @@ if selected_theater and current_day_data:
             current_t_code = t_item['theatre_code']
 
             if current_t_code not in st.session_state.theater_future_cache:
-                with st.spinner(f"Loading upcoming schedule for {t_item['name']}..."):
-                    api_url = f"https://www.regmovies.com/api/getShowtimes?theatres={current_t_code}&date={f_date}"
-                    future_data = fetch_data(api_url, t_item['path_name'], None)
-                    if future_data:
-                        _, _, _, new_future_map = flatten_data(future_data)
-                        st.session_state.theater_future_cache.update(new_future_map)
+                msg = st.toast(f"📡 Loading upcoming schedule for {t_item['name']}...")
+                api_url = f"https://www.regmovies.com/api/getShowtimes?theatres={current_t_code}&date={f_date}"
+                future_data = fetch_data(api_url, t_item['path_name'], status_context, msg)
+                if future_data:
+                    _, _, _, new_future_map = flatten_data(future_data)
+                    st.session_state.theater_future_cache.update(new_future_map)
 
             scoped_future_movies = st.session_state.theater_future_cache.get(current_t_code, [])
 
@@ -1294,12 +1306,13 @@ if selected_theater and current_day_data:
                 }
         
         movie_list_data = []
-        titles_processed = set()
+        codes_processed = set()
         for s in all_flat_data:
-            if s['Title'] not in titles_processed:
-                rating = movie_meta.get(s['master_code'], {}).get('rating', 'NR')
-                movie_list_data.append({"title": s['Title'], "label": f"{s['Title']} ({rating})"})
-                titles_processed.add(s['Title'])
+            m_code = s['master_code']
+            if m_code not in codes_processed:
+                meta = movie_meta.get(m_code, {})
+                movie_list_data.append({"code": m_code, "title": meta.get('title', 'Unknown'), "label": f"{meta.get('title')} ({meta.get('rating')})"})
+                codes_processed.add(m_code)
         movie_list_data.sort(key=lambda x: x['title'])
 
         st.markdown("###### 🍿 Select a Movie")
@@ -1328,28 +1341,28 @@ if selected_theater and current_day_data:
             </style>
         """, unsafe_allow_html=True)
 
-        if "selected_movie" not in st.session_state:
-            st.session_state.selected_movie = movie_list_data[0]['title'] if movie_list_data else None
+        if "selected_movie_code" not in st.session_state:
+            st.session_state.selected_movie_code = movie_list_data[0]['code'] if movie_list_data else None
 
         with st.container(height=130, border=True):
             cols_per_row = 5
             for i in range(0, len(movie_list_data), cols_per_row):
                 row_cols = st.columns(cols_per_row)
                 for j, m_entry in enumerate(movie_list_data[i : i + cols_per_row]):
-                    title = m_entry['title']
-                    is_selected = (title == st.session_state.selected_movie)
+                    m_code = m_entry['code']
+                    is_selected = (m_code == st.session_state.selected_movie_code)
                     label = f"✅ {m_entry['label']}" if is_selected else m_entry['label']
-                    if row_cols[j].button(label, key=f"grid_{title}", use_container_width=True):
-                        st.session_state.selected_movie = title
+                    if row_cols[j].button(label, key=f"grid_{m_code}", use_container_width=True):
+                        st.session_state.selected_movie_code = m_code
                         st.rerun()
 
-        sel_movie = st.session_state.selected_movie
-        if sel_movie:
-            m_data = [s for s in all_flat_data if s['Title'] == sel_movie]
+        sel_code = st.session_state.selected_movie_code
+        if sel_code:
+            m_data = [s for s in all_flat_data if s['master_code'] == sel_code]
             if m_data:
-                meta = movie_meta.get(m_data[0]['master_code'], {})
+                meta = movie_meta.get(sel_code, {})
                 new_tag = " | 🔴 NEW RELEASE" if meta.get('is_new') else ""
-                st.markdown(f"## {sel_movie}", unsafe_allow_html=True)
+                st.markdown(f"## {meta.get('title')}", unsafe_allow_html=True)
                 st.markdown(f"#### <small style='color:grey'>({meta.get('rating', 'NR')} | {meta.get('duration', 0)} min {new_tag})</small>", unsafe_allow_html=True)
                 
                 with st.expander("🔍 Advanced Filters", expanded=False):
@@ -1371,63 +1384,71 @@ if selected_theater and current_day_data:
                         (not f_extra or set(f_extra).issubset(s['raw_attrs'])) and
                         (not f_hide or (s['Showtime'] > current_local_time if q_date == current_local_time.date() else True))]
 
-                fmts_to_show = sorted(list(set(s['ScreenType'] for s in filtered_m)))
-                
-                for fmt in fmts_to_show:
-                    fmt_shows = [s for s in filtered_m if s['ScreenType'] == fmt]
+                if not filtered_m:
+                    st.warning(f"No showtimes found for **{meta.get('title', 'this movie')}** on {q_date.strftime('%b %d')} matching your filters.")
+                    if f_hide and q_date == current_local_time.date():
+                        st.info("Remaining shows for today may have already passed. Try unchecking **'Hide Past Shows'** in the filters above or selecting a different date.")
+                else:
+                    fmts_to_show = sorted(list(set(s['ScreenType'] for s in filtered_m)))
                     
-                    with st.expander(f"✨ {fmt}", expanded=True):
-                        t_codes = sorted(list(set(s['TheaterCode'] for s in fmt_shows)), 
-                                        key=lambda x: theater_info.get(x, {}).get('time', 999))
+                    for fmt in fmts_to_show:
+                        fmt_shows = [s for s in filtered_m if s['ScreenType'] == fmt]
                         
-                        for tc in t_codes:
-                            t_shows = sorted([s for s in fmt_shows if s['TheaterCode'] == tc], key=lambda x: x['Showtime'])
-                            info = theater_info.get(tc, {"name": f"Theater {tc}", "dist": 0, "time": 0})
+                        with st.expander(f"✨ {fmt}", expanded=True):
+                            t_codes = sorted(list(set(s['TheaterCode'] for s in fmt_shows)), 
+                                            key=lambda x: theater_info.get(x, {}).get('time', 999))
                             
-                            is_primary = (tc == t_item['theatre_code'])
-                            t_icon = "📍" if is_primary else "🚗"
-                            dist_txt = "(Current)" if is_primary else f"({info['time']}m / {info['dist']}mi)"
-                            
-                            st.markdown(f"**{t_icon} {info['name']}** <small style='color:grey'>{dist_txt}</small>", unsafe_allow_html=True)
-                            
-                            playing_on_dates = []
-                            for d_str, d_data in st.session_state.multi_day_raw.items():
-                                for theater_show in d_data.get('shows', []):
-                                    if theater_show.get('TheatreCode') == tc:
-                                        for movie in theater_show.get('Film', []):
-                                            if movie.get('Title') == sel_movie:
-                                                day_fmts = set(p.get('PerformanceGroup') or "2D" for p in movie.get('Performances', []))
-                                                if fmt in day_fmts:
-                                                    playing_on_dates.append(datetime.strptime(d_str, "%m-%d-%Y").strftime("%b %d"))
-                            
-                            t_common = set.intersection(*(s['raw_attrs'] for s in t_shows)) if t_shows else set()
-                            common_attribs = sorted(t_common - {fmt})
-                            st.markdown(f"<p style='color:grey; font-size:0.8rem; margin-top:-10px; margin-bottom:5px;'>({', '.join(common_attribs) if common_attribs else ""})</p>", unsafe_allow_html=True)
-
-                            row_items = []
-                            for s in t_shows:
-                                t_str = s['Showtime'].strftime('%I:%M %p')
-                                delta_attribs = get_attr_diff(s['Attributes'], t_common)
+                            for tc in t_codes:
+                                t_shows = sorted([s for s in fmt_shows if s['TheaterCode'] == tc], key=lambda x: x['Showtime'])
+                                info = theater_info.get(tc, {"name": f"Theater {tc}", "dist": 0, "time": 0})
                                 
-                                is_past = (q_date == current_local_time.date() and s['Showtime'] < current_local_time)
-                                if is_past:
-                                    final_time = f"<del>{t_str}</del>" 
-                                    meta_text = f" <small style='color:grey'><del>(Audi {s['Auditorium']}) {delta_attribs}</del></small>"
-                                else:    
-                                    final_time = f"**{t_str}**"
-                                    meta_text = f" <small style='color:grey'>(Audi {s['Auditorium']}) {delta_attribs}</small>"
+                                is_primary = (tc == t_item['theatre_code'])
+                                t_icon = "📍" if is_primary else "🚗"
+                                dist_txt = "(Current)" if is_primary else f"({info['time']}m / {info['dist']}mi)"
+                                
+                                st.markdown(f"**{t_icon} {info['name']}** <small style='color:grey'>{dist_txt}</small>", unsafe_allow_html=True)
+                                
+                                playing_on_dates = []
+                                for d_str, d_data in st.session_state.multi_day_raw.items():
+                                    for theater_show in d_data.get('shows', []):
+                                        if theater_show.get('TheatreCode') == tc:
+                                            for movie in theater_show.get('Film', []):
+                                                if movie.get('MasterMovieCode') == sel_code:
+                                                    day_fmts = set(p.get('PerformanceGroup') or "2D" for p in movie.get('Performances', []))
+                                                    if fmt in day_fmts:
+                                                        playing_on_dates.append(d_str)
+                                
+                                t_common = set.intersection(*(s['raw_attrs'] for s in t_shows)) if t_shows else set()
+                                common_attribs = sorted(t_common - {fmt})
+                                st.markdown(f"<p style='color:grey; font-size:0.8rem; margin-top:-10px; margin-bottom:5px;'>({', '.join(common_attribs) if common_attribs else ""})</p>", unsafe_allow_html=True)
 
-                                row_items.append(f"{final_time}{meta_text}")
-                            
-                            st.markdown(f"&nbsp;&nbsp;&nbsp;&nbsp;{' | '.join(row_items)}", unsafe_allow_html=True)
+                                row_items = []
+                                for s in t_shows:
+                                    t_str = s['Showtime'].strftime('%I:%M %p')
+                                    delta_attribs = get_attr_diff(s['Attributes'], t_common)
+                                    
+                                    is_past = (q_date == current_local_time.date() and s['Showtime'] < current_local_time)
+                                    if is_past:
+                                        final_time = f"<del>{t_str}</del>" 
+                                        meta_text = f" <small style='color:grey'><del>(Audi {s['Auditorium']}) {delta_attribs}</del></small>"
+                                    else:    
+                                        final_time = f"**{t_str}**"
+                                        meta_text = f" <small style='color:grey'>(Audi {s['Auditorium']}) {delta_attribs}</small>"
 
-                            if playing_on_dates:
-                                date_str = ", ".join(sorted(list(set(playing_on_dates))))
-                                st.markdown(f"<p style='font-size: 0.8rem; color: #e67e22; margin-top: -5px;'>🗓️ <b>Scheduled Dates:</b> {date_str}</p>", unsafe_allow_html=True)
+                                    row_items.append(f"{final_time}{meta_text}")
+                                
+                                st.markdown(f"&nbsp;&nbsp;&nbsp;&nbsp;{' | '.join(row_items)}", unsafe_allow_html=True)
 
-                            st.divider()
+                                if playing_on_dates:
+                                    unique_dates = sorted([datetime.strptime(d, "%m-%d-%Y") for d in set(playing_on_dates)])
+                                    date_str = ", ".join([d.strftime("%b %d") for d in unique_dates])
+                                    st.markdown(f"<p style='font-size: 0.8rem; color: #e67e22; margin-top: -5px;'>🗓️ <b>Scheduled Dates:</b> {date_str}</p>", unsafe_allow_html=True)
+
+                                st.divider()
             else:
-                st.warning(f"No showtimes found for **{sel_movie}** on {q_date.strftime('%b %d')}.")
+                meta = st.session_state.global_movie_catalog.get(sel_code, {})
+                sel_title = meta.get('title', f"Movie {sel_code}")
+                st.warning(f"No showtimes found for **{sel_title}** on {q_date.strftime('%b %d')}.")
                 st.info("Try selecting a different date or theater in the sidebar.")
                         
     elif nav_tab == "🗓️ Smart Scheduler":
@@ -1457,7 +1478,6 @@ if selected_theater and current_day_data:
                     default=[f_date])
             
             with r1_c2:
-                # 1. Collect MasterMovieCodes instead of titles
                 global_reactive_codes = set()
                 for d_str in target_days:
                     day_data = st.session_state.multi_day_raw.get(d_str)
@@ -1468,17 +1488,14 @@ if selected_theater and current_day_data:
                                     if movie.get('MasterMovieCode'):
                                         global_reactive_codes.add(movie.get('MasterMovieCode'))
                 
-                # 2. Formatter that pulls Title and NEW tag from the catalog
                 def format_movie_label(m_code):
                     meta = st.session_state.global_movie_catalog.get(m_code, {})
                     title = meta.get('title', f"Unknown ({m_code})")
                     return f"{title} (🔴 NEW)" if meta.get('is_new') else title
                 
-                # 3. Sort codes based on their actual titles in the catalog
                 sorted_codes = sorted(list(global_reactive_codes), 
                                      key=lambda x: st.session_state.global_movie_catalog.get(x, {}).get('title', ''))
                 
-                # 4. Multiselect now handles CODES
                 target_movies = st.multiselect(
                     "3\\. Select Movies (Ordered by Preference)", 
                     options=sorted_codes,
@@ -1490,11 +1507,10 @@ if selected_theater and current_day_data:
 
                 available_formats = sorted(list(set(
                     s['ScreenType'] for s in all_flat_data 
-                    if s['Title'] in target_movies and s['TheaterCode'] in target_theaters
-                ))) if target_movies else sorted(list(set(
+                    if s['master_code'] in target_movies and s['TheaterCode'] in target_theaters
+                    ))) if target_movies else sorted(list(set(
                     s['ScreenType'] for s in all_flat_data 
-                    if s['TheaterCode'] in target_theaters
-                )))
+                    if s['TheaterCode'] in target_theaters)))
                 
                 target_formats = st.multiselect(
                     "4\\. Preferred Formats", 
@@ -1516,7 +1532,7 @@ if selected_theater and current_day_data:
             with c2: 
                 buff = st.slider("Buffer (min)", 0, 60, 15, help="Set the minimum gap between two movies")
                 g_cap = st.slider("Max Gap (min)", 30, 240, 120, help="Set the maximum gap between two movies")
-                b_val = st.slider("Break duration (min)", 30, 120, 60)
+                b_val = st.slider("Break duration (min)", 30, 120, 60) if b_after else 0
             with c3: 
                 unlimited = st.checkbox("Regal Unlimited Rule (90-min gap)", value=True, help="Apply a minimum gap of 90-min between showtimes.")
                 fudge = st.checkbox("Fudge Factor (5-min overlap)", help="Allow a 5 min overlap between showtimes if no better schedule possible.")
@@ -1528,7 +1544,6 @@ if selected_theater and current_day_data:
                         options=["Minimize Days", "Maximize Compactness"],
                         help = "Minimize Days will pack your selected movies into the fewest number of trips possible. Maximize Compactness prioritizes the most efficient schedules with the shortest gaps and minimal travel, even if spread across more days.") 
 
-        # --- Anchor Show Selection ---
         with st.container(border=True):
             enable_anchor = st.checkbox("📍 Include a Booked (Anchor) Show", value=False)
             anchor_show = None
@@ -1537,40 +1552,32 @@ if selected_theater and current_day_data:
                 st.info("Lock a booked showtime into your plan. The scheduler will build your itinerary around this fixed point, which may limit other options.")
                 a_col1, a_col2, a_col3, a_col4  = st.columns(4)
                 with a_col1:
-                    # Filter based on target_theaters
                     a_theater = st.selectbox("Anchor Theater", 
                                              options=target_theaters, 
                                              format_func=lambda x: cluster_theaters.get(x))
                 with a_col2:
-                    # Filter based on target_days
                     a_day = st.selectbox("Anchor Day", 
                                          options=target_days,
                                          format_func=lambda x: datetime.strptime(x, "%m-%d-%Y").strftime("%b %d"))
                 with a_col3:
-                    # Pull movies available for that theater and day
                     a_day_data = st.session_state.multi_day_raw.get(a_day)
                     valid_anchor_codes = []
                     if a_day_data:
                         for ts in a_day_data.get('shows', []):
                             if ts.get('TheatreCode') == a_theater:
-                                # Collect codes playing at this specific theater
                                 theater_codes = [m.get('MasterMovieCode') for m in ts.get('Film', [])]
-                                # Intersection of target_movies (codes) and theater codes
                                 valid_anchor_codes = [c for c in target_movies if c in theater_codes]
                     
-                    # Selectbox now returns the MasterMovieCode
                     a_movie_code = st.selectbox(
                         "Anchor Movie", 
                         options=sorted(valid_anchor_codes, key=lambda x: st.session_state.global_movie_catalog.get(x, {}).get('title', '')),
-                        format_func=format_movie_label # Reuses your formatter with the "NEW" tag
+                        format_func=format_movie_label
                     )
 
-                # Final step: Select the exact showtime
                 with a_col4:
                     a_showtimes = []
                     if a_day_data and a_movie_code:
                         day_flat_anchor, _, _, _ = flatten_data(a_day_data)
-                        # Filter using master_code instead of Title
                         a_showtimes = [s for s in day_flat_anchor if s['master_code'] == a_movie_code and s['TheaterCode'] == a_theater]
                     
                     selected_anchor = st.selectbox(
@@ -1604,8 +1611,8 @@ if selected_theater and current_day_data:
                         total_movies = sum(len(p) for p in multi_itinerary.values())
                         total_hops = sum(calculate_path_score(p, params['primary_code'], drive_map)['hops'] for p in multi_itinerary.values())
                         sorted_plan_days = sorted(multi_itinerary.keys(), key=lambda x: datetime.strptime(x, '%m-%d-%Y'))
-                        scheduled_titles = [s['Title'] for p in multi_itinerary.values() for s in p]
-                        unscheduled = [m for m in target_movies if m not in scheduled_titles]
+                        scheduled_codes = [s['master_code'] for p in multi_itinerary.values() for s in p]
+                        unscheduled = [m for m in target_movies if m not in scheduled_codes]
 
                         st.markdown(f"### 🏆 Schedule Summary")
                         c1, c2, c3 = st.columns(3)
@@ -1635,7 +1642,8 @@ if selected_theater and current_day_data:
                         if not unscheduled:
                             st.success("✅ **Perfect Match!** All selected movies fit the schedule.")
                         else:
-                            st.warning(f"⚠️ **Incomplete Schedule:** {len(unscheduled)} movies could not be fitted.")
+                            m_names = [st.session_state.global_movie_catalog.get(m, {}).get('title', m) for m in unscheduled]
+                            st.warning(f"⚠️ **Incomplete Schedule:** {', '.join(m_names)} could not be fitted.")
 
                         for d_str in sorted_plan_days:
                             path = multi_itinerary[d_str]
@@ -1718,24 +1726,19 @@ if selected_theater and current_day_data:
                                 return True
                             return False
 
-                        # 1. Smart Marathon (Best overall Score)
                         add_selection(ranked_pool[0], "Smart Marathon (Best Efficiency)")
 
-                        # 2. Absolute Marathon (Max Movies - strictly by count)
                         abs_mar = sorted(processed_paths, key=lambda x: (-x['count'], -x['score']))[0]
                         add_selection(abs_mar, "Absolute Marathon (Max Movies)")
 
-                        # 3. Single-Theater Max (Filtered by 0 Hops)
                         st_p = sorted([pp for pp in processed_paths if pp['hops'] == 0], key=lambda x: (-x['score']))
                         if st_p: add_selection(st_p[0], "Single-Theater Max (Zero Hops)")
 
-                        # 4. Priority Movie Match (Matches the first two selected movies)
                         if len(target_movies) >= 2:
                             top_two = set(target_movies[:2])
-                            p_mov = sorted([pp for pp in processed_paths if top_two.issubset(set(s['Title'] for s in pp['path']))], key=lambda x: (-x['score']))
+                            p_mov = sorted([pp for pp in processed_paths if top_two.issubset(set(s['master_code'] for s in pp['path']))], key=lambda x: (-x['score']))
                             if p_mov: add_selection(p_mov[0], "Priority Movie Match (#1 & #2)")
 
-                        # 5. Fill remaining slots with the next best optimized paths
                         for entry in ranked_pool:
                             if len(final_selections) >= 5: break
                             add_selection(entry, "Alternative Optimized Path")
