@@ -257,8 +257,8 @@ def fetch_data(api_url, path_name, status_context, msg, max_retries=3):
             st.session_state.api_session = c_requests.Session()
         
         st.session_state.api_session.proxies = proxies
-        #api_headers = AJAX_HEADERS.copy()
-        api_headers = minimal_headers.copy()
+        api_headers = AJAX_HEADERS.copy()
+        #api_headers = minimal_headers.copy()
         api_headers["Referer"] = f"https://www.regmovies.com/theatres/{path_name}"
         theater_url = f"https://www.regmovies.com/theatres/{path_name}"
 
@@ -296,8 +296,10 @@ def fetch_data(api_url, path_name, status_context, msg, max_retries=3):
                 st.session_state.proxy_session_id = os.urandom(4).hex()
                 continue
             if response.status_code == 403:
-                with status_context:
-                    with st.expander("🛠️ Response", expanded=False):
+                if status_context:
+                    with status_context:
+                        #with st.expander("🛠️ Response", expanded=False):
+                        st.write("🛠️ Response")
                         st.write(response)
                 if IS_CLOUD:
                     st.session_state.current_proxy_port = 10001 + (st.session_state.current_proxy_port - 10001 + 1) % 10
@@ -311,12 +313,11 @@ def fetch_data(api_url, path_name, status_context, msg, max_retries=3):
 
             response.raise_for_status()
         except Exception as e:
-            if debug_mode:
+            if status_context:
                 with status_context:
                     st.error(f"Proxy Connection Error: {str(e)}")
             continue
     
-
     if tier_label == "Scraping API":
         log_msg = "🚀 Engaging Scraping API Fallback..."
         msg.toast(log_msg, duration="infinite")
@@ -326,19 +327,22 @@ def fetch_data(api_url, path_name, status_context, msg, max_retries=3):
         
         if status_context:
             with status_context:
-                with st.expander("🛠️ Outgoing Request Log", expanded=False):
-                    st.json({
-                        "API_URL": api_url,
-                        "Headers": headers,
-                        "Tier": tier_label,
-                    })
+                #with st.expander("🛠️ Outgoing Request Log", expanded=False):
+                st.write("🛠️ Outgoing Request Log")
+                st.json({
+                    "API_URL": api_url,
+                    "Headers": headers,
+                    "Tier": tier_label,
+                })
         try:
             s_resp = c_requests.post("https://scraper-api.decodo.com/v2/scrape", json=scraping_payload, headers=headers, timeout=45)
             if s_resp.status_code == 200:
-                return s_resp.json()
+                return json.loads(s_resp.json()['results'][0]['content'])
             else:
-                with status_context:
-                    with st.expander("🛠️ Response", expanded=False):
+                if status_context:
+                    with status_context:
+                        #with st.expander("🛠️ Response", expanded=False):
+                        st.write("🛠️ Response")
                         st.write(s_resp)
         except Exception as e:
             if debug_mode:
