@@ -1,4 +1,4 @@
-# v2.2 Hotfix 
+# v2.3 RC DB Integration 
 import streamlit as st
 import json
 import math
@@ -87,11 +87,57 @@ def init_supabase() -> Client:
 
 db = init_supabase()
 
+def get_nearby_theater_data(theater_codes, fetch_date):
+    try:
+        res = db.table("theater_day_cache") \
+                .select("showtime_date, raw_data") \
+                .in_("theater_code", theater_codes) \
+                .eq("fetch_date", fetch_date) \
+                .execute()
+        
+        if not res.data:
+            return None
+
+        combined = {}
+        for row in res.data:
+            d_str = row['showtime_date']
+            if d_str not in combined:
+                combined[d_str] = {'movies': [], 'shows': []}
+            
+            combined[d_str]['shows'].extend(row['raw_data'].get('shows', []))
+            
+            existing_ids = {m['MasterMovieCode'] for m in combined[d_str]['movies']}
+            for m in row['raw_data'].get('movies', []):
+                if m['MasterMovieCode'] not in existing_ids:
+                    combined[d_str]['movies'].append(m)
+ 
+        return combined
+    except Exception as e:
+        return None
+
 def get_db_metadata(codes):
-    """Batch fetch movie data from Supabase"""
     if not codes: return {}
     response = db.table("movie_metadata").select("*").in_("master_movie_code", list(codes)).execute()
     return {row['master_movie_code']: row for row in response.data}
+
+def get_db_theater_future(theater_code, fetch_date):
+    try:
+        res = db.table("theater_future_cache") \
+                .select("raw_data") \
+                .eq("theatre_code", theater_code) \
+                .eq("fetch_date", fetch_date) \
+                .execute()
+        return res.data[0]['raw_data'] if res.data else None
+    except Exception: return None
+
+def save_db_theater_future(theater_code, fetch_date, data):
+    try:
+        db.table("theater_future_cache").upsert({
+            "theatre_code": theater_code,
+            "fetch_date": fetch_date,
+            "raw_data": data
+        }).execute()
+    except Exception: pass
 
 @st.cache_data(ttl=300)
 def get_proxy_health():
@@ -679,7 +725,9 @@ def run_anchored_search(anchor_show, target_codes, day_str, params, drive_map):
                     nb = last_m['TheaterCode'] if last_m['TheaterCode'] != params['primary_code'] else anchor_show['TheaterCode']
                     travel = drive_map.get(nb, {}).get('time', 20)
                 
-                if last_m_end + timedelta(minutes=travel + params['buffer']) <= anchor_show['Showtime']:
+                gap_to_anchor = int((anchor_show['Showtime'] - last_m_end).total_seconds() / 60)
+
+                if (gap_to_anchor >= (travel + params['buffer'])) and (gap_to_anchor <= params['gap_cap']):
                     valid_before.append(b_path)
         
         if not valid_before: valid_before = [[]]
@@ -717,12 +765,15 @@ def calculate_path_score(path, primary_code, drive_map):
 
 def get_conflict_report(path, missing_codes, all_screenings, p, anchor_show=None, drive_map={}):
     conflicts = []
+    # Combine path and anchor into a single sorted timeline for validation
+    full_path = sorted(path + ([anchor_show] if anchor_show else []), key=lambda x: x['Showtime'])
+    
     for m_code in missing_codes:
         meta = st.session_state.global_movie_catalog.get(m_code, {})
         m_title = meta.get('title', f"Unknown ({m_code})")
         m_shows = [s for s in all_screenings if s['master_code'] == m_code and s['TheaterCode'] in p['theaters']]
         
-        if p['formats']: 
+        if p.get('formats'): 
             m_shows = [s for s in m_shows if s['ScreenType'] in p['formats']]
         
         if not m_shows:
@@ -737,33 +788,48 @@ def get_conflict_report(path, missing_codes, all_screenings, p, anchor_show=None
             ms_end = ms_start + timedelta(minutes=ms['Duration'])
             reasons = []
 
-            if len(path) >= p.get('max_per_day', 99):
-                reasons.append((10, f"Exceeds daily limit of {p['max_per_day']} movies."))
-
-            if anchor_show:
-                a_start, a_end = anchor_show['Showtime'], anchor_show['Showtime'] + timedelta(minutes=anchor_show['Duration'])
-                if not (ms_end <= a_start or ms_start >= a_end):
-                    reasons.append((1, f"Overlaps with your **Anchor Show** ({anchor_show['Title']})."))
-
-            for ps in path:
+            # Check Overlap and Gaps against the entire timeline (Path + Anchor)
+            for ps in full_path:
                 ps_start = ps['Showtime']
                 ps_end = ps_start + timedelta(minutes=ps['Duration'])
                 
+                # 1. Overlap Check
                 if not (ms_end <= ps_start or ms_start >= ps_end):
                     reasons.append((1, f"Overlaps with **{ps['Title']}** ({ps_start.strftime('%I:%M %p')})."))
                     break
 
-                if ms_start >= ps_end:
+                # 2. Gap and Buffer Check
+                gap = 0
+                is_after = ms_start >= ps_end
+                is_before = ms_end <= ps_start
+
+                if is_after:
                     gap = int((ms_start - ps_end).total_seconds() / 60)
+                elif is_before:
+                    gap = int((ps_start - ms_end).total_seconds() / 60)
+
+                # Check if this is the immediate neighbor (closest movie before or after)
+                # To avoid comparing 12PM to 9PM if there is a 4PM show in between
+                is_neighbor = False
+                if is_after:
+                    # No movies in path between ps_end and ms_start
+                    is_neighbor = not any(x['Showtime'] > ps_start and x['Showtime'] < ms_start for x in full_path)
+                elif is_before:
+                    # No movies in path between ms_end and ps_start
+                    is_neighbor = not any(x['Showtime'] > ms_start and x['Showtime'] < ps_start for x in full_path)
+
+                if is_neighbor:
                     travel = 0
                     if ms['TheaterCode'] != ps['TheaterCode']:
                         nb = ms['TheaterCode'] if ms['TheaterCode'] != p['primary_code'] else ps['TheaterCode']
                         travel = drive_map.get(nb, {}).get('time', 20)
                     
                     if gap < (travel + p['buffer']):
-                        reasons.append((2, f"Buffer violation after **{ps['Title']}** (Gap is {gap}m, needs {travel + p['buffer']}m)."))
+                        dir_str = "after" if is_after else "before"
+                        reasons.append((2, f"Buffer violation {dir_str} **{ps['Title']}** (Gap {gap}m, needs {travel + p['buffer']}m)."))
                     elif gap > p['gap_cap']:
-                        reasons.append((5, f"Gap after **{ps['Title']}** ({gap}m) exceeds your Max Gap ({p['gap_cap']}m)."))
+                        dir_str = "after" if is_after else "before"
+                        reasons.append((5, f"Gap {dir_str} **{ps['Title']}** ({gap}m) exceeds Max Gap ({p['gap_cap']}m)."))
 
             if not reasons:
                 any_valid = True
@@ -811,15 +877,26 @@ def generate_batch_ics(multi_itinerary, theater_name_map):
 
 def clean_movie_title(title):
     if not title: return ""
-    title = re.sub(r'^[A-Z0-9\s]+:\s*', '', title)
-    return title.split('(')[0].strip()
+    title = re.sub(r'^[A-Z0-9]{3,}:\s*', '', title)
+    patterns = [
+        r'[:\-\+]*\s*(\d+th\s+)?Anniversary.*',
+        r'[:\-\+]*\s*(\d+th\s+)?Anniv\.*',
+        r'[:\-\+]*\s*Early\s+Access.*',
+        r'[:\-\+]*\s*(Livestream\s+)?Q&A.*',
+        r'[:\-\+]*\s*Hong\s+Kong\s+Cinema\s+Classics.*',
+        r'[:\-\+]*\s*70mm(\s+Film\s+Reissue)?.*'
+    ]
+    for p in patterns:
+        title = re.sub(p, '', title, flags=re.IGNORECASE)
+    title = re.sub(r'\s*\([^)]*\)', '', title)
+    return title.strip()
 
 # --- Main App ---
 if "global_movie_catalog" not in st.session_state:
     st.session_state.global_movie_catalog = {}
 
 if "multi_day_raw" not in st.session_state:
-        st.session_state.multi_day_raw = {}
+    st.session_state.multi_day_raw = {}
 
 if "theater_future_cache" not in st.session_state:
     st.session_state.theater_future_cache = {}
@@ -913,6 +990,8 @@ if results:
     if new_code != st.session_state.active_theater_code:
         st.session_state.active_theater_code = new_code
         st.query_params["theater"] = new_code
+        st.session_state.multi_day_raw = {}
+        st.session_state.theater_future_cache = {}
         st.rerun()
 
 if selected_theater:
@@ -960,87 +1039,102 @@ if selected_theater:
     status_context = st.status("🛠️ Debug: Detailed Sync Log", expanded=True) if debug_mode else None
     data = None
 
-    if days_to_fetch:
-        msg = st.toast(f"🔍 Synchronizing 7-Day Data for {t_item['name']}...", duration="infinite")
-        all_week_flat = []
-        for d_str in days_to_fetch:
-            log_msg = f"🌐 Fetching {d_str}..."
+    if not st.session_state.multi_day_raw:
+        log_msg = "🌱 Initializing App..."
+        msg = st.toast(log_msg, duration="infinite")
+        if status_context: status_context.write(log_msg)
+
+        theater_codes = list(cluster_theaters.keys())
+        cached_payload = get_nearby_theater_data(theater_codes, local_today.isoformat())
+        if cached_payload:
+            log_msg = f"⚡ Loading 7-Day data for {len(theater_codes)} cluster cache..."
             msg.toast(log_msg, duration="infinite")
             if status_context: status_context.write(log_msg)
-            api_url = f"https://www.regmovies.com/api/getShowtimes?theatres={','.join(target_codes)}&date={d_str}"
-            data = fetch_data(api_url, t_item['path_name'],status_context, msg)
 
-            if not data:
-                if d_str == f_date: 
-                    st.error(f"🚨 Connection Failure: Could not retrieve current data for {t_item['name']}. Aborting sync.")
-                    break
-                else:
-                    st.warning(f"Skipping {d_str} due to connection error.")
-                    continue
-            else:
-                log_msg = f"👍 {d_str} fetch successful."
+            st.session_state.multi_day_raw = cached_payload
+            for d_str, day_json in cached_payload.items():
+                _, _, _, day_future_map = flatten_data(day_json)
+                st.session_state.theater_future_cache.update(day_future_map)  
+        else:
+            if days_to_fetch:
+                log_msg = f"🔍 Synchronizing 7-Day Data for {t_item['name']}..."
                 msg.toast(log_msg, duration="infinite")
                 if status_context: status_context.write(log_msg)
+                for d_str in days_to_fetch:
+                    log_msg = f"🌐 Fetching {d_str}..."
+                    msg.toast(log_msg, duration="infinite")
+                    if status_context: status_context.write(log_msg)
 
-                day_flat, _, _, day_future_map = flatten_data(data)
-                st.session_state.theater_future_cache.update(day_future_map)
-                all_week_flat.extend(day_flat)
-                st.session_state.multi_day_raw[d_str] = data
+                    api_url = f"https://www.regmovies.com/api/getShowtimes?theatres={','.join(target_codes)}&date={d_str}"
+                    data = fetch_data(api_url, t_item['path_name'], status_context, msg)
+                    if data:
+                        log_msg = f"👍 {d_str} fetch successful."
+                        msg.toast(log_msg, duration="infinite")
+                        if status_context: status_context.write(log_msg)
 
-        if data:
-            sweep_msg = "🩹 Checking for weekly metadata gaps..."
-            msg.toast(sweep_msg, duration="infinite")
-            if status_context: status_context.write(sweep_msg)
+                        day_flat, _, _, day_future_map = flatten_data(data)
+                        st.session_state.theater_future_cache.update(day_future_map)
+                        st.session_state.multi_day_raw[d_str] = data
+                    else:
+                        if d_str == f_date: 
+                            st.error(f"🚨 Connection Failure: Could not retrieve current data for {t_item['name']}. Aborting sync.")
+                            break
+                        else:
+                            st.warning(f"Skipping {d_str} due to connection error.")
+                            continue
+
+        all_week_flat = []
+        for d_str, day_data in st.session_state.multi_day_raw.items():
+            day_flat, _, _, _ = flatten_data(day_data)
+            all_week_flat.extend(day_flat)
             
-            for d_str in st.session_state.multi_day_raw:
-                day_flat, _, _, _ = flatten_data(st.session_state.multi_day_raw[d_str])
-                all_week_flat.extend(day_flat)
-            
-            gaps = check_metadata_gaps(all_week_flat)
+        gaps = check_metadata_gaps(all_week_flat)
         
-            if gaps:
-                if status_context: status_context.write("🩹 Filling weekly gaps from DB")
-                db_results = get_db_metadata(gaps.keys())
-                for m_code, m_info in db_results.items():
-                    st.session_state.global_movie_catalog[m_code] = {
-                        'title': m_info['title'], 'rating': m_info['rating'], 
-                        'duration': m_info['duration'], 'is_new': is_new_release(m_info['opening_date'])
-                    }
-                
-                still_missing = [m for m in gaps if m not in db_results]
+        if gaps:
+            if status_context: status_context.write("🩹 Filling weekly gaps from DB")
+            db_results = get_db_metadata(gaps.keys())
+            for m_code, m_info in db_results.items():
+                st.session_state.global_movie_catalog[m_code] = {
+                    'title': m_info['title'], 'rating': m_info['rating'], 
+                    'duration': m_info['duration'], 'is_new': is_new_release(m_info['opening_date'])
+                }
+                    
+            still_missing = [m for m in gaps if m not in db_results]
 
-                if still_missing:
-                    sweep_targets = {}
+            if still_missing:
+                sweep_targets = {}
 
-                    for m_code in still_missing:
-                        for s in all_week_flat:
-                            if s['master_code'] == m_code:
-                                key = (s['TheaterCode'], s['Showtime'].strftime('%m-%d-%Y'))
-                                if key not in sweep_targets: sweep_targets[key] = []
-                                sweep_targets[key].append(m_code)
-                                break
+                for m_code in still_missing:
+                    for s in all_week_flat:
+                        if s['master_code'] == m_code:
+                            key = (s['TheaterCode'], s['Showtime'].strftime('%m-%d-%Y'))
+                            if key not in sweep_targets: sweep_targets[key] = []
+                            sweep_targets[key].append(m_code)
+                            break
 
-                    for (t_code, d_str), m_codes in sweep_targets.items():
-                        t_name = cluster_theaters.get(t_code, t_code)
-                        sweep_msg = f"🩹 Metadata gap fill via {t_name} on {d_str}"
-                        msg.toast(sweep_msg, duration="infinite")
-                        if status_context: status_context.write(sweep_msg)
+                for (t_code, d_str), m_codes in sweep_targets.items():
+                    t_name = cluster_theaters.get(t_code, t_code)
+                    log_msg = f"🩹 Metadata gap fill via {t_name} on {d_str}"
+                    msg.toast(log_msg, duration="infinite")
+                    if status_context: status_context.write(log_msg)
 
-                        rotated = [t_code] + [c for c in target_codes if c != t_code]
-                        sweep_url = f"https://www.regmovies.com/api/getShowtimes?theatres={','.join(rotated)}&date={d_str}"
-                        sweep_data = fetch_data(sweep_url, t_item['path_name'],status_context, msg)
-                        if sweep_data:
-                            log_msg = f"👍 {t_name} gap fill successful."
-                            msg.toast(log_msg, duration="infinite")
-                            if status_context: status_context.write(log_msg)
+                    rotated = [t_code] + [c for c in target_codes if c != t_code]
+                    sweep_url = f"https://www.regmovies.com/api/getShowtimes?theatres={','.join(rotated)}&date={d_str}"
+                    sweep_data = fetch_data(sweep_url, t_item['path_name'],status_context, msg)
+                    if sweep_data:
+                        log_msg = f"👍 {t_name} gap fill successful."
+                        msg.toast(log_msg, duration="infinite")
+                        if status_context: status_context.write(log_msg)
 
-                            _, meta_found, _, _ = flatten_data(sweep_data)
-                else:
-                    if status_context: status_context.write("🎉 All weekly gaps filled from DB. No additional fetch required.")
+                        _, meta_found, _, _ = flatten_data(sweep_data)
             else:
-                if status_context: status_context.write("🎉 No Weekly gaps Found")    
-            msg.toast("🎉 7-Day Sync Complete!", duration="short")
-        if status_context: status_context.update(label="Sync Log Finished", state="complete", expanded=False)
+                if status_context: status_context.write("🎉 All weekly gaps filled from DB. No additional fetch required.")      
+        else:
+            if status_context: status_context.write("🎉 No Weekly gaps Found")    
+    
+        log_msg = "🎉 7-Day Sync Complete!"
+        msg.toast(log_msg, duration="short")
+        if status_context: status_context.update(label=log_msg, state="complete", expanded=False)
 
     current_day_data = st.session_state.multi_day_raw.get(f_date)
 
@@ -1048,18 +1142,30 @@ if selected_theater:
         st.session_state.theater_future_cache = {}
     
     current_t_code = selected_theater['item']['theatre_code']
+    fetch_date_iso = local_today.isoformat()
 
     if current_t_code not in st.session_state.theater_future_cache:
-        log_msg = f"📡 Fetching upcoming schedule for {selected_theater['item']['name']}..."
-        msg = st.toast(log_msg)
-        if status_context: status_context.write(log_msg)
+        db_future_data = get_db_theater_future(current_t_code, fetch_date_iso)
 
-        api_url = f"https://www.regmovies.com/api/getShowtimes?theatres={current_t_code}&date={f_date}"
-        future_data = fetch_data(api_url, selected_theater['item']['path_name'],status_context,msg)
-        
-        if future_data:
-            _, _, _, new_future_map = flatten_data(future_data)
+        if db_future_data:
+            log_msg = f"⚡ Loading upcoming schedule for {selected_theater['item']['name']} from DB..."
+            msg = st.toast(log_msg)
+            if status_context: status_context.write(log_msg)
+
+            _, _, _, new_future_map = flatten_data(db_future_data)
             st.session_state.theater_future_cache.update(new_future_map)
+        else:
+            log_msg = f"📡 Fetching upcoming schedule for {selected_theater['item']['name']}..."
+            msg = st.toast(log_msg)
+            if status_context: status_context.write(log_msg)
+
+            api_url = f"https://www.regmovies.com/api/getShowtimes?theatres={current_t_code}&date={f_date}"
+            future_data = fetch_data(api_url, selected_theater['item']['path_name'],status_context,msg)
+            
+            if future_data:
+                _, _, _, new_future_map = flatten_data(future_data)
+                st.session_state.theater_future_cache.update(new_future_map)
+                save_db_theater_future(current_t_code, fetch_date_iso, future_data)
 
     with st.sidebar.expander("⚙️ Advanced Settings", expanded=False):
         st.write("🕒 Timezone Settings")
@@ -1096,6 +1202,7 @@ if selected_theater and current_day_data:
     #        st.json(current_day_data)
 
     all_flat_data, movie_meta, attr_map, future_movies = flatten_data(current_day_data)        
+    all_flat_data = [s for s in all_flat_data if s['TheaterCode'] in cluster_theaters]
     flat_data = [s for s in all_flat_data if s['TheaterCode'] == t_item['theatre_code']]
         
     st.session_state.update({
@@ -1223,9 +1330,9 @@ if selected_theater and current_day_data:
                     m_shows = [s for s in filtered if s['master_code'] == m_code]
                     title = m_shows[0]['Title']
                     
-                    other_t = sorted([cluster_theaters.get(tc, f"Theater {tc}") 
+                    other_t = sorted([cluster_theaters[tc] 
                                     for tc in set(s['TheaterCode'] for s in all_flat_data if s['master_code'] == m_code) 
-                                    if tc != t_item['theatre_code']])
+                                    if tc != t_item['theatre_code'] and tc in cluster_theaters])
                     
                     valid_date_objs = [datetime.strptime(d_str, "%m-%d-%Y") 
                                     for d_str, d_data in st.session_state.multi_day_raw.items() 
@@ -1279,6 +1386,8 @@ if selected_theater and current_day_data:
             for d_str, d_data in st.session_state.multi_day_raw.items():
                 for theater_show in d_data.get('shows', []):
                     t_code = theater_show.get('TheatreCode')
+                    if t_code not in cluster_theaters:
+                        continue
                     codes = [m.get('MasterMovieCode') for m in theater_show.get('Film', [])]
                     if t_code == t_item['theatre_code']:
                         primary_codes_week.update(codes)
@@ -1297,6 +1406,8 @@ if selected_theater and current_day_data:
                     for d_str, d_data in st.session_state.multi_day_raw.items():
                         for theater_show in d_data.get('shows', []):
                             t_code = theater_show.get('TheatreCode')
+                            if t_code not in cluster_theaters:
+                                continue
                             for movie in theater_show.get('Film', []):
                                 if movie.get('MasterMovieCode') == m_code:
                                     t_name = cluster_theaters.get(t_code, f"Theater {t_code}")
