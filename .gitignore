@@ -4,4 +4,4 @@ build/
 dist/
 venv/
 local_cluster_sweep.py
-failed_theaters.json
+*.bat

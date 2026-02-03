@@ -557,6 +557,11 @@ def find_itineraries(current_path, remaining_codes, screenings, p, selected_date
 
     for m_code in remaining_codes:
         potential_shows = [s for s in screenings if s['master_code'] == m_code and s['TheaterCode'] in p['theaters']]
+        
+        if selected_date == current_local_time.date():
+            cutoff = current_local_time - timedelta(minutes=30)
+            potential_shows = [s for s in potential_shows if s['Showtime'] >= cutoff]
+        
         if p['formats']: 
             potential_shows = [s for s in potential_shows if s['ScreenType'] in p['formats']]
         
@@ -629,6 +634,10 @@ def find_multi_day_itineraries(target_codes, target_days, params, drive_map, anc
             if not day_data: continue
             day_flat, _, _, _ = flatten_data(day_data)
 
+            if d_obj == current_local_time.date():
+                cutoff = current_local_time - timedelta(minutes=30)
+                day_flat = [s for s in day_flat if s['Showtime'] >= cutoff]
+
             all_paths = find_itineraries([], remaining_codes, day_flat, params, d_obj, drive_map)
             if not all_paths: continue
 
@@ -698,6 +707,10 @@ def run_anchored_search(anchor_show, target_codes, day_str, params, drive_map):
     
     day_flat, _, _, _ = flatten_data(day_data)
     d_obj = datetime.strptime(day_str, '%m-%d-%Y').date()
+
+    if d_obj == current_local_time.date():
+        cutoff = current_local_time - timedelta(minutes=30)
+        day_flat = [s for s in day_flat if s['Showtime'] >= cutoff]
     
     wing_codes = [c for c in target_codes if c != anchor_show['master_code']]
     
@@ -768,16 +781,20 @@ def get_conflict_report(path, missing_codes, all_screenings, p, anchor_show=None
     # Combine path and anchor into a single sorted timeline for validation
     full_path = sorted(path + ([anchor_show] if anchor_show else []), key=lambda x: x['Showtime'])
     
+    cutoff = current_local_time - timedelta(minutes=30)
+
     for m_code in missing_codes:
         meta = st.session_state.global_movie_catalog.get(m_code, {})
         m_title = meta.get('title', f"Unknown ({m_code})")
-        m_shows = [s for s in all_screenings if s['master_code'] == m_code and s['TheaterCode'] in p['theaters']]
+        m_shows = [s for s in all_screenings if s['master_code'] == m_code and 
+                   s['TheaterCode'] in p['theaters'] and
+                   (s['Showtime'] >= cutoff if s['Showtime'].date() == current_local_time.date() else True)]
         
         if p.get('formats'): 
             m_shows = [s for s in m_shows if s['ScreenType'] in p['formats']]
         
         if not m_shows:
-            conflicts.append(f"❌ **{m_title}**: No screenings match your formats/theaters.")
+            conflicts.append(f"❌ **{m_title}**: No screenings match your time/formats/theaters.")
             continue
 
         any_valid = False
@@ -1279,7 +1296,7 @@ if selected_theater and current_day_data:
                                              options=list(t_ranges.keys()), 
                                              placeholder="All",
                                              key=f"f_times_{t_key}")
-                    f_avail = st.checkbox("Hide past shows", value=True, key=f"f_avail_{t_key}")
+                    f_avail = st.checkbox("Hide past shows (+30m grace)", value=True, key=f"f_avail_{t_key}")
                     f_new = st.checkbox("New Releases Only", value=False, key=f"f_new_{t_key}")
                 with c4:
                     sort_by = st.selectbox("Sort By", 
@@ -1295,7 +1312,7 @@ if selected_theater and current_day_data:
                 (not f_audi or s['Auditorium'] in f_audi) and 
                 (not f_attr or set(f_attr).issubset(s['raw_attrs'])) and 
                 (not f_times or any(t_ranges[t][0] <= s['Showtime'].hour < t_ranges[t][1] for t in f_times)) and 
-                (not f_avail or (s['Showtime'] > current_local_time if q_date == current_local_time.date() else True)) and
+                (not f_avail or (current_local_time <= s['Showtime'] + timedelta(minutes=30) if q_date == current_local_time.date() else True)) and
                 (not f_new or movie_meta.get(s['master_code'], {}).get('is_new', False))]
             
             if sort_by == "Movie Title": filtered.sort(key=lambda x: (x['Title'], x['Showtime']))
@@ -1546,13 +1563,13 @@ if selected_theater and current_day_data:
                     with f_col3:
                         all_m_attrs = set(a for s in m_data for a in s['raw_attrs'])
                         f_extra = st.multiselect("Attributes", options=sorted(list(all_m_attrs - set(m_formats))))
-                        f_hide = st.checkbox("Hide Past Shows", value=True)
+                        f_hide = st.checkbox("Hide past shows (+30m grace)", value=True)
 
                 filtered_m = [s for s in m_data if 
                         (not f_fmt or s['ScreenType'] in f_fmt) and
                         (not f_win or any(t_ranges[w][0] <= s['Showtime'].hour < t_ranges[w][1] for w in f_win)) and
                         (not f_extra or set(f_extra).issubset(s['raw_attrs'])) and
-                        (not f_hide or (s['Showtime'] > current_local_time if q_date == current_local_time.date() else True))]
+                        (not f_hide or (s['Showtime'] > current_local_time + timedelta(minutes=30) if q_date == current_local_time.date() else True))]
 
                 if not filtered_m:
                     st.warning(f"No showtimes found for **{meta.get('title', 'this movie')}** on {q_date.strftime('%b %d')} matching your filters.")
@@ -1748,7 +1765,12 @@ if selected_theater and current_day_data:
                     a_showtimes = []
                     if a_day_data and a_movie_code:
                         day_flat_anchor, _, _, _ = flatten_data(a_day_data)
-                        a_showtimes = [s for s in day_flat_anchor if s['master_code'] == a_movie_code and s['TheaterCode'] == a_theater]
+                        a_day_obj = datetime.strptime(a_day, '%m-%d-%Y').date()
+                        a_showtimes = [s for s in day_flat_anchor if 
+                                    s['master_code'] == a_movie_code and 
+                                    s['TheaterCode'] == a_theater and
+                                    (current_local_time <= s['Showtime'] + timedelta(minutes=30) 
+                                        if a_day_obj == current_local_time.date() else True)]
                     
                     selected_anchor = st.selectbox(
                         "Anchor Showtime", 
@@ -1850,7 +1872,8 @@ if selected_theater and current_day_data:
                         if unscheduled:
                             with st.expander("⚠️ Unscheduled Movies"):
                                 for m in unscheduled:
-                                    st.write(f"❌ **{m}**: Could not fit into the selected time windows or theater constraints.")
+                                    m_title = st.session_state.global_movie_catalog.get(m, {}).get('title', m)
+                                    st.write(f"❌ **{m_title}**: Could not fit into the selected time windows or theater constraints.")
                 
                 else:
                     sched_date_str = target_days[0]
@@ -1858,6 +1881,9 @@ if selected_theater and current_day_data:
                     day_data_raw = st.session_state.multi_day_raw.get(sched_date_str)
                     if day_data_raw:
                         day_flat_sched, _, _, _ = flatten_data(day_data_raw)
+
+                        if sched_date_obj == current_local_time.date():
+                            day_flat_sched = [s for s in day_flat_sched if current_local_time <= s['Showtime'] + timedelta(minutes=30)]
 
                         if enable_anchor and anchor_show:
                             paths = run_anchored_search(anchor_show, target_movies, sched_date_str, params, drive_map)
