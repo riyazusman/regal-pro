@@ -1,0 +1,28 @@
+{
+    "series_list": [
+        {
+            "Series": "JANS",
+            "Prefix": "JANS",
+            "EndDate": "2026-01-31",
+            "Active": false
+        },
+        {
+            "Series": "XOXO",
+            "Prefix": "FEBS",
+            "EndDate": "2026-02-28",
+            "Active": true
+        },
+        {
+            "Series": "MARS",
+            "Prefix": "MARS",
+            "EndDate": "2026-03-31",
+            "Active": true
+        },
+        {
+            "Series": "BP26",
+            "Prefix": "BP26",
+            "EndDate": "2026-03-31",
+            "Active": true
+        }
+    ]
+}

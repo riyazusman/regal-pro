@@ -4,4 +4,5 @@ build/
 dist/
 venv/
 local_cluster_sweep.py
+db_meta_seed.py
 *.bat
