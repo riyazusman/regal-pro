@@ -527,8 +527,27 @@ def flatten_data(data, theater_code_override=None):
                 (str(shows_list[0].get('TheatreCode')) if shows_list else None)
     
     if primary_t:
+        future_codes = [fs.get('hoCode') for fs in data.get("futureShows", []) if fs.get('hoCode')]
+        db_meta = get_db_metadata(future_codes) if future_codes else {}
+
         for fs in data.get("futureShows", []):
             m_code = fs.get('hoCode')
+            if not m_code: continue
+            m_info = db_meta.get(m_code, {})
+
+            if m_code not in st.session_state.global_movie_catalog:
+                st.session_state.global_movie_catalog[m_code] = {
+                    'title': fs.get('title', 'Upcoming Movie'),
+                    'rating': m_info.get('rating', 'NR'),
+                    'duration': m_info.get('duration', 0),
+                    'studio': m_info.get('studio'),
+                    'is_new': True
+                }
+            else:
+                st.session_state.global_movie_catalog[m_code].update({
+                    'studio': m_info.get('studio') if not st.session_state.global_movie_catalog[m_code].get('studio') else st.session_state.global_movie_catalog[m_code].get('studio')
+                })
+
             raw_dates = []
             for d_entry in fs.get('dates', []):
                 rd = d_entry.get('date')
@@ -697,8 +716,7 @@ def find_itineraries(current_path, remaining_codes, screenings, p, selected_date
                 
                 drive_time = 0
                 if s['TheaterCode'] != prev['TheaterCode']:
-                    nb_code = s['TheaterCode'] if s['TheaterCode'] != p['primary_code'] else prev['TheaterCode']
-                    drive_time = drive_map.get(nb_code, {}).get('time', 20)
+                    drive_time, _ = get_drive_stats(s['TheaterCode'], prev['TheaterCode'], theaters)
                 
                 req_buffer = p['long_buffer'] if p['break_after'] == len(current_path) else p['buffer']
                 total_min_gap = drive_time + req_buffer
@@ -887,8 +905,8 @@ def calculate_path_score(path, primary_code, drive_map):
             
             if s['TheaterCode'] != nxt['TheaterCode']:
                 hops += 1
-                nb_code = nxt['TheaterCode'] if nxt['TheaterCode'] != primary_code else s['TheaterCode']
-                total_miles += drive_map.get(nb_code, {}).get('dist', 0)
+                t_time, t_miles = get_drive_stats(s['TheaterCode'], nxt['TheaterCode'], theaters)
+                total_miles += t_miles
 
     score = (movie_count * 250) - (hops * 40) - (total_miles * 2) - (total_gap * 0.1)
     return {
@@ -896,9 +914,26 @@ def calculate_path_score(path, primary_code, drive_map):
         'miles': total_miles, 'gap': total_gap, 'duration': total_duration
     }
 
+def get_drive_stats(code_a, code_b, theaters_list):
+    if code_a == code_b: return 0, 0
+    
+    t_a = next((t['item'] for t in theaters_list if t['item']['theatre_code'] == code_a), {})
+    
+    match = next((nt for nt in t_a.get('nearby_theaters', []) if nt['code'] == code_b), None)
+    
+    if match:
+        return match.get('drive_min', 20), match.get('road_miles', 0)
+    
+    t_b = next((t['item'] for t in theaters_list if t['item']['theatre_code'] == code_b), {})
+    match = next((nt for nt in t_b.get('nearby_theaters', []) if nt['code'] == code_a), None)
+    
+    if match:
+        return match.get('drive_min', 20), match.get('road_miles', 0)
+        
+    return 20, 5
+
 def get_conflict_report(path, missing_codes, all_screenings, p, anchor_show=None, drive_map={}):
     conflicts = []
-    # Combine path and anchor into a single sorted timeline for validation
     full_path = sorted(path + ([anchor_show] if anchor_show else []), key=lambda x: x['Showtime'])
     
     cutoff = current_local_time - timedelta(minutes=30)
@@ -925,7 +960,6 @@ def get_conflict_report(path, missing_codes, all_screenings, p, anchor_show=None
             ms_end = ms_start + timedelta(minutes=ms['Duration'])
             reasons = []
 
-            # Check Overlap and Gaps against the entire timeline (Path + Anchor)
             for ps in full_path:
                 ps_start = ps['Showtime']
                 ps_end = ps_start + timedelta(minutes=ps['Duration'])
@@ -935,35 +969,27 @@ def get_conflict_report(path, missing_codes, all_screenings, p, anchor_show=None
                     reasons.append((1, f"Overlaps with **{ps['Title']}** ({ps_start.strftime('%I:%M %p')})."))
                     break
 
-                # 2. Gap and Buffer Check
+                # 2. Dynamic Gap and Buffer Check
                 gap = 0
                 is_after = ms_start >= ps_end
                 is_before = ms_end <= ps_start
 
-                if is_after:
-                    gap = int((ms_start - ps_end).total_seconds() / 60)
-                elif is_before:
-                    gap = int((ps_start - ms_end).total_seconds() / 60)
-
-                # Check if this is the immediate neighbor (closest movie before or after)
-                # To avoid comparing 12PM to 9PM if there is a 4PM show in between
+                # Identify if this theater in the path is the immediate neighbor
                 is_neighbor = False
                 if is_after:
-                    # No movies in path between ps_end and ms_start
+                    gap = int((ms_start - ps_end).total_seconds() / 60)
                     is_neighbor = not any(x['Showtime'] > ps_start and x['Showtime'] < ms_start for x in full_path)
                 elif is_before:
-                    # No movies in path between ms_end and ps_start
+                    gap = int((ps_start - ms_end).total_seconds() / 60)
                     is_neighbor = not any(x['Showtime'] > ms_start and x['Showtime'] < ps_start for x in full_path)
 
                 if is_neighbor:
-                    travel = 0
-                    if ms['TheaterCode'] != ps['TheaterCode']:
-                        nb = ms['TheaterCode'] if ms['TheaterCode'] != p['primary_code'] else ps['TheaterCode']
-                        travel = drive_map.get(nb, {}).get('time', 20)
+                    # UPDATED: Use Mesh Logic for Conflict Reporting
+                    travel_time, _ = get_drive_stats(ms['TheaterCode'], ps['TheaterCode'], theaters)
                     
-                    if gap < (travel + p['buffer']):
+                    if gap < (travel_time + p['buffer']):
                         dir_str = "after" if is_after else "before"
-                        reasons.append((2, f"Buffer violation {dir_str} **{ps['Title']}** (Gap {gap}m, needs {travel + p['buffer']}m)."))
+                        reasons.append((2, f"Buffer violation {dir_str} **{ps['Title']}** (Gap {gap}m, needs {travel_time + p['buffer']}m drive+buffer)."))
                     elif gap > p['gap_cap']:
                         dir_str = "after" if is_after else "before"
                         reasons.append((5, f"Gap {dir_str} **{ps['Title']}** ({gap}m) exceeds Max Gap ({p['gap_cap']}m)."))
@@ -1575,7 +1601,7 @@ if selected_theater and current_day_data:
                                 row.append(f"{final_time}{meta_text}")
                             
                             st.markdown(f"&nbsp;&nbsp;&nbsp;&nbsp;{' | '.join(row)}", unsafe_allow_html=True)
-
+                            st.caption(meta['studio'])
                         footer_col, link_col = st.columns([4, 1])
                         with footer_col:
                             if scheduled_days:
@@ -1646,13 +1672,13 @@ if selected_theater and current_day_data:
                                 st.markdown(f"<p style='font-size: 0.8rem; color: #e67e22; margin-top: -5px;'>🗓️ {date_str}</p>", unsafe_allow_html=True)
                             
                             st.caption(f"⏱️ {meta['duration']} min")
+                            st.caption(meta['studio'])
             else:
                 st.info("No exclusive nearby movies found for the upcoming 7 days.")
 
         elif sub_nav == "📅 Upcoming":
             current_t_code = t_item['theatre_code']
             scoped_future_movies = st.session_state.theater_future_cache.get(current_t_code, [])
-
             if scoped_future_movies:
                 specials_config = load_monthly_specials()
                 active_series = [s for s in specials_config if s['Active']]
@@ -1660,6 +1686,8 @@ if selected_theater and current_day_data:
                 if active_series:
                     st.write("###### 📅 Filter by Series")
                     filter_options = ["ALL"] + [s['Prefix'] for s in active_series]
+
+                    filter_options.append("Fathom")
                     
                     if "upcoming_filter_prefix" not in st.session_state:
                         st.session_state.upcoming_filter_prefix = "ALL"
@@ -1673,8 +1701,16 @@ if selected_theater and current_day_data:
                             st.rerun()
 
                 sel_prefix = st.session_state.get("upcoming_filter_prefix", "ALL").upper()
-                if sel_prefix != "ALL":
-                    display_movies = []
+                display_movies = []
+                if sel_prefix == "FATHOM":
+                    for m in scoped_future_movies:
+                        m_code = m['master_code']
+                        meta = st.session_state.global_movie_catalog.get(m_code, {})
+                        studio = str(meta.get('studio', '')).strip()
+                        title = m.get('title', '').upper()
+                        if studio == "Regal Cinemedia" or "FATHOM" in title:
+                            display_movies.append(m)
+                elif sel_prefix != "ALL":
                     for m in scoped_future_movies:
                         m_title = m.get('title', '').upper().strip()
                         if m_title.startswith(f"{sel_prefix}:") or m_title.startswith(f"{sel_prefix} "):
@@ -1705,6 +1741,7 @@ if selected_theater and current_day_data:
                                 dates_str = ", ".join(f_movie['scheduled_dates'])
                                 st.markdown(f"<small style='color:#e67e22;'>🗓️ {dates_str}</small>", unsafe_allow_html=True)
                                 st.caption(f"⏱️ {f_movie['duration']} min")
+                                st.caption(f_movie.get('studio'))
             else:
                 st.warning("No upcoming movies listed for this theater.")
                           
@@ -1884,7 +1921,6 @@ if selected_theater and current_day_data:
                         local_weekly_codes.add(m_code)
 
             nationwide_data = get_nationwide_active_movies()
-            st.write(nationwide_data)
             nationwide_codes = set(nationwide_data.keys())
             elsewhere_only_codes = nationwide_codes - local_weekly_codes
 
