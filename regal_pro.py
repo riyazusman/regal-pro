@@ -1601,7 +1601,7 @@ if selected_theater and current_day_data:
                                 row.append(f"{final_time}{meta_text}")
                             
                             st.markdown(f"&nbsp;&nbsp;&nbsp;&nbsp;{' | '.join(row)}", unsafe_allow_html=True)
-                            st.caption(meta['studio'])
+                            st.caption(f"🎥 {meta['studio']}")
                         footer_col, link_col = st.columns([4, 1])
                         with footer_col:
                             if scheduled_days:
@@ -1672,7 +1672,7 @@ if selected_theater and current_day_data:
                                 st.markdown(f"<p style='font-size: 0.8rem; color: #e67e22; margin-top: -5px;'>🗓️ {date_str}</p>", unsafe_allow_html=True)
                             
                             st.caption(f"⏱️ {meta['duration']} min")
-                            st.caption(meta['studio'])
+                            st.caption(f"🎥 {meta['studio']}")
             else:
                 st.info("No exclusive nearby movies found for the upcoming 7 days.")
 
@@ -1741,7 +1741,7 @@ if selected_theater and current_day_data:
                                 dates_str = ", ".join(f_movie['scheduled_dates'])
                                 st.markdown(f"<small style='color:#e67e22;'>🗓️ {dates_str}</small>", unsafe_allow_html=True)
                                 st.caption(f"⏱️ {f_movie['duration']} min")
-                                st.caption(f_movie.get('studio'))
+                                st.caption(f"🎥 {f_movie.get('studio')}")
             else:
                 st.warning("No upcoming movies listed for this theater.")
                           
