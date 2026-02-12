@@ -1747,7 +1747,7 @@ if selected_theater and current_day_data:
                           
     elif nav_tab == "🎬 Movie Explorer":
         st.subheader("🎬 Movie Explorer")
-        tab_gen, tab_else = st.tabs(["🎥 General Explorer", "🌍 Playing Elsewhere"])
+        tab_gen, tab_else = st.tabs(["🎥 Playing Nearby", "🌍 Playing Elsewhere"])
         with tab_gen:
             st.info(f"Movies: **{t_item['name']}** and nearby theaters on **{q_date.strftime('%A, %b %d')}**")
 
@@ -1922,7 +1922,7 @@ if selected_theater and current_day_data:
 
             nationwide_data = get_nationwide_active_movies()
             nationwide_codes = set(nationwide_data.keys())
-            elsewhere_only_codes = nationwide_codes - local_weekly_codes
+            elsewhere_only_codes = nationwide_codes# - local_weekly_codes
 
             if not elsewhere_only_codes:
                 st.success("No exclusive 'Elsewhere' movies found today.")
