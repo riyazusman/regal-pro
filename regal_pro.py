@@ -1170,11 +1170,11 @@ if selected_theater:
         else:
             st.session_state.registry['theaters'][tc]['future'] = []
 
-all_flat_data = st.session_state.registry['schedule'].get(d_str, [])
-movie_meta = st.session_state.registry['movies']
-attr_map = st.session_state.registry.get('attr_map', {})
-flat_data = [s for s in all_flat_data if s['TheaterCode'] == tc]
-future_movies = st.session_state.registry['theaters'].get(tc, {}).get('future', [])
+    all_flat_data = st.session_state.registry['schedule'].get(d_str, [])
+    movie_meta = st.session_state.registry['movies']
+    attr_map = st.session_state.registry.get('attr_map', {})
+    flat_data = [s for s in all_flat_data if s['TheaterCode'] == tc]
+    future_movies = st.session_state.registry['theaters'].get(tc, {}).get('future', [])
 
 st.session_state.update({
     "all_flat_data": all_flat_data,
