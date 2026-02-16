@@ -1176,13 +1176,13 @@ if selected_theater:
     flat_data = [s for s in all_flat_data if s['TheaterCode'] == tc]
     future_movies = st.session_state.registry['theaters'].get(tc, {}).get('future', [])
 
-st.session_state.update({
-    "all_flat_data": all_flat_data,
-    "flat_data": flat_data,
-    "movie_meta": movie_meta,
-    "attr_map": attr_map,
-    "future_movies": future_movies
-})
+    st.session_state.update({
+        "all_flat_data": all_flat_data,
+        "flat_data": flat_data,
+        "movie_meta": movie_meta,
+        "attr_map": attr_map,
+        "future_movies": future_movies
+    })
 
 
 with st.sidebar.expander("⚙️ Advanced Settings", expanded=False):
