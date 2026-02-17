@@ -832,7 +832,7 @@
                 "timezone": "US/Eastern",
                 "unlimited_tier": 1,
                 "cluster_key": "cluster_08",
-                "is_lead": false
+                "is_lead": true
             }
         },
         {
@@ -1256,7 +1256,7 @@
                 "timezone": "US/Eastern",
                 "unlimited_tier": 1,
                 "cluster_key": "cluster_08",
-                "is_lead": true
+                "is_lead": false
             }
         },
         {
@@ -2196,7 +2196,7 @@
                 "timezone": "US/Eastern",
                 "unlimited_tier": 2,
                 "cluster_key": "cluster_13",
-                "is_lead": false
+                "is_lead": true
             }
         },
         {
@@ -2341,7 +2341,7 @@
                 "timezone": "US/Eastern",
                 "unlimited_tier": 2,
                 "cluster_key": "cluster_13",
-                "is_lead": true
+                "is_lead": false
             }
         },
         {
@@ -7376,7 +7376,7 @@
                 "timezone": "US/Eastern",
                 "unlimited_tier": 2,
                 "cluster_key": "cluster_14",
-                "is_lead": true
+                "is_lead": false
             }
         },
         {
@@ -7991,7 +7991,7 @@
                 "timezone": "US/Eastern",
                 "unlimited_tier": 3,
                 "cluster_key": "cluster_14",
-                "is_lead": false
+                "is_lead": true
             }
         },
         {
@@ -10286,7 +10286,7 @@
                 "timezone": "US/Pacific",
                 "unlimited_tier": 2,
                 "cluster_key": "cluster_01",
-                "is_lead": false
+                "is_lead": true
             }
         },
         {
@@ -11741,7 +11741,7 @@
                 "timezone": "US/Pacific",
                 "unlimited_tier": 2,
                 "cluster_key": "cluster_01",
-                "is_lead": true
+                "is_lead": false
             }
         },
         {
@@ -12599,7 +12599,7 @@
                 "timezone": "US/Pacific",
                 "unlimited_tier": 2,
                 "cluster_key": "cluster_03",
-                "is_lead": false
+                "is_lead": true
             }
         },
         {
@@ -13138,7 +13138,7 @@
                 "timezone": "US/Pacific",
                 "unlimited_tier": 3,
                 "cluster_key": "cluster_03",
-                "is_lead": true
+                "is_lead": false
             }
         },
         {
@@ -18982,7 +18982,7 @@
                 "timezone": "US/Pacific",
                 "unlimited_tier": 3,
                 "cluster_key": "cluster_05",
-                "is_lead": true
+                "is_lead": false
             }
         },
         {
@@ -19737,7 +19737,7 @@
                 "timezone": "US/Pacific",
                 "unlimited_tier": 3,
                 "cluster_key": "cluster_05",
-                "is_lead": false
+                "is_lead": true
             }
         },
         {
@@ -23351,7 +23351,7 @@
                 "timezone": "US/Mountain",
                 "unlimited_tier": 2,
                 "cluster_key": "cluster_07",
-                "is_lead": false
+                "is_lead": true
             }
         },
         {
@@ -23736,7 +23736,7 @@
                 "timezone": "US/Central",
                 "unlimited_tier": 1,
                 "cluster_key": "cluster_07",
-                "is_lead": true
+                "is_lead": false
             }
         },
         {

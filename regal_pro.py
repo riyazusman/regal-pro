@@ -104,22 +104,35 @@ def get_db_metadata(codes):
 
 def registry_ingest(raw_payload):
     all_mc = set()
+    gaps=set()  
     for d_str, day_data in raw_payload.items():
         for show in day_data.get('shows', []):
             for film in show.get('Film', []):
                 if film.get('MasterMovieCode'): all_mc.add(film['MasterMovieCode'])
         all_mc.update(fs.get('hoCode') for fs in day_data.get('futureShows', []) if fs.get('hoCode'))
-
+    
     missing_mc = [mc for mc in all_mc if mc not in st.session_state.registry['movies']]
     if missing_mc:
         db_meta = get_db_metadata(missing_mc)
         translated_meta = {}
+        placeholder_updates = {}
+        
+        for mc in missing_mc:
+            if not mc in db_meta:
+                gaps.add(mc)
+                placeholder_updates[mc] = {
+                    'title': f"New Release ({mc})",
+                    'rating': "NR",
+                    'duration': 120,
+                    'is_new': True
+                }
+        st.session_state.registry['movies'].update(placeholder_updates)
         
         for mc, m_info in db_meta.items():
             translated_meta[mc] = {
                 **m_info,
                 'rt_critics': m_info.get('rt_critics_score'),
-                'rt_users': m_info.get('rt_users_score'), # Maps 'rt_audience_score'
+                'rt_users': m_info.get('rt_users_score'),
                 'metacritic': m_info.get('metacritic_score'),
                 'letterboxd': m_info.get('letterboxd_score')
             }
@@ -156,6 +169,7 @@ def registry_ingest(raw_payload):
 
     del raw_payload
     gc.collect()
+    log_visit(t_item, metadata_gaps=gaps)
 
 def load_cluster_from_storage(cluster_id, d_str):
     if d_str.endswith(".json.gz"):
@@ -427,11 +441,16 @@ def flatten_data(data, theater_code_override=None):
         for film in ts.get("Film", []):
             m_code = film.get('MasterMovieCode')
             if not m_code: continue
+            m_meta = catalog.get(m_code, {})
             for perf in film.get("Performances", []):
+                if not m_meta.get('title'):
+                    st.write(t_code)
                 flat_list.append({
-                    "TheaterCode": t_code, "master_code": m_code,
-                    "Title": catalog[m_code]['title'], "Rating": catalog[m_code]['rating'],
-                    "Duration": catalog[m_code]['duration'],
+                    "TheaterCode": t_code, 
+                    "master_code": m_code,
+                    "Title": m_meta.get('title', f"Unknown Movie ({m_code})"),
+                    "Rating": m_meta.get('rating', "NR"),
+                    "Duration": m_meta.get('duration', 120),
                     "Showtime": datetime.strptime(perf["CalendarShowTime"], "%Y-%m-%dT%H:%M:%S"),
                     "Auditorium": str(perf.get("Auditorium", "?")),
                     "ScreenType": perf.get("PerformanceGroup") or "2D",
@@ -930,6 +949,19 @@ def sync_movie_metadata():
                 'letterboxd': m_info.get('letterboxd_score'),
                 'letterboxd_url': m_info.get('letterboxd_url')
             })
+
+def log_visit(t_item, metadata_gaps=None):
+    try:
+        if not st.session_state.get('logged_this_session'):
+            db.table("visitor_log").insert({
+                "theater_code": t_item['theatre_code'],
+                "theater_name": t_item['name'],
+                "is_mobile": IS_CLOUD,
+                "metadata_gaps": list(metadata_gaps) if metadata_gaps else []
+            }).execute()
+            st.session_state.logged_this_session = True
+    except Exception as e:
+        if debug_mode: print(f"Log error: {e}")
 
 # --- Main App ---
 st.title("🎬 Regal Pro")
