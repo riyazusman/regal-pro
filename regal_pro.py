@@ -1,4 +1,4 @@
-# v2.6 RC 
+# v2.7 RC 
 import streamlit as st
 import json
 import math
@@ -1424,7 +1424,8 @@ if selected_theater and schedule:
                             if scheduled_days:
                                 st.markdown(f"<div style='font-size: 0.8rem; color: #e67e22; padding-top: 2px;'>🗓️ <b>Scheduled Dates:</b> {', '.join(scheduled_days)}</div>", unsafe_allow_html=True)
                             if other_t:
-                                st.markdown(f"<div style='font-size: 0.8rem; color: #666; padding-top: 5px;'><b>Also Playing at:</b> {', '.join(other_t)}</div>", unsafe_allow_html=True)
+                                nearby_text = ', '.join(other_t) if len(other_t)<10 else f"{len(other_t)} Regals Nearby"
+                                st.markdown(f"<div style='font-size: 0.8rem; color: #666; padding-top: 5px;'><b>Also Playing at:</b> {nearby_text}</div>", unsafe_allow_html=True)
 
                         with link_col:
                             if other_t or scheduled_days:
