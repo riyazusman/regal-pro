@@ -176,7 +176,7 @@ def load_cluster_from_storage(cluster_id, path):
         if response:
             with gzip.GzipFile(fileobj=io.BytesIO(response), mode='rb') as f:
                 return json.loads(f.read().decode('utf-8'))
-    except Exception:
+    except Exception as e:
         return None
 
 def save_future_to_storage(bucket, file_path, payload):
@@ -211,11 +211,15 @@ def load_monthly_specials():
         return []
     except Exception: return []
 
-def get_nationwide_active_movies():
+def get_nationwide_active_movies(status_context):
     try:
-        res = db.table("active_nationwide_movies_cache").select("master_code, theater_count").execute()
-        return {row['master_code']: row['theater_count'] for row in res.data} if res.data else {}
-    except Exception:
+        res = db.rpc("get_nationwide_active_movies_rpc").execute()
+        if res.data:
+            return {row['master_code']: row['theater_count'] for row in res.data}
+        return {}
+    except Exception as e:
+        if status_context:
+            status_context.write(f"⚠️ RPC Error (nationwide_movies): {e}")
         return {}
 
 def get_theaters_playing_movie(m_code, local_codes):
@@ -1763,7 +1767,7 @@ if selected_theater and schedule:
                 for s in st.session_state.registry['schedule'][date_key]:
                     if s['TheaterCode'] in allowed_codes:
                         local_weekly_codes.add(s['master_code'])
-            nationwide_data = get_nationwide_active_movies()
+            nationwide_data = get_nationwide_active_movies(status_context)
             nationwide_codes = set(nationwide_data.keys())
             elsewhere_only_codes = nationwide_codes - local_weekly_codes
 
