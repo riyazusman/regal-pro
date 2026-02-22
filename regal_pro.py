@@ -1187,7 +1187,7 @@ if selected_theater:
             msg.toast(log_msg)
             if status_context: status_context.write(log_msg)
             api_url = f"https://www.regmovies.com/api/getShowtimes?theatres={tc}&date={d_str}"
-            f_payload = fetch_data(api_url, t_item['name'], status_context if debug_mode else None, msg)
+            f_payload = fetch_data(api_url, t_item['path_name'], status_context if debug_mode else None, msg)
             if f_payload:
                 save_future_to_storage("future-shows", f_file, f_payload)
                 log_msg = f"✅ Successfully cached future data for {tc} to storage."
