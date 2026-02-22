@@ -151,7 +151,6 @@ def registry_ingest(raw_payload):
             else:
                 translated_meta[mc]['is_new'] = False
         st.session_state.registry['movies'].update(translated_meta)
-
     for d_str, day_data in raw_payload.items():
         flat_day, am, _, future_map = flatten_data(day_data)
         st.session_state.registry['schedule'][d_str] = flat_day
@@ -171,21 +170,16 @@ def registry_ingest(raw_payload):
     gc.collect()
     log_visit(t_item, metadata_gaps=gaps)
 
-def load_cluster_from_storage(cluster_id, d_str):
-    if d_str.endswith(".json.gz"):
-        file_path = d_str
-    else:
-        file_path = f"{cluster_id}_{d_str}.json.gz"
-    
+def load_cluster_from_storage(cluster_id, path):
     try:
-        response = db.storage.from_("theater-cache").download(file_path)
+        response = db.storage.from_(cluster_id).download(path)
         if response:
             with gzip.GzipFile(fileobj=io.BytesIO(response), mode='rb') as f:
                 return json.loads(f.read().decode('utf-8'))
     except Exception:
         return None
 
-def save_future_to_storage(tc, d_str, payload):
+def save_future_to_storage(bucket, file_path, payload):
     try:
         if 'movies' in payload: del payload['movies'] # Prune heavy metadata
         json_bytes = json.dumps(payload).encode('utf-8')
@@ -193,21 +187,21 @@ def save_future_to_storage(tc, d_str, payload):
         with gzip.GzipFile(fileobj=buf, mode='wb') as f:
             f.write(json_bytes)
         
-        file_path = f"future_{tc}_{d_str}.json.gz"
-        db.storage.from_("theater-cache").upload(
+        db.storage.from_(bucket).upload(
             path=file_path, file=buf.getvalue(),
             file_options={"content-type": "application/gzip", "upsert": "true"}
         )
         return True
     except Exception as e: return False
 
-@st.cache_data
-def load_theaters():
+@st.cache_data(ttl=3600)
+def load_app_config():
     try:
-        with open(THEATERS_FILE, "r", encoding="utf-8") as f:
-            return json.load(f).get("theatre_list", [])
-    except Exception as e:
-        st.error(f"Error loading theater list: {e}"); return []
+        with open('app_config.json', 'r') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        st.error("Missing app_config.json. Please run the sync_app_config routine.")
+        return None
 
 def load_monthly_specials():
     try:
@@ -367,8 +361,8 @@ def fetch_data(api_url, path_name, status_context, msg, max_retries=3):
                 st.session_state.api_session = c_requests.Session()
             
             api_headers = AJAX_HEADERS.copy()
-            api_headers["Referer"] = f"https://www.regmovies.com/theatres/{path_name}"
-            theater_url = f"https://www.regmovies.com/theatres/{path_name}"
+            api_headers["Referer"] = f"https://www.regmovies.com/theaters/{path_name}"
+            theater_url = f"https://www.regmovies.com/theaters/{path_name}"
 
             if status_context:
                 with status_context:
@@ -458,7 +452,7 @@ def flatten_data(data, theater_code_override=None):
                 })
                 
     theater_future_map = {}
-    primary_t = theater_code_override or (data.get('shows')[0].get('TheatreCode') if data.get('shows') else None)
+    primary_t = theater_code_override or (data.get('shows')[0].get('theaterCode') if data.get('shows') else None)
     if primary_t:
         for fs in data.get("futureShows", []):
             m_code = fs.get('hoCode')
@@ -793,14 +787,14 @@ def calculate_path_score(path, primary_code, drive_map):
 def get_drive_stats(code_a, code_b, theaters_list):
     if code_a == code_b: return 0, 0
     
-    t_a = next((t['item'] for t in theaters_list if t['item']['theatre_code'] == code_a), {})
+    t_a = next((t for t in theaters_list if t['theater_code'] == code_a), {})
     
     match = next((nt for nt in t_a.get('nearby_theaters', []) if nt['code'] == code_b), None)
     
     if match:
         return match.get('drive_min', 20), match.get('road_miles', 0)
     
-    t_b = next((t['item'] for t in theaters_list if t['item']['theatre_code'] == code_b), {})
+    t_b = next((t for t in theaters_list if t['theater_code'] == code_b), {})
     match = next((nt for nt in t_b.get('nearby_theaters', []) if nt['code'] == code_a), None)
     
     if match:
@@ -954,7 +948,7 @@ def log_visit(t_item, metadata_gaps=None):
     try:
         if not st.session_state.get('logged_this_session'):
             db.table("visitor_log").insert({
-                "theater_code": t_item['theatre_code'],
+                "theater_code": t_item['theater_code'],
                 "theater_name": t_item['name'],
                 "is_mobile": IS_CLOUD,
                 "metadata_gaps": list(metadata_gaps) if metadata_gaps else []
@@ -967,7 +961,11 @@ def log_visit(t_item, metadata_gaps=None):
 st.title("🎬 Regal Pro")
 db = init_supabase()
 init_registry()
-theaters = load_theaters()
+
+if 'app_config' not in st.session_state:
+    st.session_state.app_config = load_app_config()
+
+theaters = st.session_state.app_config['theaters'] if st.session_state.app_config else []
 
 if "init_complete" not in st.session_state:
     url_t_code = st.query_params.get("theater")
@@ -1000,12 +998,14 @@ if search_mode == "Theater Code":
 
     if code_in:
         search_performed = True
-        match = next((t for t in theaters if t['item']['theatre_code'] == code_in), None)
+        match = next((t for t in theaters if t['theater_code'] == code_in), None)
+       
         if match:
             results = [match]
-            if 'nearby_theaters' in match['item']:
-                nearby_codes = [n['code'] for n in match['item']['nearby_theaters']]
-                results.extend([t for t in theaters if t['item']['theatre_code'] in nearby_codes])
+            nearby_data = st.session_state.app_config.get('nearby_map', {}).get(code_in, [])
+            if nearby_data:
+                nearby_codes = [n['code'] for n in nearby_data]
+                results.extend([t for t in theaters if t['theater_code'] in nearby_codes])
 elif search_mode == "Zip Code":
     zip_in = st.sidebar.text_input("Zip Code", placeholder="46201", value=default_zip_code)
     radius_in = st.sidebar.slider("Radius (miles)", 5, 200, 50)
@@ -1017,40 +1017,45 @@ elif search_mode == "Zip Code":
         z_data = nomi.query_postal_code(zip_in)
         if not math.isnan(z_data['latitude']):
             for t in theaters:
-                d = calculate_haversine_distance(z_data['latitude'], z_data['longitude'], t['item']['latitude'], t['item']['longitude'])
+                d = calculate_haversine_distance(z_data['latitude'], z_data['longitude'], t['latitude'], t['longitude'])
                 if d <= radius_in: results.append((t, d))
             results.sort(key=lambda x: x[1])
     elif location and not math.isnan(latitude):
         for t in theaters:
-            d = calculate_haversine_distance(latitude, longitude, t['item']['latitude'], t['item']['longitude'])
+            d = calculate_haversine_distance(latitude, longitude, t['latitude'], t['longitude'])
             if d <= 50: results.append((t, d))
         results.sort(key=lambda x: x[1])
 elif search_mode == "Theater Name":
     name_in = st.sidebar.text_input("Theater Name")
-    if name_in: search_performed = True; results = [t for t in theaters if name_in.lower() in t['item']['name'].lower()]
+    if name_in: search_performed = True; results = [t for t in theaters if name_in.lower() in t['name'].lower()]
 elif search_mode == "Address/City":
     addr_in = st.sidebar.text_input("Address, City, or State")
-    if addr_in: search_performed = True; results = [t for t in theaters if any(addr_in.lower() in t['item'].get(f, '').lower() for f in ['address', 'city', 'state'])]
-
+    if addr_in:
+        search_performed = True
+        term = addr_in.strip().lower()
+        results = [
+            t for t in theaters 
+            if any(term in str(t.get(f) or '').lower() for f in ['address', 'city', 'state'])
+        ]
 if search_performed and not results: st.sidebar.warning("No theaters found matching your criteria.")
 
 selected_theater = None
 
 if results:
-    opts = {f"{r[0]['item']['name'] if isinstance(r, tuple) else r['item']['name']} - {r[0]['item']['city'] if isinstance(r, tuple) else r['item']['city']}": (r[0] if isinstance(r, tuple) else r) for r in results}    
+    opts = {f"{r[0]['name'] if isinstance(r, tuple) else r['name']} - {r[0]['city'] if isinstance(r, tuple) else r['city']}": (r[0] if isinstance(r, tuple) else r) for r in results}    
     
     if "active_theater_code" not in st.session_state:
         st.session_state.active_theater_code = st.query_params.get("theater")
     
     idx = 0
     for i, t in enumerate(opts.values()):
-        if t['item']['theatre_code'] == st.session_state.active_theater_code: 
+        if t['theater_code'] == st.session_state.active_theater_code: 
             idx = i
             break
 
     sel_label = st.sidebar.selectbox("Select Theater", options=list(opts.keys()), index=idx)
     selected_theater = opts[sel_label]
-    new_code = selected_theater['item']['theatre_code']
+    new_code = selected_theater['theater_code']
 
     if new_code != st.session_state.active_theater_code:
         st.session_state.active_theater_code = new_code
@@ -1058,24 +1063,22 @@ if results:
         st.rerun()
 
 if selected_theater:
-    t_item = selected_theater['item']
-    tc, ckey = t_item['theatre_code'], t_item.get('cluster_key', 'cluster_99')
-    master_name_map = {t['item']['theatre_code']: t['item']['name'] for t in theaters}
-
+    t_item = selected_theater
+    tc, ckey = t_item['theater_code'], t_item.get('cluster_key', 'cluster_99')
 
     cluster_theaters = {tc: t_item['name']}
-    master_name_map = {t['item']['theatre_code']: t['item']['name'] for t in theaters}
+    master_name_map = {t['theater_code']: t['name'] for t in theaters}
     drive_map = {tc: {'time': 0, 'dist': 0}}
     
-    if 'nearby_theaters' in t_item:
-        for nt in t_item['nearby_theaters']:
-            n_code = nt['code']
-            cluster_theaters[n_code] = master_name_map.get(n_code, nt.get('name', f"Theater {n_code}"))
-            drive_map[n_code] = {'time': nt.get('drive_min', 20), 'dist': nt.get('road_miles', 0)}
+    nearby_data = st.session_state.app_config.get('nearby_map', {}).get(tc, [])
+    for nt in nearby_data:
+        n_code = nt['code']
+        cluster_theaters[n_code] = master_name_map.get(n_code, f"Theater {n_code}")
+        drive_map[n_code] = {'time': nt.get('mins', 20), 'dist': nt.get('miles', 0)}
 
     tz_off = st.session_state.get('auto_tz_offset', -5)
     local_today = (datetime.now(timezone.utc) + timedelta(hours=tz_off)).date()
-    q_date = st.sidebar.date_input("Select Date", value=local_today, min_value=local_today)
+    q_date = st.sidebar.date_input("Select Date", value=local_today, min_value=local_today, format="MM/DD/YYYY")
     d_str, today_cache_str = q_date.strftime('%m-%d-%Y'), local_today.strftime('%m-%d-%Y')
 
     t_lon = t_item.get('longitude')
@@ -1094,17 +1097,20 @@ if selected_theater:
     if is_new_cluster or is_date_missing:
         log_msg = "🌱 Initializing App..."
         msg = st.toast(log_msg)
+        if status_context: status_context.write(log_msg)
         log_msg = f"🔄 Synchronizing Cluster {ckey}..."
         msg.toast(log_msg)
         if status_context: status_context.write(log_msg)
 
-        raw_payload = load_cluster_from_storage(ckey, today_cache_str)
+        c_file = f"{ckey}_{today_cache_str}.json.gz"
+        raw_payload = load_cluster_from_storage("theater-cache", c_file)
 
         if raw_payload:
-            log_msg = f"⚡ Loading 7-Day data for theaters from storage..."
+            log_msg = f"⚡ Loading 7-Day cluster data from storage..."
             msg.toast(log_msg)
             if status_context: status_context.write(log_msg)
             registry_ingest(raw_payload)
+            st.session_state.registry['loaded_dates'] = list(raw_payload.keys())
         else:
             log_msg = f"🌐 Cache miss. Synchronizing 7-Day Data from Regal API..."
             msg.toast(log_msg)  
@@ -1167,20 +1173,27 @@ if selected_theater:
             msg.toast(log_msg)
         else:
             msg = st.toast(log_msg)
+        if status_context: status_context.write(log_msg)
 
-        f_file = f"future_{tc}_{today_cache_str}.json.gz"
-        f_payload = load_cluster_from_storage("theater-cache", f_file)
+        f_file = f"{tc}_{today_cache_str}.json.gz"
+        f_payload = load_cluster_from_storage("future-shows", f_file)
         
         if f_payload:
-            msg.toast(f"⚡ Loading upcoming schedule for {t_item['name']} from Storage...")
+            log_msg = f"⚡ Loading upcoming schedule for {t_item['name']} from Storage..."
+            msg.toast(log_msg)
+            if status_context: status_context.write(log_msg)
         else:
-            msg.toast(f"📡 Fetching unique upcoming schedule for {t_item['name']}...")
+            log_msg = f"📡 Fetching unique upcoming schedule for {t_item['name']}..."
+            msg.toast(log_msg)
+            if status_context: status_context.write(log_msg)
             api_url = f"https://www.regmovies.com/api/getShowtimes?theatres={tc}&date={d_str}"
-            f_payload = fetch_data(api_url, t_item['path_name'], status_context if debug_mode else None, msg)
-            
+            f_payload = fetch_data(api_url, t_item['name'], status_context if debug_mode else None, msg)
             if f_payload:
-                save_future_to_storage(tc, today_cache_str, f_payload)
-
+                save_future_to_storage("future-shows", f_file, f_payload)
+                log_msg = f"✅ Successfully cached future data for {tc} to storage."
+                msg.toast(log_msg)
+                if status_context: status_context.write(log_msg)
+            
         if f_payload:
             _, _, _, f_map = flatten_data(f_payload, theater_code_override=tc)
             st.session_state.registry['theaters'][tc]['future'] = f_map.get(tc, [])
@@ -1189,9 +1202,7 @@ if selected_theater:
             missing_f = [mc for mc in f_codes if mc not in st.session_state.registry['movies']]
             
             if missing_f:
-                db_meta = get_db_metadata(missing_f)
-                translated = {mc: {**m_info, 'rt_critics': m_info.get('rt_critics_score'), 'rt_users': m_info.get('rt_users_score'), 'metacritic': m_info.get('metacritic_score'), 'letterboxd': m_info.get('letterboxd_score')} for mc, m_info in db_meta.items()}
-                st.session_state.registry['movies'].update(translated)
+                st.session_state.registry['movies'].update(get_db_metadata(missing_f))
 
             if tc not in st.session_state.registry['theaters']:
                 st.session_state.registry['theaters'][tc] = {}
@@ -1203,17 +1214,12 @@ if selected_theater:
             st.session_state.registry['theaters'][tc]['future'] = []
 
     all_flat_data = st.session_state.registry['schedule'].get(d_str, [])
-    movie_meta = st.session_state.registry['movies']
-    attr_map = st.session_state.registry.get('attr_map', {})
-    flat_data = [s for s in all_flat_data if s['TheaterCode'] == tc]
-    future_movies = st.session_state.registry['theaters'].get(tc, {}).get('future', [])
-
     st.session_state.update({
         "all_flat_data": all_flat_data,
-        "flat_data": flat_data,
-        "movie_meta": movie_meta,
-        "attr_map": attr_map,
-        "future_movies": future_movies
+        "flat_data": [s for s in all_flat_data if s['TheaterCode'] == tc],
+        "movie_meta": st.session_state.registry['movies'],
+        "future_movies": st.session_state.registry['theaters'].get(tc, {}).get('future', []),
+        "drive_map": drive_map
     })
 
 
@@ -1254,7 +1260,7 @@ if selected_theater and schedule:
         "future_movies": future_movies
     })
 
-    t_key = t_item['theatre_code']
+    t_key = t_item['theater_code']
     nav_key = f"nav_tab_{t_key}"
 
     tabs_list = ["🔎 Theater Explorer", "🎬 Movie Explorer", "🗓️ Smart Scheduler"]
@@ -1377,7 +1383,7 @@ if selected_theater and schedule:
                     
                     other_t = sorted([cluster_theaters[tc] 
                                     for tc in set(s['TheaterCode'] for s in all_flat_data if s['master_code'] == m_code) 
-                                    if tc != t_item['theatre_code'] and tc in cluster_theaters])
+                                    if tc != t_item['theater_code'] and tc in cluster_theaters])
                     
                     valid_date_objs = [datetime.strptime(date_key, "%m-%d-%Y") 
                         for date_key, day_flat in st.session_state.registry['schedule'].items() 
@@ -1422,7 +1428,7 @@ if selected_theater and schedule:
 
                         with link_col:
                             if other_t or scheduled_days:
-                                if st.button("📅 Full Schedule", key=f"link_{m_code}_{t_item['theatre_code']}", use_container_width=True):
+                                if st.button("📅 Full Schedule", key=f"link_{m_code}_{t_item['theater_code']}", use_container_width=True):
                                     st.session_state.nav_redirect = "🎬 Movie Explorer"
                                     st.session_state.selected_movie_code = m_code
                                     st.rerun()
@@ -1557,21 +1563,35 @@ if selected_theater and schedule:
     elif nav_tab == "🎬 Movie Explorer":
         st.subheader("🎬 Movie Explorer")
         tab_gen, tab_else = st.tabs(["🎥 Playing Nearby", "🌍 Playing Elsewhere"])
+
+        nearby_data = st.session_state.app_config.get('nearby_map', {}).get(tc, [])
+        allowed_codes = {tc} | {nt['code'] for nt in nearby_data}
+        
         with tab_gen:
-            st.info(f"Movies: **{t_item['name']}** and nearby theaters on **{q_date.strftime('%A, %b %d')}**")
-            
             full_cluster_schedule = st.session_state.registry['schedule'].get(d_str, [])
-            nearby_schedule = [s for s in full_cluster_schedule if s['TheaterCode'] in cluster_theaters]
+            nearby_schedule = [s for s in full_cluster_schedule if s['TheaterCode'] in allowed_codes]
             movie_meta = st.session_state.registry['movies']
 
             theater_info = {tc: {"name": t_item['name'], "dist": 0, "time": 0}}
-            if 'nearby_theaters' in t_item:
-                for nt in t_item['nearby_theaters']:
-                    n_code = nt['code']
+            
+            for nt in nearby_data:
+                n_code = nt['code']
+                theater_info[n_code] = {
+                    "name": master_name_map.get(n_code, f"Theater {n_code}"), 
+                    "dist": nt.get('miles', 0), 
+                    "time": nt.get('mins', 0)
+                }
+
+            if nearby_data:
+                for nt in nearby_data:
+                    n_code = nt['code'] # This matches the key in our new map
+                    n_name = master_name_map.get(n_code, f"Theater {n_code}")
+                    n_miles = nt.get('miles', 0)
+                    n_mins = nt.get('mins', 20)
                     theater_info[n_code] = {
-                        "name": master_name_map.get(n_code, f"Theater {n_code}"), 
-                        "dist": nt.get('road_miles', 0), 
-                        "time": nt.get('drive_min', 0)
+                        "name": n_name, 
+                        "dist": n_miles, 
+                        "time": n_mins
                     }
 
             movie_list_data = []
@@ -1587,6 +1607,9 @@ if selected_theater and schedule:
                     })
                     seen_mc.add(mc)
             movie_list_data.sort(key=lambda x: x['title'])
+
+            st.info(f"Showing {len(movie_list_data)} movies playing at **{t_item['name']}** and nearby theaters on **{q_date.strftime('%A, %b %d')}**")
+
 
             st.markdown("###### 🍿 Select a Movie")
             st.markdown("""
@@ -1690,7 +1713,7 @@ if selected_theater and schedule:
                                         t_shows = sorted([s for s in fmt_shows if s['TheaterCode'] == tc], key=lambda x: x['Showtime'])
                                         info = theater_info.get(tc, {"name": f"Theater {tc}", "dist": 0, "time": 0})
                                         
-                                        is_primary = (tc == t_item['theatre_code'])
+                                        is_primary = (tc == t_item['theater_code'])
                                         t_icon = "📍" if is_primary else "🚗"
                                         dist_txt = "(Current)" if is_primary else f"({info['time']}m / {info['dist']}mi)"
                                         
@@ -1737,8 +1760,8 @@ if selected_theater and schedule:
             local_weekly_codes = set()
             for date_key in st.session_state.registry['schedule']:
                 for s in st.session_state.registry['schedule'][date_key]:
-                    local_weekly_codes.add(s['master_code'])
-
+                    if s['TheaterCode'] in allowed_codes:
+                        local_weekly_codes.add(s['master_code'])
             nationwide_data = get_nationwide_active_movies()
             nationwide_codes = set(nationwide_data.keys())
             elsewhere_only_codes = nationwide_codes - local_weekly_codes
@@ -1752,17 +1775,20 @@ if selected_theater and schedule:
 
                 elsewhere_display_list = []
                 for m_code in nationwide_codes:
-                    meta = st.session_state.global_movie_catalog.get(m_code, {})
+                    meta = st.session_state.registry['movies'].get(m_code, {})
                     count = nationwide_data.get(m_code, 0)
+                    
+                    prefix = "📍 " if m_code in local_weekly_codes else ""
+                    
                     elsewhere_display_list.append({
                         "code": m_code, 
-                        "title": meta.get('title', f"Movie {m_code}"),
+                        "title": f"{prefix}{meta.get('title', f'Movie {m_code}')}",
                         "count": count
                     })
                 
-                elsewhere_display_list.sort(key=lambda x: x['title'])
+                elsewhere_display_list.sort(key=lambda x: x['title'].replace("📍 ", ""))
                 
-                st.write(f"Found **{len(elsewhere_display_list)}** movies playing at Regals across the US.")
+                st.info(f"Showing **{len(elsewhere_display_list)}** movies playing across the US. 📍 indicates availability at theaters within your nearby radius.")
 
                 if "sel_elsewhere_code" not in st.session_state or st.session_state.sel_elsewhere_code not in nationwide_codes:
                     st.session_state.sel_elsewhere_code = elsewhere_display_list[0]['code']
@@ -1787,18 +1813,18 @@ if selected_theater and schedule:
                     badges, badges_type = get_rating_badges(sel_code)
                     st.markdown(f"<small>{badges}</small>", help=badges_type, unsafe_allow_html=True)
                     
-                    target_theaters = get_theaters_playing_movie(sel_code, local_weekly_codes)
+                    target_theaters = get_theaters_playing_movie(st.session_state.sel_elsewhere_code, set())
                     
                     if target_theaters:
                         state_map = {}
                         for t in theaters:
-                            t_code = t['item']['theatre_code']
+                            t_code = t['theater_code']
                             if t_code in target_theaters:
-                                st_code = t['item'].get('state', 'Other')
+                                st_code = t.get('state', 'Other')
                                 st_full_name = STATE_NAMES.get(st_code, st_code)
                                 if st_full_name not in state_map: 
                                     state_map[st_full_name] = []
-                                state_map[st_full_name  ].append(f"{t['item']['name']} ({t['item']['city']})")
+                                state_map[st_full_name  ].append(f"{t['name']} ({t['city']})")
                         
                         sorted_states = sorted(state_map.keys())
                         s_cols = st.columns(3)
@@ -1812,7 +1838,7 @@ if selected_theater and schedule:
         st.subheader("🗓️ Smart Scheduler")
         st.info(f"Scheduling: **{t_item['name']}** and nearby theaters on **{q_date.strftime('%A, %b %d')}**")
 
-        primary_code = t_item['theatre_code']
+        primary_code = t_item['theater_code']
         with st.expander("⚙️ Parameters", expanded=True):
             t_opts = list(cluster_theaters.keys())
             cached_dates = sorted(list(st.session_state.registry['loaded_dates']))
@@ -1823,9 +1849,9 @@ if selected_theater and schedule:
                 target_theaters = st.multiselect(
                     "1\\. Select Theaters (Ordered by Preference)", 
                     options=t_opts,
-                    default=[t_item['theatre_code']],
+                    default=[t_item['theater_code']],
                     format_func=lambda x: cluster_theaters.get(x),
-                    key=f"target_theaters_{t_item['theatre_code']}"
+                    key=f"target_theaters_{t_item['theater_code']}"
                 )
 
                 target_days = st.multiselect(
@@ -1860,7 +1886,7 @@ if selected_theater and schedule:
                     "3\\. Select Movies (Ordered by Preference)", 
                     options=sorted_codes,
                     format_func=format_movie_label_grouped,
-                    key=f"target_movies_{t_item['theatre_code']}",
+                    key=f"target_movies_{t_item['theater_code']}",
                     help = "🔴 New Release  🎬 Regular Release  🎫 Unlimited Excluded"
                 )
 
@@ -1877,7 +1903,7 @@ if selected_theater and schedule:
                     "4\\. Preferred Formats", 
                     options=available_formats, 
                     placeholder="All",
-                    key=f"target_formats_{t_item['theatre_code']}"
+                    key=f"target_formats_{t_item['theater_code']}"
                 )
             
             time_opts = ["Any Time"] + get_time_options()
@@ -1951,7 +1977,7 @@ if selected_theater and schedule:
                     'start': t_start, 'end': t_end, 'buffer': buff, 'gap_cap': g_cap, 
                     'unlimited': unlimited, 'fudge': fudge, 'break_after': b_after, 
                     'long_buffer': b_val, 'formats': target_formats, 'theaters': target_theaters,
-                    'primary_code': t_item['theatre_code'],
+                    'primary_code': t_item['theater_code'],
                     'strategy': strategy if len(target_days) > 1 else "Minimize Days",
                     'max_per_day': max_per_day if len(target_days) > 1 else n_movies
                 }

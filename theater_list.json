@@ -1,10 +1,10 @@
 {
-    "theatre_list": [
+    "theater_list": [
         {
             "item": {
                 "state": "TN",
                 "city": "Clarksville",
-                "theatre_code": "1534",
+                "theater_code": "1534",
                 "path_name": "regal-clarksville-1534",
                 "name": "Regal Clarksville",
                 "address": "1810 Tiny Town Road",
@@ -44,7 +44,7 @@
             "item": {
                 "state": "TN",
                 "city": "Hendersonville",
-                "theatre_code": "1926",
+                "theater_code": "1926",
                 "path_name": "regal-streets-of-indian-lake-1926",
                 "name": "Regal Streets of Indian Lake",
                 "address": "300 Indian Lake Blvd, Blding T",
@@ -99,7 +99,7 @@
             "item": {
                 "state": "TN",
                 "city": "Nashville",
-                "theatre_code": "0615",
+                "theater_code": "0615",
                 "path_name": "regal-opry-mills-0615",
                 "name": "Regal Opry Mills",
                 "address": "570 Opry Mills Drive",
@@ -144,7 +144,7 @@
             "item": {
                 "state": "TN",
                 "city": "Mt Juliet",
-                "theatre_code": "1890",
+                "theater_code": "1890",
                 "path_name": "regal-providence-1890",
                 "name": "Regal Providence",
                 "address": "401 S. Mt Juliet Rd, Suite 490",
@@ -184,7 +184,7 @@
             "item": {
                 "state": "TN",
                 "city": "Nashville",
-                "theatre_code": "0489",
+                "theater_code": "0489",
                 "path_name": "regal-hollywood-rpx-nashville-0489",
                 "name": "Regal Hollywood - Nashville",
                 "address": "719 Thompson Ln",
@@ -222,14 +222,14 @@
                 "timezone": "US/Central",
                 "unlimited_tier": 3,
                 "cluster_key": "cluster_09",
-                "is_lead": false
+                "is_lead": true
             }
         },
         {
             "item": {
                 "state": "TN",
                 "city": "Nashville",
-                "theatre_code": "0513",
+                "theater_code": "0513",
                 "path_name": "regal-green-hills-0513",
                 "name": "Regal Green Hills",
                 "address": "3815 Greenhills Village Drive",
@@ -274,7 +274,7 @@
             "item": {
                 "state": "TN",
                 "city": "Knoxville",
-                "theatre_code": "0690",
+                "theater_code": "0690",
                 "path_name": "regal-riviera-0690",
                 "name": "Regal Riviera",
                 "address": "510 South Gay Street",
@@ -309,7 +309,7 @@
             "item": {
                 "state": "TN",
                 "city": "Knoxville",
-                "theatre_code": "1462",
+                "theater_code": "1462",
                 "path_name": "regal-cinebarre-west-town-mall-1462",
                 "name": "Regal Cinebarre West Town Mall",
                 "address": "7600 Kingston Pike, Suite 1520",
@@ -344,7 +344,7 @@
             "item": {
                 "state": "TN",
                 "city": "Knoxville",
-                "theatre_code": "0103",
+                "theater_code": "0103",
                 "path_name": "regal-downtown-west-cinema-0103",
                 "name": "Regal Downtown West",
                 "address": "1640 Downtown West Blvd.",
@@ -379,7 +379,7 @@
             "item": {
                 "state": "TN",
                 "city": "Knoxville",
-                "theatre_code": "0682",
+                "theater_code": "0682",
                 "path_name": "regal-pinnacle-0682",
                 "name": "Regal Pinnacle",
                 "address": "11240 Parkside Drive",
@@ -414,7 +414,7 @@
             "item": {
                 "state": "TN",
                 "city": "Tullahoma",
-                "theatre_code": "0120",
+                "theater_code": "0120",
                 "path_name": "regal-tullahoma-0120",
                 "name": "Regal Tullahoma",
                 "address": "2221 N. Jackson Street",
@@ -433,7 +433,7 @@
             "item": {
                 "state": "TN",
                 "city": "Chattanooga",
-                "theatre_code": "0117",
+                "theater_code": "0117",
                 "path_name": "regal-hamilton-place-0117",
                 "name": "Regal Hamilton Place",
                 "address": "2000 Hamilton Place Boulevard",
@@ -452,7 +452,7 @@
             "item": {
                 "state": "WV",
                 "city": "Vienna",
-                "theatre_code": "0115",
+                "theater_code": "0115",
                 "path_name": "regal-grand-central-mall-0115",
                 "name": "Regal Grand Central Mall",
                 "address": "700 Grand Central Mall",
@@ -471,7 +471,7 @@
             "item": {
                 "state": "WV",
                 "city": "Cross Lanes",
-                "theatre_code": "1518",
+                "theater_code": "1518",
                 "path_name": "regal-nitro-1518",
                 "name": "Regal Nitro",
                 "address": "12 JW Drive",
@@ -490,7 +490,7 @@
             "item": {
                 "state": "DE",
                 "city": "Wilmington",
-                "theatre_code": "0509",
+                "theater_code": "0509",
                 "path_name": "regal-brandywine-town-center-0509",
                 "name": "Regal Brandywine Town Center",
                 "address": "3300 Brandywine Parkway",
@@ -585,7 +585,7 @@
             "item": {
                 "state": "DE",
                 "city": "Newark",
-                "theatre_code": "0133",
+                "theater_code": "0133",
                 "path_name": "regal-peoples-plaza-0133",
                 "name": "Regal Peoples Plaza",
                 "address": "1100 Peoples Plaza",
@@ -660,7 +660,7 @@
             "item": {
                 "state": "IN",
                 "city": "Fort Wayne",
-                "theatre_code": "0169",
+                "theater_code": "0169",
                 "path_name": "regal-coldwater-crossing-0169",
                 "name": "Regal Coldwater Crossing",
                 "address": "211 West Washington Center Rd",
@@ -679,7 +679,7 @@
             "item": {
                 "state": "IN",
                 "city": "Noblesville",
-                "theatre_code": "1523",
+                "theater_code": "1523",
                 "path_name": "regal-noblesville-1523",
                 "name": "Regal Noblesville",
                 "address": "10075 Town & Country Blvd",
@@ -719,7 +719,7 @@
             "item": {
                 "state": "IN",
                 "city": "Carmel",
-                "theatre_code": "0147",
+                "theater_code": "0147",
                 "path_name": "regal-village-park-0147",
                 "name": "Regal Village Park",
                 "address": "2222 East 146th Street",
@@ -759,7 +759,7 @@
             "item": {
                 "state": "IN",
                 "city": "Indianapolis",
-                "theatre_code": "1299",
+                "theater_code": "1299",
                 "path_name": "regal-ua-galaxy-indianapolis-1299",
                 "name": "Regal UA Galaxy - Indianapolis",
                 "address": "8105 E. 96Th Street",
@@ -799,7 +799,7 @@
             "item": {
                 "state": "IN",
                 "city": "Avon",
-                "theatre_code": "0190",
+                "theater_code": "0190",
                 "path_name": "regal-shiloh-crossing-0190",
                 "name": "Regal Shiloh Crossing",
                 "address": "10400 East US 36, STE 800",
@@ -839,7 +839,7 @@
             "item": {
                 "state": "IN",
                 "city": "Greenwood",
-                "theatre_code": "1794",
+                "theater_code": "1794",
                 "path_name": "regal-greenwood-1794",
                 "name": "Regal Greenwood",
                 "address": "461 Greenwood Park South Drive",
@@ -879,7 +879,7 @@
             "item": {
                 "state": "OH",
                 "city": "Willoughby",
-                "theatre_code": "0381",
+                "theater_code": "0381",
                 "path_name": "regal-willoughby-commons-0381",
                 "name": "Regal Willoughby Commons",
                 "address": "36655 Euclid Avenue",
@@ -924,7 +924,7 @@
             "item": {
                 "state": "OH",
                 "city": "Westlake",
-                "theatre_code": "0155",
+                "theater_code": "0155",
                 "path_name": "regal-crocker-park-0155",
                 "name": "Regal Crocker Park",
                 "address": "30147 Detroit Road",
@@ -964,7 +964,7 @@
             "item": {
                 "state": "OH",
                 "city": "Elyria",
-                "theatre_code": "0755",
+                "theater_code": "0755",
                 "path_name": "regal-cobblestone-square-0755",
                 "name": "Regal Cobblestone Square",
                 "address": "5500 Cobblestone Road",
@@ -1004,7 +1004,7 @@
             "item": {
                 "state": "OH",
                 "city": "Hudson",
-                "theatre_code": "0164",
+                "theater_code": "0164",
                 "path_name": "regal-hudson-cinema-0164",
                 "name": "Regal Hudson",
                 "address": "5339 Darrow Road",
@@ -1059,7 +1059,7 @@
             "item": {
                 "state": "OH",
                 "city": "Niles",
-                "theatre_code": "0183",
+                "theater_code": "0183",
                 "path_name": "regal-boulevard-centre-0183",
                 "name": "Regal Boulevard Centre",
                 "address": "24 Boulevard Centre",
@@ -1099,7 +1099,7 @@
             "item": {
                 "state": "OH",
                 "city": "Medina",
-                "theatre_code": "0707",
+                "theater_code": "0707",
                 "path_name": "regal-medina-0707",
                 "name": "Regal Medina",
                 "address": "200 West Reagan Pkwy",
@@ -1144,7 +1144,7 @@
             "item": {
                 "state": "OH",
                 "city": "Youngstown",
-                "theatre_code": "0175",
+                "theater_code": "0175",
                 "path_name": "regal-cinema-south-0175",
                 "name": "Regal Cinema South",
                 "address": "7420 South Ave",
@@ -1179,7 +1179,7 @@
             "item": {
                 "state": "OH",
                 "city": "Massillon",
-                "theatre_code": "1512",
+                "theater_code": "1512",
                 "path_name": "regal-massillon-1512",
                 "name": "Regal Massillon",
                 "address": "175 Cherry Rd NW",
@@ -1219,7 +1219,7 @@
             "item": {
                 "state": "OH",
                 "city": "Lima",
-                "theatre_code": "0680",
+                "theater_code": "0680",
                 "path_name": "regal-american-mall-0680",
                 "name": "Regal American Mall",
                 "address": "2830 West Elm Street",
@@ -1238,7 +1238,7 @@
             "item": {
                 "state": "OH",
                 "city": "Beavercreek",
-                "theatre_code": "0389",
+                "theater_code": "0389",
                 "path_name": "regal-fairfield-commons-rpx-0389",
                 "name": "Regal Fairfield Commons",
                 "address": "2651 Fairfield Commons",
@@ -1263,7 +1263,7 @@
             "item": {
                 "state": "OH",
                 "city": "Mason",
-                "theatre_code": "1901",
+                "theater_code": "1901",
                 "path_name": "regal-deerfield-town-center-rpx-1901",
                 "name": "Regal Deerfield Town Center",
                 "address": "5500 Deerfield Blvd",
@@ -1293,7 +1293,7 @@
             "item": {
                 "state": "VA",
                 "city": "Sterling",
-                "theatre_code": "1672",
+                "theater_code": "1672",
                 "path_name": "regal-dulles-town-center-1672",
                 "name": "Regal Dulles Town Center",
                 "address": "21100 Dulles Town Cir, Ste 203",
@@ -1388,7 +1388,7 @@
             "item": {
                 "state": "VA",
                 "city": "Ashburn",
-                "theatre_code": "1869",
+                "theater_code": "1869",
                 "path_name": "regal-fox-1869",
                 "name": "Regal Fox",
                 "address": "22875 Brambleton Plaza",
@@ -1488,7 +1488,7 @@
             "item": {
                 "state": "VA",
                 "city": "Arlington",
-                "theatre_code": "0296",
+                "theater_code": "0296",
                 "path_name": "regal-ballston-quarter-0296",
                 "name": "Regal Ballston Quarter",
                 "address": "671 N. Glebe Road",
@@ -1583,7 +1583,7 @@
             "item": {
                 "state": "VA",
                 "city": "Fairfax",
-                "theatre_code": "1275",
+                "theater_code": "1275",
                 "path_name": "regal-fairfax-towne-center-1275",
                 "name": "Regal Fairfax Towne Center",
                 "address": "4110 West Ox Rd, Suite 12110",
@@ -1678,7 +1678,7 @@
             "item": {
                 "state": "VA",
                 "city": "Gainesville",
-                "theatre_code": "1675",
+                "theater_code": "1675",
                 "path_name": "regal-virginia-gateway-1675",
                 "name": "Regal Virginia Gateway",
                 "address": "8001 Gateway Promenade Place",
@@ -1768,7 +1768,7 @@
             "item": {
                 "state": "VA",
                 "city": "Springfield",
-                "theatre_code": "0595",
+                "theater_code": "0595",
                 "path_name": "regal-springfield-town-center-0595",
                 "name": "Regal Springfield Town Center",
                 "address": "6859 Springfield Mall",
@@ -1863,7 +1863,7 @@
             "item": {
                 "state": "VA",
                 "city": "Alexandria",
-                "theatre_code": "1865",
+                "theater_code": "1865",
                 "path_name": "regal-kingstowne-rpx-1865",
                 "name": "Regal Kingstowne",
                 "address": "5910 Kingstowne Towne Center",
@@ -1953,7 +1953,7 @@
             "item": {
                 "state": "VA",
                 "city": "Culpeper",
-                "theatre_code": "1913",
+                "theater_code": "1913",
                 "path_name": "regal-culpeper-1913",
                 "name": "Regal Culpeper",
                 "address": "210 S Main Street",
@@ -2013,7 +2013,7 @@
             "item": {
                 "state": "VA",
                 "city": "Harrisonburg",
-                "theatre_code": "0735",
+                "theater_code": "0735",
                 "path_name": "regal-harrisonburg-0735",
                 "name": "Regal Harrisonburg",
                 "address": "381 University Blvd.",
@@ -2043,7 +2043,7 @@
             "item": {
                 "state": "VA",
                 "city": "Fredericksburg",
-                "theatre_code": "0712",
+                "theater_code": "0712",
                 "path_name": "regal-fredericksburg-0712",
                 "name": "Regal Fredericksburg",
                 "address": "3301 Plank Road Route 3W",
@@ -2118,7 +2118,7 @@
             "item": {
                 "state": "VA",
                 "city": "Charlottesville",
-                "theatre_code": "1969",
+                "theater_code": "1969",
                 "path_name": "regal-stonefield-1969",
                 "name": "Regal Stonefield",
                 "address": "1954 Swanson Drive",
@@ -2148,7 +2148,7 @@
             "item": {
                 "state": "VA",
                 "city": "Glen Allen",
-                "theatre_code": "0165",
+                "theater_code": "0165",
                 "path_name": "regal-virginia-center-0165",
                 "name": "Regal Virginia Center",
                 "address": "10091 Jeb Stuart Parkway",
@@ -2196,14 +2196,14 @@
                 "timezone": "US/Eastern",
                 "unlimited_tier": 2,
                 "cluster_key": "cluster_13",
-                "is_lead": true
+                "is_lead": false
             }
         },
         {
             "item": {
                 "state": "VA",
                 "city": "Richmond",
-                "theatre_code": "0730",
+                "theater_code": "0730",
                 "path_name": "regal-short-pump-0730",
                 "name": "Regal Short Pump",
                 "address": "11650 West Broad Street",
@@ -2253,7 +2253,7 @@
             "item": {
                 "state": "VA",
                 "city": "Richmond",
-                "theatre_code": "1226",
+                "theater_code": "1226",
                 "path_name": "regal-west-tower-cinemas-1226",
                 "name": "Regal West Tower",
                 "address": "8998 West Broad Street",
@@ -2303,7 +2303,7 @@
             "item": {
                 "state": "VA",
                 "city": "Midlothian",
-                "theatre_code": "1936",
+                "theater_code": "1936",
                 "path_name": "regal-westchester-commons-1936",
                 "name": "Regal Westchester Commons",
                 "address": "361 Perimeter Drive",
@@ -2348,7 +2348,7 @@
             "item": {
                 "state": "VA",
                 "city": "Midlothian",
-                "theatre_code": "1864",
+                "theater_code": "1864",
                 "path_name": "regal-commonwealth-1864",
                 "name": "Regal Commonwealth",
                 "address": "5001 Commonwealth Centre Pkwy",
@@ -2398,7 +2398,7 @@
             "item": {
                 "state": "VA",
                 "city": "Lynchburg",
-                "theatre_code": "1995",
+                "theater_code": "1995",
                 "path_name": "regal-river-ridge-1995",
                 "name": "Regal River Ridge",
                 "address": "3411 Candlers Mountain Road",
@@ -2423,7 +2423,7 @@
             "item": {
                 "state": "VA",
                 "city": "Roanoke",
-                "theatre_code": "1867",
+                "theater_code": "1867",
                 "path_name": "regal-valley-view-grande-1867",
                 "name": "Regal Valley View Grande",
                 "address": "4730 Valley View Boulevard",
@@ -2453,7 +2453,7 @@
             "item": {
                 "state": "VA",
                 "city": "Williamsburg",
-                "theatre_code": "1868",
+                "theater_code": "1868",
                 "path_name": "regal-new-town-1868",
                 "name": "Regal New Town",
                 "address": "4911 Courthouse Street",
@@ -2470,11 +2470,6 @@
                         "code": "0165",
                         "road_miles": 56.0,
                         "drive_min": 55
-                    },
-                    {
-                        "code": "0365",
-                        "road_miles": 54.1,
-                        "drive_min": 59
                     },
                     {
                         "code": "0718",
@@ -2503,7 +2498,7 @@
             "item": {
                 "state": "VA",
                 "city": "Colonial Heights",
-                "theatre_code": "1902",
+                "theater_code": "1902",
                 "path_name": "regal-southpark-mall-1902",
                 "name": "Regal Southpark Mall",
                 "address": "300 Southpark Circle",
@@ -2553,7 +2548,7 @@
             "item": {
                 "state": "VA",
                 "city": "Christianburg",
-                "theatre_code": "0671",
+                "theater_code": "0671",
                 "path_name": "regal-new-river-valley-0671",
                 "name": "Regal New River Valley",
                 "address": "110 New River Road",
@@ -2578,7 +2573,7 @@
             "item": {
                 "state": "VA",
                 "city": "Suffolk",
-                "theatre_code": "1866",
+                "theater_code": "1866",
                 "path_name": "regal-harbour-view-grande-1866",
                 "name": "Regal Harbour View Grande",
                 "address": "5860 Harbour View Boulevard",
@@ -2586,11 +2581,6 @@
                 "longitude": -76.4469,
                 "zip": "23435",
                 "nearby_theaters": [
-                    {
-                        "code": "0365",
-                        "road_miles": 12.7,
-                        "drive_min": 18
-                    },
                     {
                         "code": "0718",
                         "road_miles": 21.7,
@@ -2611,54 +2601,14 @@
                 "timezone": "US/Eastern",
                 "unlimited_tier": 1,
                 "cluster_key": "cluster_13",
-                "is_lead": false
-            }
-        },
-        {
-            "item": {
-                "state": "VA",
-                "city": "Norfolk",
-                "theatre_code": "0365",
-                "path_name": "regal-macarthur-center-rpx-0365",
-                "name": "Regal Macarthur Center",
-                "address": "300 Monticello Avenue, Ste 330",
-                "latitude": 36.85,
-                "longitude": -76.29,
-                "zip": "23510",
-                "nearby_theaters": [
-                    {
-                        "code": "0718",
-                        "road_miles": 10.2,
-                        "drive_min": 16
-                    },
-                    {
-                        "code": "1866",
-                        "road_miles": 12.7,
-                        "drive_min": 18
-                    },
-                    {
-                        "code": "0235",
-                        "road_miles": 19.0,
-                        "drive_min": 31
-                    },
-                    {
-                        "code": "1868",
-                        "road_miles": 54.1,
-                        "drive_min": 59
-                    }
-                ],
-                "phone_number": "(844) 462-7342",
-                "timezone": "US/Eastern",
-                "unlimited_tier": 1,
-                "cluster_key": "cluster_13",
-                "is_lead": false
+                "is_lead": true
             }
         },
         {
             "item": {
                 "state": "VA",
                 "city": "Virginia Beach",
-                "theatre_code": "0718",
+                "theater_code": "0718",
                 "path_name": "regal-columbus-0718",
                 "name": "Regal Columbus",
                 "address": "104 Constitution Drive",
@@ -2666,11 +2616,6 @@
                 "longitude": -76.1314,
                 "zip": "23462",
                 "nearby_theaters": [
-                    {
-                        "code": "0365",
-                        "road_miles": 10.2,
-                        "drive_min": 16
-                    },
                     {
                         "code": "0235",
                         "road_miles": 10.4,
@@ -2698,7 +2643,7 @@
             "item": {
                 "state": "VA",
                 "city": "Virginia Beach",
-                "theatre_code": "0235",
+                "theater_code": "0235",
                 "path_name": "regal-strawbridge-marketplace-0235",
                 "name": "Regal Strawbridge Marketplace",
                 "address": "2133 General Booth Blvd.",
@@ -2710,11 +2655,6 @@
                         "code": "0718",
                         "road_miles": 10.4,
                         "drive_min": 22
-                    },
-                    {
-                        "code": "0365",
-                        "road_miles": 19.0,
-                        "drive_min": 31
                     },
                     {
                         "code": "1866",
@@ -2733,8 +2673,8 @@
             "item": {
                 "state": "NJ",
                 "city": "South Plainfield",
-                "theatre_code": "0370",
-                "path_name": "regal-hadley-theatre-0370",
+                "theater_code": "0370",
+                "path_name": "regal-hadley-theater-0370",
                 "name": "Regal Hadley",
                 "address": "1000 Corporate CT",
                 "latitude": 40.5499,
@@ -2858,7 +2798,7 @@
             "item": {
                 "state": "NJ",
                 "city": "North Brunswick",
-                "theatre_code": "0705",
+                "theater_code": "0705",
                 "path_name": "regal-commerce-center-rpx-0705",
                 "name": "Regal Commerce Center",
                 "address": "2399 Route 1 South",
@@ -2988,7 +2928,7 @@
             "item": {
                 "state": "NJ",
                 "city": "Hamilton",
-                "theatre_code": "1417",
+                "theater_code": "1417",
                 "path_name": "regal-independence-plaza-1417",
                 "name": "Regal Independence Plaza",
                 "address": "2465 South Broad Street",
@@ -3093,7 +3033,7 @@
             "item": {
                 "state": "NJ",
                 "city": "Burlington",
-                "theatre_code": "0198",
+                "theater_code": "0198",
                 "path_name": "regal-burlington-0198",
                 "name": "Regal Burlington",
                 "address": "250 Bromley Boulevard",
@@ -3203,7 +3143,7 @@
             "item": {
                 "state": "NJ",
                 "city": "Moorestown",
-                "theatre_code": "1917",
+                "theater_code": "1917",
                 "path_name": "regal-moorestown-mall-rpx-1917",
                 "name": "Regal Moorestown Mall",
                 "address": "400 Route 38",
@@ -3308,7 +3248,7 @@
             "item": {
                 "state": "NJ",
                 "city": "Sewell",
-                "theatre_code": "1281",
+                "theater_code": "1281",
                 "path_name": "regal-ua-washington-township-1281",
                 "name": "Regal UA Washington Township",
                 "address": "121 Tuckahoe Road",
@@ -3408,7 +3348,7 @@
             "item": {
                 "state": "NJ",
                 "city": "Manahawkin",
-                "theatre_code": "1754",
+                "theater_code": "1754",
                 "path_name": "regal-manahawkin-1754",
                 "name": "Regal Manahawkin",
                 "address": "733 Route 72 East",
@@ -3468,7 +3408,7 @@
             "item": {
                 "state": "NJ",
                 "city": "Mays Landing",
-                "theatre_code": "1729",
+                "theater_code": "1729",
                 "path_name": "regal-hamilton-commons-1729",
                 "name": "Regal Hamilton Commons",
                 "address": "4215 Black Horse Pike, Lot 600",
@@ -3523,7 +3463,7 @@
             "item": {
                 "state": "NJ",
                 "city": "Vineland",
-                "theatre_code": "0244",
+                "theater_code": "0244",
                 "path_name": "regal-cumberland-mall-0244",
                 "name": "Regal Cumberland Mall",
                 "address": "3849 South Delsea",
@@ -3603,7 +3543,7 @@
             "item": {
                 "state": "FL",
                 "city": "Mary Esther",
-                "theatre_code": "1195",
+                "theater_code": "1195",
                 "path_name": "regal-santa-rosa-1195",
                 "name": "Regal Santa Rosa",
                 "address": "300 Mary Esther Blvd.",
@@ -3622,7 +3562,7 @@
             "item": {
                 "state": "FL",
                 "city": "Jacksonville",
-                "theatre_code": "0241",
+                "theater_code": "0241",
                 "path_name": "regal-avenues-4dx-rpx-0241",
                 "name": "Regal Avenues",
                 "address": "9525 Phillips Highway",
@@ -3641,7 +3581,7 @@
             "item": {
                 "state": "FL",
                 "city": "Panama City",
-                "theatre_code": "1859",
+                "theater_code": "1859",
                 "path_name": "regal-regency-panama-city-1859",
                 "name": "Regal Regency Panama City",
                 "address": "1515 W. 23rd St.",
@@ -3660,7 +3600,7 @@
             "item": {
                 "state": "FL",
                 "city": "Lake City",
-                "theatre_code": "1214",
+                "theater_code": "1214",
                 "path_name": "regal-ua-cinema-90-1214",
                 "name": "Regal UA Cinema 90",
                 "address": "2830 Highway 90 West",
@@ -3695,7 +3635,7 @@
             "item": {
                 "state": "FL",
                 "city": "Gainesville",
-                "theatre_code": "1860",
+                "theater_code": "1860",
                 "path_name": "regal-royal-park-1860",
                 "name": "Regal Royal Park",
                 "address": "3702 W. Newberry Road",
@@ -3735,7 +3675,7 @@
             "item": {
                 "state": "FL",
                 "city": "Gainesville",
-                "theatre_code": "0219",
+                "theater_code": "0219",
                 "path_name": "regal-butler-town-center-0219",
                 "name": "Regal Butler Town Center",
                 "address": "3101 SW 35th Blvd Butler Plaza",
@@ -3775,7 +3715,7 @@
             "item": {
                 "state": "FL",
                 "city": "Gainesville",
-                "theatre_code": "1416",
+                "theater_code": "1416",
                 "path_name": "regal-celebration-pointe-rpx-1416",
                 "name": "Regal Celebration Pointe",
                 "address": "4901 Steve Spurrier Way",
@@ -3815,7 +3755,7 @@
             "item": {
                 "state": "FL",
                 "city": "Ocala",
-                "theatre_code": "0483",
+                "theater_code": "0483",
                 "path_name": "regal-hollywood-ocala-0483",
                 "name": "Regal Hollywood - Ocala",
                 "address": "2801 SW 27th Avenue",
@@ -3855,7 +3795,7 @@
             "item": {
                 "state": "FL",
                 "city": "Port Orange",
-                "theatre_code": "1613",
+                "theater_code": "1613",
                 "path_name": "regal-pavilion-rpx-1613",
                 "name": "Regal Pavilion",
                 "address": "5547 S Williamson Blvd",
@@ -3895,7 +3835,7 @@
             "item": {
                 "state": "FL",
                 "city": "Inverness",
-                "theatre_code": "0206",
+                "theater_code": "0206",
                 "path_name": "regal-citrus-cinemas-0206",
                 "name": "Regal Citrus Cinemas",
                 "address": "2635 E. Gulf to Lake Highway",
@@ -3925,7 +3865,7 @@
             "item": {
                 "state": "FL",
                 "city": "Apopka",
-                "theatre_code": "1258",
+                "theater_code": "1258",
                 "path_name": "regal-wekiva-riverwalk-1258",
                 "name": "Regal Wekiva Riverwalk",
                 "address": "2141 North Semoran Blvd",
@@ -3975,7 +3915,7 @@
             "item": {
                 "state": "FL",
                 "city": "Oviedo",
-                "theatre_code": "0380",
+                "theater_code": "0380",
                 "path_name": "regal-oviedo-mall-0380",
                 "name": "Regal Oviedo Mall",
                 "address": "1500 Oviedo Marketplace Blvd",
@@ -4025,7 +3965,7 @@
             "item": {
                 "state": "FL",
                 "city": "Winter Park",
-                "theatre_code": "0721",
+                "theater_code": "0721",
                 "path_name": "regal-winter-park-village-0721",
                 "name": "Regal Winter Park Village",
                 "address": "510 North Orlando Ave",
@@ -4080,7 +4020,7 @@
             "item": {
                 "state": "FL",
                 "city": "Orlando",
-                "theatre_code": "0734",
+                "theater_code": "0734",
                 "path_name": "regal-waterford-lakes-0734",
                 "name": "Regal Waterford Lakes",
                 "address": "541 North Alafaya Trail",
@@ -4135,7 +4075,7 @@
             "item": {
                 "state": "FL",
                 "city": "Orlando",
-                "theatre_code": "1938",
+                "theater_code": "1938",
                 "path_name": "regal-pointe-orlando-1938",
                 "name": "Regal Pointe Orlando",
                 "address": "9101 International Dr, St 2100",
@@ -4185,7 +4125,7 @@
             "item": {
                 "state": "FL",
                 "city": "Kissimmee",
-                "theatre_code": "0687",
+                "theater_code": "0687",
                 "path_name": "regal-the-loop-0687",
                 "name": "Regal The Loop",
                 "address": "3232 N. John Young Parkway",
@@ -4235,7 +4175,7 @@
             "item": {
                 "state": "FL",
                 "city": "Port Richey",
-                "theatre_code": "0418",
+                "theater_code": "0418",
                 "path_name": "regal-hollywood-port-richey-0418",
                 "name": "Regal Hollywood - Port Richey",
                 "address": "6701 Cinema Drive (34668)",
@@ -4270,7 +4210,7 @@
             "item": {
                 "state": "FL",
                 "city": "Lake Wales",
-                "theatre_code": "0466",
+                "theater_code": "0466",
                 "path_name": "regal-eagle-ridge-mall-0466",
                 "name": "Regal Eagle Ridge Mall",
                 "address": "955 Eagle Ridge Drive & Hwy 27",
@@ -4310,7 +4250,7 @@
             "item": {
                 "state": "FL",
                 "city": "Largo",
-                "theatre_code": "0446",
+                "theater_code": "0446",
                 "path_name": "regal-largo-mall-0446",
                 "name": "Regal Largo Mall",
                 "address": "10500 Ulmerton Road East, #500",
@@ -4350,7 +4290,7 @@
             "item": {
                 "state": "FL",
                 "city": "Pinellas Park",
-                "theatre_code": "1914",
+                "theater_code": "1914",
                 "path_name": "regal-park-place-rpx-1914",
                 "name": "Regal Park Place",
                 "address": "7200 US Highway 19 North",
@@ -4390,7 +4330,7 @@
             "item": {
                 "state": "FL",
                 "city": "Bradenton",
-                "theatre_code": "0444",
+                "theater_code": "0444",
                 "path_name": "regal-oakmont-0444",
                 "name": "Regal Oakmont",
                 "address": "4801 Cortez Road W",
@@ -4430,7 +4370,7 @@
             "item": {
                 "state": "FL",
                 "city": "Sarasota",
-                "theatre_code": "0467",
+                "theater_code": "0467",
                 "path_name": "regal-hollywood-sarasota-0467",
                 "name": "Regal Hollywood - Sarasota",
                 "address": "1993 Main Street",
@@ -4470,7 +4410,7 @@
             "item": {
                 "state": "FL",
                 "city": "Jensen Beach",
-                "theatre_code": "0731",
+                "theater_code": "0731",
                 "path_name": "regal-treasure-coast-mall-0731",
                 "name": "Regal Treasure Coast Mall",
                 "address": "3290 North West Federal Highwy",
@@ -4495,7 +4435,7 @@
             "item": {
                 "state": "FL",
                 "city": "Port Charlotte",
-                "theatre_code": "0723",
+                "theater_code": "0723",
                 "path_name": "regal-town-center-port-charlotte-0723",
                 "name": "Regal Town Center - Port Charlotte",
                 "address": "1441 Tamiami Trail, Unit 701",
@@ -4535,7 +4475,7 @@
             "item": {
                 "state": "FL",
                 "city": "Royal Palm Beach",
-                "theatre_code": "0351",
+                "theater_code": "0351",
                 "path_name": "regal-royal-palm-beach-rpx-0351",
                 "name": "Regal Royal Palm Beach",
                 "address": "1003 State Road 7",
@@ -4585,7 +4525,7 @@
             "item": {
                 "state": "FL",
                 "city": "Ft Myers",
-                "theatre_code": "0432",
+                "theater_code": "0432",
                 "path_name": "regal-belltower-0432",
                 "name": "Regal Belltower",
                 "address": "13499 Belltower Drive",
@@ -4620,7 +4560,7 @@
             "item": {
                 "state": "FL",
                 "city": "Fort Myers",
-                "theatre_code": "0684",
+                "theater_code": "0684",
                 "path_name": "regal-gulf-coast-0684",
                 "name": "Regal Gulf Coast",
                 "address": "10028 Gulf Center Drive",
@@ -4655,7 +4595,7 @@
             "item": {
                 "state": "FL",
                 "city": "Coral Springs",
-                "theatre_code": "0339",
+                "theater_code": "0339",
                 "path_name": "regal-magnolia-place-0339",
                 "name": "Regal Magnolia Place",
                 "address": "9645 Westview Drive",
@@ -4710,7 +4650,7 @@
             "item": {
                 "state": "FL",
                 "city": "Naples",
-                "theatre_code": "0465",
+                "theater_code": "0465",
                 "path_name": "regal-naples-0465",
                 "name": "Regal Naples",
                 "address": "6006 Hollywood Drive",
@@ -4740,7 +4680,7 @@
             "item": {
                 "state": "FL",
                 "city": "Sunrise",
-                "theatre_code": "0442",
+                "theater_code": "0442",
                 "path_name": "regal-sawgrass-0442",
                 "name": "Regal Sawgrass",
                 "address": "2600  Northwest 136th Avenue",
@@ -4800,7 +4740,7 @@
             "item": {
                 "state": "FL",
                 "city": "Plantation",
-                "theatre_code": "1762",
+                "theater_code": "1762",
                 "path_name": "regal-broward-rpx-1762",
                 "name": "Regal Broward",
                 "address": "8000 West Broward Blvd. #1840",
@@ -4860,7 +4800,7 @@
             "item": {
                 "state": "FL",
                 "city": "Dania Beach",
-                "theatre_code": "1474",
+                "theater_code": "1474",
                 "path_name": "regal-dania-pointe-1474",
                 "name": "Regal Dania Pointe",
                 "address": "128 Sunset Drive",
@@ -4920,7 +4860,7 @@
             "item": {
                 "state": "FL",
                 "city": "Pembroke Pines",
-                "theatre_code": "0709",
+                "theater_code": "0709",
                 "path_name": "regal-westfork-0709",
                 "name": "Regal Westfork",
                 "address": "15977 Pines Blvd. on Dykes Roa",
@@ -4980,7 +4920,7 @@
             "item": {
                 "state": "FL",
                 "city": "Miami",
-                "theatre_code": "0996",
+                "theater_code": "0996",
                 "path_name": "regal-kendall-village-0996",
                 "name": "Regal Kendall Village",
                 "address": "8595 S.W. 124 Avenue",
@@ -5035,7 +4975,7 @@
             "item": {
                 "state": "FL",
                 "city": "Miami",
-                "theatre_code": "1149",
+                "theater_code": "1149",
                 "path_name": "regal-ua-falls-1149",
                 "name": "Regal Bistro at The Falls",
                 "address": "9000 S.W. 136Th Street",
@@ -5090,7 +5030,7 @@
             "item": {
                 "state": "FL",
                 "city": "Miami",
-                "theatre_code": "0683",
+                "theater_code": "0683",
                 "path_name": "regal-southland-mall-0683",
                 "name": "Regal Southland Mall",
                 "address": "20505 S Dixie Hwy Suite 1301",
@@ -5140,7 +5080,7 @@
             "item": {
                 "state": "FL",
                 "city": "Key West",
-                "theatre_code": "0412",
+                "theater_code": "0412",
                 "path_name": "regal-key-west-0412",
                 "name": "Regal Key West",
                 "address": "3338 N. Roosevelt Blvd.",
@@ -5159,7 +5099,7 @@
             "item": {
                 "state": "NC",
                 "city": "Boone",
-                "theatre_code": "0217",
+                "theater_code": "0217",
                 "path_name": "regal-boone-cinema-0217",
                 "name": "Regal Boone",
                 "address": "210 New Market Street Centre",
@@ -5178,7 +5118,7 @@
             "item": {
                 "state": "NC",
                 "city": "Greensboro",
-                "theatre_code": "1875",
+                "theater_code": "1875",
                 "path_name": "regal-greensboro-grande-rpx-1875",
                 "name": "Regal Greensboro Grande",
                 "address": "3205 Northline Avenue",
@@ -5203,7 +5143,7 @@
             "item": {
                 "state": "NC",
                 "city": "High Point",
-                "theatre_code": "1870",
+                "theater_code": "1870",
                 "path_name": "regal-palladium-1870",
                 "name": "Regal Palladium",
                 "address": "5830 Samet Drive",
@@ -5228,7 +5168,7 @@
             "item": {
                 "state": "NC",
                 "city": "Raleigh",
-                "theatre_code": "1843",
+                "theater_code": "1843",
                 "path_name": "regal-brier-creek-1843",
                 "name": "Regal Brier Creek",
                 "address": "8611 Brier Creek Parkway",
@@ -5263,7 +5203,7 @@
             "item": {
                 "state": "NC",
                 "city": "Raleigh",
-                "theatre_code": "1846",
+                "theater_code": "1846",
                 "path_name": "regal-north-hills-1846",
                 "name": "Regal North Hills",
                 "address": "4150 Main at North Hills St",
@@ -5298,7 +5238,7 @@
             "item": {
                 "state": "NC",
                 "city": "Cary",
-                "theatre_code": "1874",
+                "theater_code": "1874",
                 "path_name": "regal-crossroads-cary-1874",
                 "name": "Regal Crossroads - Cary",
                 "address": "501 Caitboo Avenue",
@@ -5333,7 +5273,7 @@
             "item": {
                 "state": "NC",
                 "city": "Garner",
-                "theatre_code": "1876",
+                "theater_code": "1876",
                 "path_name": "regal-white-oak-1876",
                 "name": "Regal White Oak",
                 "address": "1205 Timber Drive East",
@@ -5368,7 +5308,7 @@
             "item": {
                 "state": "NC",
                 "city": "Asheville",
-                "theatre_code": "1892",
+                "theater_code": "1892",
                 "path_name": "regal-biltmore-grande-rpx-1892",
                 "name": "Regal Biltmore Grande",
                 "address": "292 Thetford Street",
@@ -5403,7 +5343,7 @@
             "item": {
                 "state": "NC",
                 "city": "Huntersville",
-                "theatre_code": "1842",
+                "theater_code": "1842",
                 "path_name": "regal-birkdale-rpx-1842",
                 "name": "Regal Birkdale",
                 "address": "16950 Birkdale Commons Pkwy",
@@ -5443,7 +5383,7 @@
             "item": {
                 "state": "NC",
                 "city": "Charlotte",
-                "theatre_code": "1848",
+                "theater_code": "1848",
                 "path_name": "regal-starlight-charlotte-1848",
                 "name": "Regal Starlight - Charlotte",
                 "address": "11240 US Hwy 29",
@@ -5483,7 +5423,7 @@
             "item": {
                 "state": "NC",
                 "city": "Gastonia",
-                "theatre_code": "1845",
+                "theater_code": "1845",
                 "path_name": "regal-franklin-square-1845",
                 "name": "Regal Franklin Square",
                 "address": "3778 East Franklin Blvd",
@@ -5523,7 +5463,7 @@
             "item": {
                 "state": "NC",
                 "city": "Charlotte",
-                "theatre_code": "0384",
+                "theater_code": "0384",
                 "path_name": "regal-stonecrest-piper-glen-0384",
                 "name": "Regal Stonecrest at Piper Glen",
                 "address": "7824 Rea Road",
@@ -5563,7 +5503,7 @@
             "item": {
                 "state": "NC",
                 "city": "Wilmington",
-                "theatre_code": "1873",
+                "theater_code": "1873",
                 "path_name": "regal-mayfaire-1873",
                 "name": "Regal Mayfaire",
                 "address": "900 Town Center Drive",
@@ -5582,7 +5522,7 @@
             "item": {
                 "state": "PA",
                 "city": "Dickson City",
-                "theatre_code": "1515",
+                "theater_code": "1515",
                 "path_name": "regal-dickson-city-1515",
                 "name": "Regal Dickson City",
                 "address": "3909 Commerce Boulevard",
@@ -5612,7 +5552,7 @@
             "item": {
                 "state": "PA",
                 "city": "Hazleton",
-                "theatre_code": "1749",
+                "theater_code": "1749",
                 "path_name": "regal-hazleton-1749",
                 "name": "Regal Hazleton",
                 "address": "400 Laurel Mall",
@@ -5642,7 +5582,7 @@
             "item": {
                 "state": "PA",
                 "city": "Easton",
-                "theatre_code": "0371",
+                "theater_code": "0371",
                 "path_name": "regal-northampton-cinema-rpx-0371",
                 "name": "Regal Northampton",
                 "address": "3720 Easton-Nazareth Highway",
@@ -5712,7 +5652,7 @@
             "item": {
                 "state": "PA",
                 "city": "Harrisburg",
-                "theatre_code": "1748",
+                "theater_code": "1748",
                 "path_name": "regal-harrisburg-1748",
                 "name": "Regal Harrisburg",
                 "address": "1500 Caughey Dr",
@@ -5742,7 +5682,7 @@
             "item": {
                 "state": "PA",
                 "city": "Warrington",
-                "theatre_code": "0379",
+                "theater_code": "0379",
                 "path_name": "regal-warrington-crossing-0379",
                 "name": "Regal Warrington Crossing",
                 "address": "104 Easton Rd., Bldg F",
@@ -5837,7 +5777,7 @@
             "item": {
                 "state": "PA",
                 "city": "Langhorne",
-                "theatre_code": "1269",
+                "theater_code": "1269",
                 "path_name": "regal-ua-oxford-valley-1269",
                 "name": "Regal UA Oxford Valley",
                 "address": "403 Middletown Blvd",
@@ -5942,7 +5882,7 @@
             "item": {
                 "state": "PA",
                 "city": "Conshohocken",
-                "theatre_code": "0234",
+                "theater_code": "0234",
                 "path_name": "regal-plymouth-meeting-0234",
                 "name": "Regal Plymouth Meeting",
                 "address": "1011 Ridge Pike",
@@ -6042,7 +5982,7 @@
             "item": {
                 "state": "PA",
                 "city": "King Of Prussia",
-                "theatre_code": "1329",
+                "theater_code": "1329",
                 "path_name": "regal-ua-king-of-prussia-1329",
                 "name": "Regal UA King Of Prussia",
                 "address": "300 Goddard Blvd",
@@ -6142,7 +6082,7 @@
             "item": {
                 "state": "PA",
                 "city": "Philadelphia",
-                "theatre_code": "1290",
+                "theater_code": "1290",
                 "path_name": "regal-ua-grant-plaza-1290",
                 "name": "Regal UA Grant Plaza",
                 "address": "1619 Grant Avenue",
@@ -6252,7 +6192,7 @@
             "item": {
                 "state": "PA",
                 "city": "Lancaster",
-                "theatre_code": "0754",
+                "theater_code": "0754",
                 "path_name": "regal-manor-0754",
                 "name": "Regal Manor",
                 "address": "1246 Millersville Pike",
@@ -6312,8 +6252,8 @@
             "item": {
                 "state": "PA",
                 "city": "Manayunk",
-                "theatre_code": "1314",
-                "path_name": "regal-ua-main-street-theatre-1314",
+                "theater_code": "1314",
+                "path_name": "regal-ua-main-street-theater-1314",
                 "name": "Regal UA Main Street",
                 "address": "3720-40 Main Street",
                 "latitude": 40.0153,
@@ -6417,7 +6357,7 @@
             "item": {
                 "state": "PA",
                 "city": "Downingtown",
-                "theatre_code": "0385",
+                "theater_code": "0385",
                 "path_name": "regal-downingtown-0385",
                 "name": "Regal Downingtown",
                 "address": "100 Quarry Road",
@@ -6502,7 +6442,7 @@
             "item": {
                 "state": "PA",
                 "city": "Newtown Square",
-                "theatre_code": "0232",
+                "theater_code": "0232",
                 "path_name": "regal-edgmont-square-0232",
                 "name": "Regal Edgmont Square",
                 "address": "4777 W Chester Pike",
@@ -6597,7 +6537,7 @@
             "item": {
                 "state": "PA",
                 "city": "York",
-                "theatre_code": "0395",
+                "theater_code": "0395",
                 "path_name": "regal-west-manchester-0395",
                 "name": "Regal West Manchester",
                 "address": "455 Town Center Drive",
@@ -6632,7 +6572,7 @@
             "item": {
                 "state": "SC",
                 "city": "Spartanburg",
-                "theatre_code": "1888",
+                "theater_code": "1888",
                 "path_name": "regal-spartan-1888",
                 "name": "Regal Spartan",
                 "address": "855 Spartan Boulevard",
@@ -6677,7 +6617,7 @@
             "item": {
                 "state": "SC",
                 "city": "Rock Hill",
-                "theatre_code": "1886",
+                "theater_code": "1886",
                 "path_name": "regal-manchester-rock-hill-1886",
                 "name": "Regal Manchester - Rock Hill",
                 "address": "1935 Cinema Drive",
@@ -6717,7 +6657,7 @@
             "item": {
                 "state": "SC",
                 "city": "Greenville",
-                "theatre_code": "1885",
+                "theater_code": "1885",
                 "path_name": "regal-cherrydale-1885",
                 "name": "Regal Cherrydale",
                 "address": "3221 N. Pleasantburg Drive",
@@ -6762,7 +6702,7 @@
             "item": {
                 "state": "SC",
                 "city": "Greenville",
-                "theatre_code": "0488",
+                "theater_code": "0488",
                 "path_name": "regal-hollywood-greenville-0488",
                 "name": "Regal Hollywood - Greenville",
                 "address": "1029 Woodruff Road",
@@ -6807,7 +6747,7 @@
             "item": {
                 "state": "SC",
                 "city": "Simpsonville",
-                "theatre_code": "1517",
+                "theater_code": "1517",
                 "path_name": "regal-simpsonville-1517",
                 "name": "Regal Simpsonville",
                 "address": "780 South Street",
@@ -6847,7 +6787,7 @@
             "item": {
                 "state": "SC",
                 "city": "Anderson",
-                "theatre_code": "1853",
+                "theater_code": "1853",
                 "path_name": "regal-starlight-anderson-1853",
                 "name": "Regal Starlight - Anderson",
                 "address": "141 Interstate Boulevard",
@@ -6887,7 +6827,7 @@
             "item": {
                 "state": "SC",
                 "city": "Florence",
-                "theatre_code": "1854",
+                "theater_code": "1854",
                 "path_name": "regal-swamp-fox-1854",
                 "name": "Regal Swamp Fox",
                 "address": "3400 Radio Road",
@@ -6906,7 +6846,7 @@
             "item": {
                 "state": "SC",
                 "city": "Columbia",
-                "theatre_code": "1855",
+                "theater_code": "1855",
                 "path_name": "regal-sandhill-1855",
                 "name": "Regal Sandhill",
                 "address": "450 Town Center Place",
@@ -6936,7 +6876,7 @@
             "item": {
                 "state": "SC",
                 "city": "Columbia",
-                "theatre_code": "1887",
+                "theater_code": "1887",
                 "path_name": "regal-columbiana-grande-1887",
                 "name": "Regal Columbiana Grande",
                 "address": "1250 Bower Parkway",
@@ -6966,7 +6906,7 @@
             "item": {
                 "state": "SC",
                 "city": "Lexington",
-                "theatre_code": "1889",
+                "theater_code": "1889",
                 "path_name": "regal-northlake-village-1889",
                 "name": "Regal Northlake Village",
                 "address": "929 North Lake Drive",
@@ -7001,7 +6941,7 @@
             "item": {
                 "state": "SC",
                 "city": "Aiken",
-                "theatre_code": "0252",
+                "theater_code": "0252",
                 "path_name": "regal-aiken-mall-0252",
                 "name": "Regal Aiken Mall",
                 "address": "300 East Gate Drive",
@@ -7031,7 +6971,7 @@
             "item": {
                 "state": "SC",
                 "city": "Summerville",
-                "theatre_code": "1850",
+                "theater_code": "1850",
                 "path_name": "regal-azalea-square-rpx-1850",
                 "name": "Regal Azalea Square",
                 "address": "215 Azalea Square Blvd",
@@ -7056,7 +6996,7 @@
             "item": {
                 "state": "SC",
                 "city": "Mount Pleasant",
-                "theatre_code": "1884",
+                "theater_code": "1884",
                 "path_name": "regal-palmetto-grande-1884",
                 "name": "Regal Palmetto Grande",
                 "address": "1319 Theatre Drive",
@@ -7081,7 +7021,7 @@
             "item": {
                 "state": "NY",
                 "city": "Plattsburgh",
-                "theatre_code": "1734",
+                "theater_code": "1734",
                 "path_name": "regal-champlain-centre-1734",
                 "name": "Regal Champlain Centre",
                 "address": "60 Smithfield Blvd, Suite 90",
@@ -7100,7 +7040,7 @@
             "item": {
                 "state": "NY",
                 "city": "Watertown",
-                "theatre_code": "1946",
+                "theater_code": "1946",
                 "path_name": "regal-salmon-run-1946",
                 "name": "Regal Salmon Run",
                 "address": "21182 Salmon Run Mall Loop W",
@@ -7119,7 +7059,7 @@
             "item": {
                 "state": "NY",
                 "city": "Queensbury",
-                "theatre_code": "1731",
+                "theater_code": "1731",
                 "path_name": "regal-aviation-mall-1731",
                 "name": "Regal Aviation Mall",
                 "address": "578 Aviation Rd",
@@ -7159,7 +7099,7 @@
             "item": {
                 "state": "NY",
                 "city": "Syracuse",
-                "theatre_code": "1733",
+                "theater_code": "1733",
                 "path_name": "regal-destiny-usa-1733",
                 "name": "Regal Destiny USA",
                 "address": "9586 Destiny USA Drive",
@@ -7184,7 +7124,7 @@
             "item": {
                 "state": "NY",
                 "city": "Victor",
-                "theatre_code": "0501",
+                "theater_code": "0501",
                 "path_name": "regal-eastview-mall-0501",
                 "name": "Regal Eastview Mall",
                 "address": "70 Eastview Mall Drive",
@@ -7203,7 +7143,7 @@
             "item": {
                 "state": "NY",
                 "city": "Williamsville",
-                "theatre_code": "0294",
+                "theater_code": "0294",
                 "path_name": "regal-transit-center-0294",
                 "name": "Regal Transit Center",
                 "address": "6707 Transit Road",
@@ -7238,7 +7178,7 @@
             "item": {
                 "state": "NY",
                 "city": "Buffalo",
-                "theatre_code": "0341",
+                "theater_code": "0341",
                 "path_name": "regal-elmwood-center-0341",
                 "name": "Regal Elmwood Center",
                 "address": "2001 Elmwood Avenue",
@@ -7273,7 +7213,7 @@
             "item": {
                 "state": "NY",
                 "city": "Buffalo",
-                "theatre_code": "0675",
+                "theater_code": "0675",
                 "path_name": "regal-walden-galleria-rpx-0675",
                 "name": "Regal Walden Galleria",
                 "address": "TH201 - Walden Galleria",
@@ -7308,7 +7248,7 @@
             "item": {
                 "state": "NY",
                 "city": "Clifton Park",
-                "theatre_code": "1769",
+                "theater_code": "1769",
                 "path_name": "regal-clifton-park-rpx-1769",
                 "name": "Regal Clifton Park",
                 "address": "22 Clifton Country Road",
@@ -7348,7 +7288,7 @@
             "item": {
                 "state": "NY",
                 "city": "Orchard Park",
-                "theatre_code": "0700",
+                "theater_code": "0700",
                 "path_name": "regal-quaker-crossing-0700",
                 "name": "Regal Quaker Crossing",
                 "address": "3450 Amelia Drive",
@@ -7376,14 +7316,14 @@
                 "timezone": "US/Eastern",
                 "unlimited_tier": 2,
                 "cluster_key": "cluster_14",
-                "is_lead": false
+                "is_lead": true
             }
         },
         {
             "item": {
                 "state": "NY",
                 "city": "Albany",
-                "theatre_code": "1923",
+                "theater_code": "1923",
                 "path_name": "regal-colonie-center-rpx-1923",
                 "name": "Regal Colonie Center",
                 "address": "131 Colonie Center",
@@ -7423,7 +7363,7 @@
             "item": {
                 "state": "NY",
                 "city": "Albany",
-                "theatre_code": "1737",
+                "theater_code": "1737",
                 "path_name": "regal-crossgates-1737",
                 "name": "Regal Crossgates",
                 "address": "120 B Washington Avenue Ext",
@@ -7463,7 +7403,7 @@
             "item": {
                 "state": "NY",
                 "city": "Rensselaer",
-                "theatre_code": "1738",
+                "theater_code": "1738",
                 "path_name": "regal-east-greenbush-1738",
                 "name": "Regal East Greenbush",
                 "address": "279 Troy Rd",
@@ -7503,7 +7443,7 @@
             "item": {
                 "state": "NY",
                 "city": "Ithaca",
-                "theatre_code": "0677",
+                "theater_code": "0677",
                 "path_name": "regal-ithaca-mall-0677",
                 "name": "Regal Ithaca Mall",
                 "address": "40 Catherwood Road",
@@ -7538,7 +7478,7 @@
             "item": {
                 "state": "NY",
                 "city": "Horseheads",
-                "theatre_code": "1730",
+                "theater_code": "1730",
                 "path_name": "regal-arnot-mall-1730",
                 "name": "Regal Arnot Mall",
                 "address": "3300 Chambers Rd",
@@ -7568,7 +7508,7 @@
             "item": {
                 "state": "NY",
                 "city": "Binghamton",
-                "theatre_code": "1732",
+                "theater_code": "1732",
                 "path_name": "regal-binghamton-1732",
                 "name": "Regal Binghamton",
                 "address": "900 Front St",
@@ -7603,7 +7543,7 @@
             "item": {
                 "state": "NY",
                 "city": "Poughkeepsie",
-                "theatre_code": "1740",
+                "theater_code": "1740",
                 "path_name": "regal-galleria-mall-1740",
                 "name": "Regal Galleria Mall",
                 "address": "2001 South Road",
@@ -7638,7 +7578,7 @@
             "item": {
                 "state": "NY",
                 "city": "Mohegan Lake",
-                "theatre_code": "1318",
+                "theater_code": "1318",
                 "path_name": "regal-ua-cortlandt-town-center-1318",
                 "name": "Regal UA Cortlandt Town Center",
                 "address": "3131 East Main Street",
@@ -7733,7 +7673,7 @@
             "item": {
                 "state": "NY",
                 "city": "Nanuet",
-                "theatre_code": "0558",
+                "theater_code": "0558",
                 "path_name": "regal-nanuet-rpx-0558",
                 "name": "Regal Nanuet",
                 "address": "6201 Fashion Drive",
@@ -7843,7 +7783,7 @@
             "item": {
                 "state": "NY",
                 "city": "East Hampton",
-                "theatre_code": "1138",
+                "theater_code": "1138",
                 "path_name": "regal-ua-east-hampton-cinema-1138",
                 "name": "Regal UA East Hampton",
                 "address": "30 Main Street",
@@ -7851,11 +7791,6 @@
                 "longitude": -72.1855,
                 "zip": "11937",
                 "nearby_theaters": [
-                    {
-                        "code": "1313",
-                        "road_miles": 22.9,
-                        "drive_min": 45
-                    },
                     {
                         "code": "0632",
                         "road_miles": 53.0,
@@ -7878,7 +7813,7 @@
             "item": {
                 "state": "NY",
                 "city": "New Rochelle",
-                "theatre_code": "0297",
+                "theater_code": "0297",
                 "path_name": "regal-new-roc-0297",
                 "name": "Regal New Roc",
                 "address": "33 Le Count Place",
@@ -7991,51 +7926,6 @@
                 "timezone": "US/Eastern",
                 "unlimited_tier": 3,
                 "cluster_key": "cluster_14",
-                "is_lead": true
-            }
-        },
-        {
-            "item": {
-                "state": "NY",
-                "city": "Hampton Bays",
-                "theatre_code": "1313",
-                "path_name": "regal-ua-hampton-bays-1313",
-                "name": "Regal UA Hampton Bays",
-                "address": "119 W. Montauk Highway",
-                "latitude": 40.8624,
-                "longitude": -72.5602,
-                "zip": "11946",
-                "nearby_theaters": [
-                    {
-                        "code": "0632",
-                        "road_miles": 31.7,
-                        "drive_min": 38
-                    },
-                    {
-                        "code": "1138",
-                        "road_miles": 22.9,
-                        "drive_min": 45
-                    },
-                    {
-                        "code": "0692",
-                        "road_miles": 44.0,
-                        "drive_min": 51
-                    },
-                    {
-                        "code": "1319",
-                        "road_miles": 50.7,
-                        "drive_min": 54
-                    },
-                    {
-                        "code": "1703",
-                        "road_miles": 60.1,
-                        "drive_min": 138
-                    }
-                ],
-                "phone_number": "(844) 462-7342",
-                "timezone": "US/Eastern",
-                "unlimited_tier": 3,
-                "cluster_key": "cluster_14",
                 "is_lead": false
             }
         },
@@ -8043,7 +7933,7 @@
             "item": {
                 "state": "NY",
                 "city": "Ronkonkoma",
-                "theatre_code": "0632",
+                "theater_code": "0632",
                 "path_name": "regal-ronkonkoma-0632",
                 "name": "Regal Ronkonkoma",
                 "address": "565 Portion Road",
@@ -8065,11 +7955,6 @@
                         "code": "1319",
                         "road_miles": 23.0,
                         "drive_min": 30
-                    },
-                    {
-                        "code": "1313",
-                        "road_miles": 31.7,
-                        "drive_min": 38
                     },
                     {
                         "code": "1348",
@@ -8143,7 +8028,7 @@
             "item": {
                 "state": "NY",
                 "city": "Westbury",
-                "theatre_code": "1273",
+                "theater_code": "1273",
                 "path_name": "regal-westbury-1273",
                 "name": "Regal Westbury",
                 "address": "7000 Brush Hollow Road",
@@ -8253,7 +8138,7 @@
             "item": {
                 "state": "NY",
                 "city": "Deer Park",
-                "theatre_code": "0692",
+                "theater_code": "0692",
                 "path_name": "regal-deer-park-0692",
                 "name": "Regal Deer Park",
                 "address": "1050 The Arches Circle",
@@ -8294,11 +8179,6 @@
                     {
                         "code": "0688",
                         "road_miles": 38.7,
-                        "drive_min": 51
-                    },
-                    {
-                        "code": "1313",
-                        "road_miles": 44.0,
                         "drive_min": 51
                     },
                     {
@@ -8358,7 +8238,7 @@
             "item": {
                 "state": "NY",
                 "city": "Flushing",
-                "theatre_code": "1472",
+                "theater_code": "1472",
                 "path_name": "regal-tangram-4dx-1472",
                 "name": "Regal Tangram",
                 "address": "133-36 37th Avenue",
@@ -8473,7 +8353,7 @@
             "item": {
                 "state": "NY",
                 "city": "New York",
-                "theatre_code": "1929",
+                "theater_code": "1929",
                 "path_name": "regal-times-square-1929",
                 "name": "Regal Times Square",
                 "address": "247 W. 42nd St.",
@@ -8588,7 +8468,7 @@
             "item": {
                 "state": "NY",
                 "city": "Long Island City",
-                "theatre_code": "1333",
+                "theater_code": "1333",
                 "path_name": "regal-ua-kaufman-astoria-rpx-1333",
                 "name": "Regal UA Kaufman Astoria",
                 "address": "35-30 38th Street",
@@ -8703,7 +8583,7 @@
             "item": {
                 "state": "NY",
                 "city": "New York",
-                "theatre_code": "1320",
+                "theater_code": "1320",
                 "path_name": "regal-union-square-screenx-4dx-1320",
                 "name": "Regal Union Square",
                 "address": "850 Broadway",
@@ -8818,7 +8698,7 @@
             "item": {
                 "state": "NY",
                 "city": "Farmingdale",
-                "theatre_code": "1319",
+                "theater_code": "1319",
                 "path_name": "regal-ua-farmingdale-1319",
                 "name": "Regal UA Farmingdale",
                 "address": "20 Michael Avenue",
@@ -8877,11 +8757,6 @@
                         "drive_min": 54
                     },
                     {
-                        "code": "1313",
-                        "road_miles": 50.7,
-                        "drive_min": 54
-                    },
-                    {
                         "code": "1412",
                         "road_miles": 38.4,
                         "drive_min": 58
@@ -8928,7 +8803,7 @@
             "item": {
                 "state": "NY",
                 "city": "Forest Hills",
-                "theatre_code": "1143",
+                "theater_code": "1143",
                 "path_name": "regal-ua-midway-1143",
                 "name": "Regal UA Midway",
                 "address": "108-22 Queens Blvd",
@@ -9043,7 +8918,7 @@
             "item": {
                 "state": "NY",
                 "city": "New York",
-                "theatre_code": "1412",
+                "theater_code": "1412",
                 "path_name": "regal-essex-crossing-1412",
                 "name": "Regal Essex Crossing",
                 "address": "129 Delancey Street",
@@ -9158,7 +9033,7 @@
             "item": {
                 "state": "NY",
                 "city": "New York",
-                "theatre_code": "1335",
+                "theater_code": "1335",
                 "path_name": "regal-battery-park-1335",
                 "name": "Regal Battery Park",
                 "address": "102 North End Ave.",
@@ -9273,7 +9148,7 @@
             "item": {
                 "state": "NY",
                 "city": "Glendale",
-                "theatre_code": "0688",
+                "theater_code": "0688",
                 "path_name": "regal-atlas-park-0688",
                 "name": "Regal Atlas Park",
                 "address": "80-28 Cooper Ave, Suite #6216",
@@ -9388,7 +9263,7 @@
             "item": {
                 "state": "NY",
                 "city": "Lynbrook",
-                "theatre_code": "1348",
+                "theater_code": "1348",
                 "path_name": "regal-lynbrook-rpx-1348",
                 "name": "Regal Lynbrook",
                 "address": "321 Merrick Road",
@@ -9503,7 +9378,7 @@
             "item": {
                 "state": "NY",
                 "city": "Brooklyn",
-                "theatre_code": "1159",
+                "theater_code": "1159",
                 "path_name": "regal-ua-sheepshead-bay-1159",
                 "name": "Regal UA Sheepshead Bay",
                 "address": "3907 Shore Pkwy",
@@ -9618,7 +9493,7 @@
             "item": {
                 "state": "NY",
                 "city": "Staten Island",
-                "theatre_code": "1419",
+                "theater_code": "1419",
                 "path_name": "regal-bricktown-charleston-1419",
                 "name": "Regal Bricktown Charleston",
                 "address": "165 Bricktown Way",
@@ -9733,7 +9608,7 @@
             "item": {
                 "state": "WA",
                 "city": "Bellingham",
-                "theatre_code": "1671",
+                "theater_code": "1671",
                 "path_name": "regal-barkley-village-1671",
                 "name": "Regal Barkley Village",
                 "address": "3005 Cinema Place",
@@ -9758,7 +9633,7 @@
             "item": {
                 "state": "WA",
                 "city": "Marysville",
-                "theatre_code": "0298",
+                "theater_code": "0298",
                 "path_name": "regal-marysville-0298",
                 "name": "Regal Marysville",
                 "address": "9811 State Avenue",
@@ -9833,7 +9708,7 @@
             "item": {
                 "state": "WA",
                 "city": "Everett",
-                "theatre_code": "0663",
+                "theater_code": "0663",
                 "path_name": "regal-everett-rpx-0663",
                 "name": "Regal Everett",
                 "address": "1402 Everett Mall Way #133",
@@ -9908,7 +9783,7 @@
             "item": {
                 "state": "WA",
                 "city": "Lynnwood",
-                "theatre_code": "0909",
+                "theater_code": "0909",
                 "path_name": "regal-alderwood-rpx-0909",
                 "name": "Regal Alderwood",
                 "address": "3501 184th St. SW",
@@ -10003,7 +9878,7 @@
             "item": {
                 "state": "WA",
                 "city": "Mountlake Terrace",
-                "theatre_code": "1958",
+                "theater_code": "1958",
                 "path_name": "regal-cinebarre-mountlake-1958",
                 "name": "Regal Cinebarre Mountlake",
                 "address": "24240 Van Ry Blvd",
@@ -10098,7 +9973,7 @@
             "item": {
                 "state": "WA",
                 "city": "Poulsbo",
-                "theatre_code": "0880",
+                "theater_code": "0880",
                 "path_name": "regal-poulsbo-0880",
                 "name": "Regal Poulsbo",
                 "address": "750 NW Edvard Street",
@@ -10198,7 +10073,7 @@
             "item": {
                 "state": "WA",
                 "city": "Seattle",
-                "theatre_code": "1937",
+                "theater_code": "1937",
                 "path_name": "regal-thornton-place-1937",
                 "name": "Regal Thornton Place",
                 "address": "316 NE Thornton Place",
@@ -10286,14 +10161,14 @@
                 "timezone": "US/Pacific",
                 "unlimited_tier": 2,
                 "cluster_key": "cluster_01",
-                "is_lead": true
+                "is_lead": false
             }
         },
         {
             "item": {
                 "state": "WA",
                 "city": "Spokane",
-                "theatre_code": "0883",
+                "theater_code": "0883",
                 "path_name": "regal-northtown-mall-0883",
                 "name": "Regal Northtown Mall",
                 "address": "4750 North Division Street",
@@ -10323,7 +10198,7 @@
             "item": {
                 "state": "WA",
                 "city": "Redmond",
-                "theatre_code": "0904",
+                "theater_code": "0904",
                 "path_name": "regal-bella-bottega-0904",
                 "name": "Regal Bella Bottega",
                 "address": "8890 NE 161st Avenue",
@@ -10418,7 +10293,7 @@
             "item": {
                 "state": "WA",
                 "city": "Spokane Valley",
-                "theatre_code": "0895",
+                "theater_code": "0895",
                 "path_name": "regal-spokane-valley-0895",
                 "name": "Regal Spokane Valley",
                 "address": "14760 E Indiana Avenue",
@@ -10448,7 +10323,7 @@
             "item": {
                 "state": "WA",
                 "city": "Bellevue",
-                "theatre_code": "0905",
+                "theater_code": "0905",
                 "path_name": "regal-crossroads-bellevue-0905",
                 "name": "Regal Crossroads - Bellevue",
                 "address": "1200  156th Avenue NE",
@@ -10543,7 +10418,7 @@
             "item": {
                 "state": "WA",
                 "city": "Seattle",
-                "theatre_code": "1931",
+                "theater_code": "1931",
                 "path_name": "regal-meridian-4dx-1931",
                 "name": "Regal Meridian",
                 "address": "1501 7th Ave.",
@@ -10643,7 +10518,7 @@
             "item": {
                 "state": "WA",
                 "city": "Issaquah",
-                "theatre_code": "1942",
+                "theater_code": "1942",
                 "path_name": "regal-issaquah-highlands-1942",
                 "name": "Regal Issaquah Highlands",
                 "address": "940 NE Park Drive",
@@ -10738,7 +10613,7 @@
             "item": {
                 "state": "WA",
                 "city": "Renton",
-                "theatre_code": "1935",
+                "theater_code": "1935",
                 "path_name": "regal-the-landing-1935",
                 "name": "Regal The Landing",
                 "address": "900 N 10th Place",
@@ -10838,7 +10713,7 @@
             "item": {
                 "state": "WA",
                 "city": "Auburn",
-                "theatre_code": "0877",
+                "theater_code": "0877",
                 "path_name": "regal-auburn-washington-0877",
                 "name": "Regal Auburn - Washington",
                 "address": "1101 Outlet Collection Way, Ste. 901",
@@ -10926,14 +10801,14 @@
                 "timezone": "US/Pacific",
                 "unlimited_tier": 2,
                 "cluster_key": "cluster_01",
-                "is_lead": false
+                "is_lead": true
             }
         },
         {
             "item": {
                 "state": "WA",
                 "city": "Lakewood",
-                "theatre_code": "0887",
+                "theater_code": "0887",
                 "path_name": "regal-lakewood-rpx-0887",
                 "name": "Regal Lakewood",
                 "address": "2410 South 84th Street",
@@ -11023,7 +10898,7 @@
             "item": {
                 "state": "WA",
                 "city": "Bonneylake",
-                "theatre_code": "0330",
+                "theater_code": "0330",
                 "path_name": "regal-tall-firs-0330",
                 "name": "Regal Tall Firs",
                 "address": "20751 State Route 410 E",
@@ -11113,7 +10988,7 @@
             "item": {
                 "state": "WA",
                 "city": "Puyallup",
-                "theatre_code": "0885",
+                "theater_code": "0885",
                 "path_name": "regal-south-hill-cinema-0885",
                 "name": "Regal South Hill",
                 "address": "3500 S Meridian",
@@ -11203,7 +11078,7 @@
             "item": {
                 "state": "WA",
                 "city": "Puyallup",
-                "theatre_code": "0355",
+                "theater_code": "0355",
                 "path_name": "regal-longston-place-0355",
                 "name": "Regal Longston Place",
                 "address": "13317 Meridan St. East",
@@ -11293,7 +11168,7 @@
             "item": {
                 "state": "WA",
                 "city": "Lacey",
-                "theatre_code": "0673",
+                "theater_code": "0673",
                 "path_name": "regal-martin-village-0673",
                 "name": "Regal Martin Village",
                 "address": "5400 East Martin Way",
@@ -11353,7 +11228,7 @@
             "item": {
                 "state": "WA",
                 "city": "Kelso",
-                "theatre_code": "0599",
+                "theater_code": "0599",
                 "path_name": "regal-three-rivers-mall-0599",
                 "name": "Regal Three Rivers Mall",
                 "address": "341 Three Rivers Drive",
@@ -11370,11 +11245,6 @@
                         "code": "0847",
                         "road_miles": 40.1,
                         "drive_min": 40
-                    },
-                    {
-                        "code": "0843",
-                        "road_miles": 40.6,
-                        "drive_min": 41
                     },
                     {
                         "code": "0845",
@@ -11423,7 +11293,7 @@
             "item": {
                 "state": "WA",
                 "city": "Vancouver",
-                "theatre_code": "0846",
+                "theater_code": "0846",
                 "path_name": "regal-cinema-99-0846",
                 "name": "Regal Cinema 99",
                 "address": "9010 NE Hwy 99",
@@ -11435,11 +11305,6 @@
                         "code": "0847",
                         "road_miles": 4.9,
                         "drive_min": 10
-                    },
-                    {
-                        "code": "0843",
-                        "road_miles": 6.8,
-                        "drive_min": 14
                     },
                     {
                         "code": "0656",
@@ -11503,87 +11368,7 @@
             "item": {
                 "state": "WA",
                 "city": "Vancouver",
-                "theatre_code": "0843",
-                "path_name": "regal-vancouver-plaza-0843",
-                "name": "Regal Vancouver Plaza",
-                "address": "7800  N.E. Fourth Plain",
-                "latitude": 45.6488,
-                "longitude": -122.5956,
-                "zip": "98662",
-                "nearby_theaters": [
-                    {
-                        "code": "0847",
-                        "road_miles": 5.6,
-                        "drive_min": 11
-                    },
-                    {
-                        "code": "0846",
-                        "road_miles": 6.8,
-                        "drive_min": 14
-                    },
-                    {
-                        "code": "0845",
-                        "road_miles": 6.8,
-                        "drive_min": 15
-                    },
-                    {
-                        "code": "0656",
-                        "road_miles": 14.7,
-                        "drive_min": 20
-                    },
-                    {
-                        "code": "0633",
-                        "road_miles": 14.1,
-                        "drive_min": 21
-                    },
-                    {
-                        "code": "0807",
-                        "road_miles": 13.8,
-                        "drive_min": 21
-                    },
-                    {
-                        "code": "0856",
-                        "road_miles": 19.3,
-                        "drive_min": 28
-                    },
-                    {
-                        "code": "0652",
-                        "road_miles": 25.0,
-                        "drive_min": 32
-                    },
-                    {
-                        "code": "0853",
-                        "road_miles": 26.3,
-                        "drive_min": 33
-                    },
-                    {
-                        "code": "0850",
-                        "road_miles": 27.5,
-                        "drive_min": 34
-                    },
-                    {
-                        "code": "0599",
-                        "road_miles": 40.6,
-                        "drive_min": 41
-                    },
-                    {
-                        "code": "0855",
-                        "road_miles": 30.0,
-                        "drive_min": 43
-                    }
-                ],
-                "phone_number": "(844) 462-7342",
-                "timezone": "US/Pacific",
-                "unlimited_tier": 2,
-                "cluster_key": "cluster_01",
-                "is_lead": false
-            }
-        },
-        {
-            "item": {
-                "state": "WA",
-                "city": "Vancouver",
-                "theatre_code": "0847",
+                "theater_code": "0847",
                 "path_name": "regal-city-center-0847",
                 "name": "Regal City Center",
                 "address": "801 C Street",
@@ -11595,11 +11380,6 @@
                         "code": "0846",
                         "road_miles": 4.9,
                         "drive_min": 10
-                    },
-                    {
-                        "code": "0843",
-                        "road_miles": 5.6,
-                        "drive_min": 11
                     },
                     {
                         "code": "0656",
@@ -11668,7 +11448,7 @@
             "item": {
                 "state": "WA",
                 "city": "Vancouver",
-                "theatre_code": "0845",
+                "theater_code": "0845",
                 "path_name": "regal-cascade-0845",
                 "name": "Regal Cascade",
                 "address": "1101 SE 160th Avenue",
@@ -11676,11 +11456,6 @@
                 "longitude": -122.5077,
                 "zip": "98683",
                 "nearby_theaters": [
-                    {
-                        "code": "0843",
-                        "road_miles": 6.8,
-                        "drive_min": 15
-                    },
                     {
                         "code": "0847",
                         "road_miles": 10.6,
@@ -11748,7 +11523,7 @@
             "item": {
                 "state": "MD",
                 "city": "Hagerstown",
-                "theatre_code": "1908",
+                "theater_code": "1908",
                 "path_name": "regal-valley-mall-screenx-1908",
                 "name": "Regal Valley Mall",
                 "address": "17301 Valley Mall Road",
@@ -11788,7 +11563,7 @@
             "item": {
                 "state": "MD",
                 "city": "Hunt Valley",
-                "theatre_code": "1711",
+                "theater_code": "1711",
                 "path_name": "regal-hunt-valley-1711",
                 "name": "Regal Hunt Valley",
                 "address": "11511 McCormick Rd",
@@ -11863,7 +11638,7 @@
             "item": {
                 "state": "MD",
                 "city": "Frederick",
-                "theatre_code": "1910",
+                "theater_code": "1910",
                 "path_name": "regal-westview-1910",
                 "name": "Regal Westview",
                 "address": "5243 Buckeystown Pike",
@@ -11958,7 +11733,7 @@
             "item": {
                 "state": "MD",
                 "city": "Laurel",
-                "theatre_code": "0563",
+                "theater_code": "0563",
                 "path_name": "regal-laurel-towne-centre-0563",
                 "name": "Regal Laurel Towne Centre",
                 "address": "14716 Baltimore Ave",
@@ -12048,7 +11823,7 @@
             "item": {
                 "state": "MD",
                 "city": "Rockville",
-                "theatre_code": "0336",
+                "theater_code": "0336",
                 "path_name": "regal-rockville-center-0336",
                 "name": "Regal Rockville Center",
                 "address": "199 East Montgomery Avenue",
@@ -12143,7 +11918,7 @@
             "item": {
                 "state": "MD",
                 "city": "Gambrills",
-                "theatre_code": "0542",
+                "theater_code": "0542",
                 "path_name": "regal-waugh-chapel-0542",
                 "name": "Regal Waugh Chapel",
                 "address": "1419 S. Main Chapel Way",
@@ -12228,7 +12003,7 @@
             "item": {
                 "state": "MD",
                 "city": "Silver Spring",
-                "theatre_code": "1862",
+                "theater_code": "1862",
                 "path_name": "regal-majestic-1862",
                 "name": "Regal Majestic",
                 "address": "900 Ellsworth Drive",
@@ -12318,7 +12093,7 @@
             "item": {
                 "state": "MD",
                 "city": "Hyattsville",
-                "theatre_code": "1863",
+                "theater_code": "1863",
                 "path_name": "regal-hyattsville-royale-1863",
                 "name": "Regal Hyattsville Royale",
                 "address": "6505 America Boulevard",
@@ -12408,7 +12183,7 @@
             "item": {
                 "state": "MD",
                 "city": "Salisbury",
-                "theatre_code": "0674",
+                "theater_code": "0674",
                 "path_name": "regal-salisbury-rpx-0674",
                 "name": "Regal Salisbury",
                 "address": "2322 North Salisbury Blvd",
@@ -12427,7 +12202,7 @@
             "item": {
                 "state": "CA",
                 "city": "Ukiah",
-                "theatre_code": "1813",
+                "theater_code": "1813",
                 "path_name": "regal-ukiah-1813",
                 "name": "Regal Ukiah",
                 "address": "612 S State Street",
@@ -12446,7 +12221,7 @@
             "item": {
                 "state": "CA",
                 "city": "Auburn",
-                "theatre_code": "1823",
+                "theater_code": "1823",
                 "path_name": "regal-auburn-california-1823",
                 "name": "Regal Auburn - California",
                 "address": "500 Nevada Street",
@@ -12491,7 +12266,7 @@
             "item": {
                 "state": "CA",
                 "city": "El Dorado Hills",
-                "theatre_code": "1807",
+                "theater_code": "1807",
                 "path_name": "regal-el-dorado-hills-1807",
                 "name": "Regal El Dorado Hills",
                 "address": "2101 Vine Street",
@@ -12546,7 +12321,7 @@
             "item": {
                 "state": "CA",
                 "city": "Sacramento",
-                "theatre_code": "0774",
+                "theater_code": "0774",
                 "path_name": "regal-natomas-marketplace-0774",
                 "name": "Regal Natomas Marketplace",
                 "address": "3561 Truxel Road",
@@ -12599,14 +12374,14 @@
                 "timezone": "US/Pacific",
                 "unlimited_tier": 2,
                 "cluster_key": "cluster_03",
-                "is_lead": true
+                "is_lead": false
             }
         },
         {
             "item": {
                 "state": "CA",
                 "city": "Davis",
-                "theatre_code": "1814",
+                "theater_code": "1814",
                 "path_name": "regal-davis-holiday-1814",
                 "name": "Regal Davis Holiday",
                 "address": "101 F Street",
@@ -12666,7 +12441,7 @@
             "item": {
                 "state": "CA",
                 "city": "Sacramento",
-                "theatre_code": "1413",
+                "theater_code": "1413",
                 "path_name": "regal-delta-shores-1413",
                 "name": "Regal Delta Shores",
                 "address": "8136 Delta Shores Circle",
@@ -12726,7 +12501,7 @@
             "item": {
                 "state": "CA",
                 "city": "Sacramento",
-                "theatre_code": "1286",
+                "theater_code": "1286",
                 "path_name": "regal-ua-laguna-village-1286",
                 "name": "Regal UA Laguna Village",
                 "address": "8755 Center Parkway Drive",
@@ -12786,7 +12561,7 @@
             "item": {
                 "state": "CA",
                 "city": "Fairfield",
-                "theatre_code": "1046",
+                "theater_code": "1046",
                 "path_name": "regal-edwards-fairfield-1046",
                 "name": "Regal Edwards Fairfield",
                 "address": "1549 Gateway Boulevard",
@@ -12851,7 +12626,7 @@
             "item": {
                 "state": "CA",
                 "city": "Stockton",
-                "theatre_code": "1816",
+                "theater_code": "1816",
                 "path_name": "regal-stockton-holiday-cinema-1816",
                 "name": "Regal Stockton Holiday",
                 "address": "6262 N West Lane",
@@ -12920,42 +12695,8 @@
         {
             "item": {
                 "state": "CA",
-                "city": "Sonora",
-                "theatre_code": "1826",
-                "path_name": "regal-sonora-1826",
-                "name": "Regal Sonora",
-                "address": "901 Sanguinetti Road",
-                "latitude": 37.9736,
-                "longitude": -120.3705,
-                "zip": "95370",
-                "nearby_theaters": [
-                    {
-                        "code": "1818",
-                        "road_miles": 46.3,
-                        "drive_min": 64
-                    },
-                    {
-                        "code": "1607",
-                        "road_miles": 57.4,
-                        "drive_min": 72
-                    },
-                    {
-                        "code": "1819",
-                        "road_miles": 57.1,
-                        "drive_min": 75
-                    }
-                ],
-                "phone_number": "(844) 462-7342",
-                "timezone": "US/Pacific",
-                "cluster_key": "cluster_03",
-                "is_lead": false
-            }
-        },
-        {
-            "item": {
-                "state": "CA",
                 "city": "Stockton",
-                "theatre_code": "1817",
+                "theater_code": "1817",
                 "path_name": "regal-stockton-city-center-1817",
                 "name": "Regal Stockton City Center",
                 "address": "222 N El Dorado Street",
@@ -13025,7 +12766,7 @@
             "item": {
                 "state": "CA",
                 "city": "Oakland",
-                "theatre_code": "1808",
+                "theater_code": "1808",
                 "path_name": "regal-jack-london-1808",
                 "name": "Regal Jack London",
                 "address": "100 Washington Street",
@@ -13060,7 +12801,7 @@
             "item": {
                 "state": "CA",
                 "city": "San Francisco",
-                "theatre_code": "1464",
+                "theater_code": "1464",
                 "path_name": "regal-stonestown-galleria-1464",
                 "name": "Regal Stonestown Galleria",
                 "address": "3251 20th Avenue",
@@ -13095,7 +12836,7 @@
             "item": {
                 "state": "CA",
                 "city": "Dublin",
-                "theatre_code": "0347",
+                "theater_code": "0347",
                 "path_name": "regal-hacienda-crossings-0347",
                 "name": "Regal Hacienda Crossings",
                 "address": "5000 Dublin Blvd",
@@ -13138,14 +12879,14 @@
                 "timezone": "US/Pacific",
                 "unlimited_tier": 3,
                 "cluster_key": "cluster_03",
-                "is_lead": false
+                "is_lead": true
             }
         },
         {
             "item": {
                 "state": "CA",
                 "city": "Modesto",
-                "theatre_code": "1818",
+                "theater_code": "1818",
                 "path_name": "regal-modesto-1818",
                 "name": "Regal Modesto",
                 "address": "3969 McHenry Blvd",
@@ -13177,11 +12918,6 @@
                         "code": "0347",
                         "road_miles": 54.1,
                         "drive_min": 58
-                    },
-                    {
-                        "code": "1826",
-                        "road_miles": 46.3,
-                        "drive_min": 64
                     }
                 ],
                 "phone_number": "(844) 462-7342",
@@ -13195,7 +12931,7 @@
             "item": {
                 "state": "CA",
                 "city": "Turlock",
-                "theatre_code": "1819",
+                "theater_code": "1819",
                 "path_name": "regal-turlock-1819",
                 "name": "Regal Turlock",
                 "address": "2323 W Main",
@@ -13222,11 +12958,6 @@
                         "code": "1816",
                         "road_miles": 47.4,
                         "drive_min": 50
-                    },
-                    {
-                        "code": "1826",
-                        "road_miles": 57.1,
-                        "drive_min": 75
                     }
                 ],
                 "phone_number": "(844) 462-7342",
@@ -13240,7 +12971,7 @@
             "item": {
                 "state": "CA",
                 "city": "Merced",
-                "theatre_code": "1607",
+                "theater_code": "1607",
                 "path_name": "regal-hollywood-merced-1607",
                 "name": "Regal Hollywood - Merced",
                 "address": "403 W. Main",
@@ -13267,11 +12998,6 @@
                         "code": "1033",
                         "road_miles": 55.2,
                         "drive_min": 57
-                    },
-                    {
-                        "code": "1826",
-                        "road_miles": 57.4,
-                        "drive_min": 72
                     }
                 ],
                 "phone_number": "(844) 462-7342",
@@ -13285,7 +13011,7 @@
             "item": {
                 "state": "CA",
                 "city": "Fresno",
-                "theatre_code": "1033",
+                "theater_code": "1033",
                 "path_name": "regal-fresno-river-park-1033",
                 "name": "Regal Fresno River Park",
                 "address": "250 Paseo Del Centro",
@@ -13325,7 +13051,7 @@
             "item": {
                 "state": "CA",
                 "city": "Fresno",
-                "theatre_code": "1433",
+                "theater_code": "1433",
                 "path_name": "regal-marketplace-at-el-paseo-1433",
                 "name": "Regal Marketplace @ El Paseo",
                 "address": "6455 N. Riverside Drive",
@@ -13365,7 +13091,7 @@
             "item": {
                 "state": "CA",
                 "city": "Fresno",
-                "theatre_code": "1820",
+                "theater_code": "1820",
                 "path_name": "regal-manchester-fresno-1820",
                 "name": "Regal Manchester - Fresno",
                 "address": "2055 E Shields Avenue",
@@ -13400,7 +13126,7 @@
             "item": {
                 "state": "CA",
                 "city": "Visalia",
-                "theatre_code": "1821",
+                "theater_code": "1821",
                 "path_name": "regal-visalia-1821",
                 "name": "Regal Visalia",
                 "address": "120 S Bridge Street",
@@ -13435,7 +13161,7 @@
             "item": {
                 "state": "CA",
                 "city": "Bakersfield",
-                "theatre_code": "1031",
+                "theater_code": "1031",
                 "path_name": "regal-edwards-bakersfield-1031",
                 "name": "Regal Edwards Bakersfield",
                 "address": "9000-G Ming Avenue",
@@ -13454,7 +13180,7 @@
             "item": {
                 "state": "CA",
                 "city": "Arroyo Grande",
-                "theatre_code": "1812",
+                "theater_code": "1812",
                 "path_name": "regal-arroyo-grande-1812",
                 "name": "Regal Arroyo Grande",
                 "address": "1160 W Branch Street",
@@ -13479,7 +13205,7 @@
             "item": {
                 "state": "CA",
                 "city": "Santa Maria",
-                "theatre_code": "1681",
+                "theater_code": "1681",
                 "path_name": "regal-edwards-santa-maria-rpx-1681",
                 "name": "Regal Edwards Santa Maria & RPX",
                 "address": "100 Town Center East",
@@ -13504,7 +13230,7 @@
             "item": {
                 "state": "CA",
                 "city": "Santa Clarita",
-                "theatre_code": "1047",
+                "theater_code": "1047",
                 "path_name": "regal-edwards-canyon-country-1047",
                 "name": "Regal Edwards Canyon Country",
                 "address": "18800 Soledad Canyon Road",
@@ -13614,7 +13340,7 @@
             "item": {
                 "state": "CA",
                 "city": "Santa Clarita",
-                "theatre_code": "1038",
+                "theater_code": "1038",
                 "path_name": "regal-edwards-valencia-1038",
                 "name": "Regal Valencia",
                 "address": "24435 Town Center Drive",
@@ -13719,7 +13445,7 @@
             "item": {
                 "state": "CA",
                 "city": "Simi Valley",
-                "theatre_code": "0391",
+                "theater_code": "0391",
                 "path_name": "regal-simi-valley-civic-center-0391",
                 "name": "Regal Simi Valley Civic Center",
                 "address": "2751 Tapo Cyn Road",
@@ -13814,7 +13540,7 @@
             "item": {
                 "state": "CA",
                 "city": "Camarillo",
-                "theatre_code": "1009",
+                "theater_code": "1009",
                 "path_name": "regal-edwards-camarillo-palace-1009",
                 "name": "Regal Edwards Camarillo Palace",
                 "address": "680 Ventura Boulevard",
@@ -13874,7 +13600,7 @@
             "item": {
                 "state": "CA",
                 "city": "La Canada",
-                "theatre_code": "1270",
+                "theater_code": "1270",
                 "path_name": "regal-ua-la-canada-1270",
                 "name": "Regal UA La Canada",
                 "address": "1919 Verdugo Blvd",
@@ -14039,7 +13765,7 @@
             "item": {
                 "state": "CA",
                 "city": "Thousand Oaks",
-                "theatre_code": "1418",
+                "theater_code": "1418",
                 "path_name": "regal-janss-marketplace-1418",
                 "name": "Regal Janss Marketplace",
                 "address": "255 North Moorpark Road",
@@ -14119,7 +13845,7 @@
             "item": {
                 "state": "CA",
                 "city": "North Hollywood",
-                "theatre_code": "1438",
+                "theater_code": "1438",
                 "path_name": "regal-north-hollywood-1438",
                 "name": "Regal North Hollywood",
                 "address": "6150 Laurel Canyon Blvd., #200",
@@ -14269,7 +13995,7 @@
             "item": {
                 "state": "CA",
                 "city": "Sherman Oaks",
-                "theatre_code": "1483",
+                "theater_code": "1483",
                 "path_name": "regal-sherman-oaks-galleria-1483",
                 "name": "Regal Sherman Oaks Galleria",
                 "address": "15301 Ventura Blvd. Bldg A, 3rd Floor, Suite 300",
@@ -14404,7 +14130,7 @@
             "item": {
                 "state": "CA",
                 "city": "Pasadena",
-                "theatre_code": "1485",
+                "theater_code": "1485",
                 "path_name": "regal-paseo-1485",
                 "name": "Regal Paseo",
                 "address": "300 E Colorado Blvd.",
@@ -14584,7 +14310,7 @@
             "item": {
                 "state": "CA",
                 "city": "La Verne",
-                "theatre_code": "1012",
+                "theater_code": "1012",
                 "path_name": "regal-edwards-la-verne-1012",
                 "name": "Regal Edwards La Verne",
                 "address": "1950 East Foothill Boulevard",
@@ -14754,7 +14480,7 @@
             "item": {
                 "state": "CA",
                 "city": "San Bernardino",
-                "theatre_code": "1799",
+                "theater_code": "1799",
                 "path_name": "regal-san-bernardino-1799",
                 "name": "Regal San Bernardino",
                 "address": "450 N. E Street",
@@ -14894,7 +14620,7 @@
             "item": {
                 "state": "CA",
                 "city": "Alhambra",
-                "theatre_code": "1053",
+                "theater_code": "1053",
                 "path_name": "regal-edwards-alhambra-renaissance-1053",
                 "name": "Regal Alhambra Renaissance",
                 "address": "1 East Main Street",
@@ -15074,7 +14800,7 @@
             "item": {
                 "state": "CA",
                 "city": "Ontario",
-                "theatre_code": "1037",
+                "theater_code": "1037",
                 "path_name": "regal-edwards-ontario-mountain-village-1037",
                 "name": "Regal Edwards Ontario Mountain Village",
                 "address": "1575 North Mountain Avenue",
@@ -15244,7 +14970,7 @@
             "item": {
                 "state": "CA",
                 "city": "Ontario",
-                "theatre_code": "1026",
+                "theater_code": "1026",
                 "path_name": "regal-edwards-ontario-palace-1026",
                 "name": "Regal Edwards Ontario Palace",
                 "address": "4900 East 4th Street",
@@ -15404,7 +15130,7 @@
             "item": {
                 "state": "CA",
                 "city": "West Covina",
-                "theatre_code": "1030",
+                "theater_code": "1030",
                 "path_name": "regal-edwards-west-covina-1030",
                 "name": "Regal Edwards West Covina",
                 "address": "1200 Lakes Drive",
@@ -15579,7 +15305,7 @@
             "item": {
                 "state": "CA",
                 "city": "Los Angeles",
-                "theatre_code": "1484",
+                "theater_code": "1484",
                 "path_name": "regal-la-live-1484",
                 "name": "Regal LA Live",
                 "address": "1000 W Olympic Boulevard",
@@ -15754,7 +15480,7 @@
             "item": {
                 "state": "CA",
                 "city": "Eastvale",
-                "theatre_code": "1916",
+                "theater_code": "1916",
                 "path_name": "regal-edwards-eastvale-gateway-1916",
                 "name": "Regal Edwards Eastvale Gateway",
                 "address": "12285 Limonite Avenue",
@@ -15914,7 +15640,7 @@
             "item": {
                 "state": "CA",
                 "city": "Riverside",
-                "theatre_code": "1806",
+                "theater_code": "1806",
                 "path_name": "regal-riverside-plaza-1806",
                 "name": "Regal Riverside Plaza",
                 "address": "3535 Riverside Plaza Drive",
@@ -16064,7 +15790,7 @@
             "item": {
                 "state": "CA",
                 "city": "South Gate",
-                "theatre_code": "1044",
+                "theater_code": "1044",
                 "path_name": "regal-edwards-south-gate-1044",
                 "name": "Regal Edwards South Gate",
                 "address": "8630 Garfield Avenue",
@@ -16239,7 +15965,7 @@
             "item": {
                 "state": "CA",
                 "city": "Brea",
-                "theatre_code": "1028",
+                "theater_code": "1028",
                 "path_name": "regal-edwards-brea-east-1028",
                 "name": "Regal Edwards Brea East",
                 "address": "155 West  Birch Street",
@@ -16404,7 +16130,7 @@
             "item": {
                 "state": "CA",
                 "city": "La Habra",
-                "theatre_code": "0704",
+                "theater_code": "0704",
                 "path_name": "regal-la-habra-0704",
                 "name": "Regal La Habra",
                 "address": "1351 W. Imperial Hwy",
@@ -16574,7 +16300,7 @@
             "item": {
                 "state": "CA",
                 "city": "Yorba Linda",
-                "theatre_code": "1430",
+                "theater_code": "1430",
                 "path_name": "regal-yorba-linda-1430",
                 "name": "Regal Yorba Linda",
                 "address": "4870 Valencia Ave.",
@@ -16744,7 +16470,7 @@
             "item": {
                 "state": "CA",
                 "city": "Cerritos",
-                "theatre_code": "1018",
+                "theater_code": "1018",
                 "path_name": "regal-edwards-cerritos-1018",
                 "name": "Regal Edwards Cerritos",
                 "address": "12761 Towne Center Drive",
@@ -16919,7 +16645,7 @@
             "item": {
                 "state": "CA",
                 "city": "Long Beach",
-                "theatre_code": "1042",
+                "theater_code": "1042",
                 "path_name": "regal-edwards-long-beach-1042",
                 "name": "Regal Long Beach",
                 "address": "7501 East Carson",
@@ -17094,7 +16820,7 @@
             "item": {
                 "state": "CA",
                 "city": "Corona",
-                "theatre_code": "0665",
+                "theater_code": "0665",
                 "path_name": "regal-edwards-corona-crossings-rpx-0665",
                 "name": "Regal Edwards Corona Crossings",
                 "address": "2650 Tuscany Street",
@@ -17269,7 +16995,7 @@
             "item": {
                 "state": "CA",
                 "city": "Rancho Mirage",
-                "theatre_code": "1801",
+                "theater_code": "1801",
                 "path_name": "regal-rancho-mirage-1801",
                 "name": "Regal Rancho Mirage",
                 "address": "72-777 Dinah Shore Drive",
@@ -17299,7 +17025,7 @@
             "item": {
                 "state": "CA",
                 "city": "Garden Grove",
-                "theatre_code": "0364",
+                "theater_code": "0364",
                 "path_name": "regal-garden-grove-0364",
                 "name": "Regal Garden Grove",
                 "address": "9741 Chapman Avenue",
@@ -17459,7 +17185,7 @@
             "item": {
                 "state": "CA",
                 "city": "San Jacinto",
-                "theatre_code": "1804",
+                "theater_code": "1804",
                 "path_name": "regal-san-jacinto-metro-1804",
                 "name": "Regal San Jacinto Metro",
                 "address": "1599 San Jacinto Ave",
@@ -17569,7 +17295,7 @@
             "item": {
                 "state": "CA",
                 "city": "Rolling Hills Est",
-                "theatre_code": "0748",
+                "theater_code": "0748",
                 "path_name": "regal-promenade-0748",
                 "name": "Regal Promenade",
                 "address": "550 Deep Valley Dr, Suite 336",
@@ -17734,7 +17460,7 @@
             "item": {
                 "state": "CA",
                 "city": "Irvine",
-                "theatre_code": "1048",
+                "theater_code": "1048",
                 "path_name": "regal-edwards-market-place-1048",
                 "name": "Regal Edwards Market Place",
                 "address": "13782 Jamboree Road",
@@ -17919,7 +17645,7 @@
             "item": {
                 "state": "CA",
                 "city": "Costa Mesa",
-                "theatre_code": "1007",
+                "theater_code": "1007",
                 "path_name": "regal-edwards-metro-pointe-1007",
                 "name": "Regal Edwards Metro Pointe",
                 "address": "901 South Coast Drive",
@@ -18099,7 +17825,7 @@
             "item": {
                 "state": "CA",
                 "city": "Irvine",
-                "theatre_code": "1010",
+                "theater_code": "1010",
                 "path_name": "regal-edwards-irvine-spectrum-1010",
                 "name": "Regal Irvine Spectrum",
                 "address": "500 Spectrum Center Drive",
@@ -18279,7 +18005,7 @@
             "item": {
                 "state": "CA",
                 "city": "Irvine",
-                "theatre_code": "1025",
+                "theater_code": "1025",
                 "path_name": "regal-edwards-university-town-center-1025",
                 "name": "Regal University Town Center",
                 "address": "4245 Campus Drive",
@@ -18454,7 +18180,7 @@
             "item": {
                 "state": "CA",
                 "city": "Newport Beach",
-                "theatre_code": "1024",
+                "theater_code": "1024",
                 "path_name": "regal-edwards-big-newport-rpx-1024",
                 "name": "Regal Edwards Big Newport",
                 "address": "300 Newport Center Drive East",
@@ -18629,7 +18355,7 @@
             "item": {
                 "state": "CA",
                 "city": "Mission Viejo",
-                "theatre_code": "1035",
+                "theater_code": "1035",
                 "path_name": "regal-edwards-kaleidoscope-1035",
                 "name": "Regal Edwards Kaleidoscope",
                 "address": "27741 Crown Valley Pkwy #301",
@@ -18809,7 +18535,7 @@
             "item": {
                 "state": "CA",
                 "city": "Aliso Viejo",
-                "theatre_code": "1032",
+                "theater_code": "1032",
                 "path_name": "regal-edwards-aliso-viejo-1032",
                 "name": "Regal Edwards Aliso Viejo",
                 "address": "26701 Aliso Creek Road",
@@ -18989,7 +18715,7 @@
             "item": {
                 "state": "CA",
                 "city": "Temecula",
-                "theatre_code": "1045",
+                "theater_code": "1045",
                 "path_name": "regal-edwards-temecula-1045",
                 "name": "Regal Edwards Temecula",
                 "address": "40750 Winchester Road",
@@ -19119,7 +18845,7 @@
             "item": {
                 "state": "CA",
                 "city": "Oceanside",
-                "theatre_code": "1470",
+                "theater_code": "1470",
                 "path_name": "regal-mission-marketplace-1470",
                 "name": "Regal Mission Marketplace",
                 "address": "431 College Boulevard",
@@ -19234,7 +18960,7 @@
             "item": {
                 "state": "CA",
                 "city": "Oceanside",
-                "theatre_code": "0708",
+                "theater_code": "0708",
                 "path_name": "regal-oceanside-0708",
                 "name": "Regal Oceanside",
                 "address": "401 Mission Ave.",
@@ -19344,7 +19070,7 @@
             "item": {
                 "state": "CA",
                 "city": "Carlsbad",
-                "theatre_code": "1778",
+                "theater_code": "1778",
                 "path_name": "regal-carlsbad-1778",
                 "name": "Regal Carlsbad",
                 "address": "2501 El Camino Real",
@@ -19454,7 +19180,7 @@
             "item": {
                 "state": "CA",
                 "city": "San Marcos",
-                "theatre_code": "1034",
+                "theater_code": "1034",
                 "path_name": "regal-edwards-san-marcos-1034",
                 "name": "Regal Edwards San Marcos",
                 "address": "1180 W San Marcos Boulevard",
@@ -19532,14 +19258,14 @@
                 "timezone": "US/Pacific",
                 "unlimited_tier": 3,
                 "cluster_key": "cluster_05",
-                "is_lead": false
+                "is_lead": true
             }
         },
         {
             "item": {
                 "state": "CA",
                 "city": "Escondido",
-                "theatre_code": "1805",
+                "theater_code": "1805",
                 "path_name": "regal-escondido-1805",
                 "name": "Regal Escondido",
                 "address": "350 W Valley Parkway",
@@ -19619,7 +19345,7 @@
             "item": {
                 "state": "CA",
                 "city": "San Diego",
-                "theatre_code": "1043",
+                "theater_code": "1043",
                 "path_name": "regal-edwards-mira-mesa-1043",
                 "name": "Regal Edwards Mira Mesa",
                 "address": "10733 Westview Parkway",
@@ -19684,7 +19410,7 @@
             "item": {
                 "state": "CA",
                 "city": "El Cajon",
-                "theatre_code": "0388",
+                "theater_code": "0388",
                 "path_name": "regal-parkway-plaza-0388",
                 "name": "Regal Parkway Plaza",
                 "address": "405 Parkway Plaza",
@@ -19737,14 +19463,14 @@
                 "timezone": "US/Pacific",
                 "unlimited_tier": 3,
                 "cluster_key": "cluster_05",
-                "is_lead": true
+                "is_lead": false
             }
         },
         {
             "item": {
                 "state": "CA",
                 "city": "El Cajon",
-                "theatre_code": "1049",
+                "theater_code": "1049",
                 "path_name": "regal-edwards-rancho-san-diego-1049",
                 "name": "Regal Edwards Rancho San Diego",
                 "address": "2951 Jamacha Road",
@@ -19804,7 +19530,7 @@
             "item": {
                 "state": "CA",
                 "city": "Chula Vista",
-                "theatre_code": "0361",
+                "theater_code": "0361",
                 "path_name": "regal-rancho-del-rey-0361",
                 "name": "Regal Rancho Del Rey",
                 "address": "1025 Tierra Del Rey",
@@ -19864,7 +19590,7 @@
             "item": {
                 "state": "GA",
                 "city": "Dawsonville",
-                "theatre_code": "1422",
+                "theater_code": "1422",
                 "path_name": "regal-dawson-1422",
                 "name": "Regal Dawson",
                 "address": "189 North 400 Center Lane",
@@ -19924,7 +19650,7 @@
             "item": {
                 "state": "GA",
                 "city": "Gainesville",
-                "theatre_code": "1421",
+                "theater_code": "1421",
                 "path_name": "regal-hollywood-cinemas-gainesville-1421",
                 "name": "Regal Hollywood - Gainesville",
                 "address": "120 Green Hill Circle NW",
@@ -19984,7 +19710,7 @@
             "item": {
                 "state": "GA",
                 "city": "Woodstock",
-                "theatre_code": "1423",
+                "theater_code": "1423",
                 "path_name": "regal-cherokee-1423",
                 "name": "Regal Cherokee",
                 "address": "355 Cinema View",
@@ -20059,7 +19785,7 @@
             "item": {
                 "state": "GA",
                 "city": "Alpharetta",
-                "theatre_code": "1694",
+                "theater_code": "1694",
                 "path_name": "regal-avalon-1694",
                 "name": "Regal Avalon",
                 "address": "3950 1st Street",
@@ -20129,7 +19855,7 @@
             "item": {
                 "state": "GA",
                 "city": "Dacula",
-                "theatre_code": "1535",
+                "theater_code": "1535",
                 "path_name": "regal-hamilton-mill-1535",
                 "name": "Regal Hamilton Mill",
                 "address": "2160 Hamilton Creek Parkway",
@@ -20194,7 +19920,7 @@
             "item": {
                 "state": "GA",
                 "city": "Buford",
-                "theatre_code": "0701",
+                "theater_code": "0701",
                 "path_name": "regal-mall-of-georgia-0701",
                 "name": "Regal Mall Of Georgia",
                 "address": "3333 Buford Drive, Suite 3000",
@@ -20252,14 +19978,14 @@
                 "timezone": "US/Eastern",
                 "unlimited_tier": 2,
                 "cluster_key": "cluster_09",
-                "is_lead": true
+                "is_lead": false
             }
         },
         {
             "item": {
                 "state": "GA",
                 "city": "Duluth",
-                "theatre_code": "0354",
+                "theater_code": "0354",
                 "path_name": "regal-medlock-crossing-rpx-0354",
                 "name": "Regal Medlock Crossing",
                 "address": "9700 Medlock Bridge Rd, St 170",
@@ -20329,7 +20055,7 @@
             "item": {
                 "state": "GA",
                 "city": "Atlanta",
-                "theatre_code": "1309",
+                "theater_code": "1309",
                 "path_name": "regal-perimeter-pointe-1309",
                 "name": "Regal Perimeter Pointe",
                 "address": "1155 Mt. Vernon Highway",
@@ -20414,7 +20140,7 @@
             "item": {
                 "state": "GA",
                 "city": "Atlanta",
-                "theatre_code": "1346",
+                "theater_code": "1346",
                 "path_name": "regal-atlantic-station-1346",
                 "name": "Regal Atlantic Station",
                 "address": "261 19th Street NW, Suite 1250",
@@ -20499,7 +20225,7 @@
             "item": {
                 "state": "GA",
                 "city": "Douglasville",
-                "theatre_code": "0392",
+                "theater_code": "0392",
                 "path_name": "regal-arbor-place-0392",
                 "name": "Regal Arbor Place",
                 "address": "6600 Douglas Blvd.",
@@ -20564,7 +20290,7 @@
             "item": {
                 "state": "GA",
                 "city": "Carrollton",
-                "theatre_code": "1420",
+                "theater_code": "1420",
                 "path_name": "regal-carrollton-1420",
                 "name": "Regal Carrollton",
                 "address": "1135 Bankhead Highway",
@@ -20619,7 +20345,7 @@
             "item": {
                 "state": "GA",
                 "city": "Augusta",
-                "theatre_code": "0724",
+                "theater_code": "0724",
                 "path_name": "regal-augusta-exchange-0724",
                 "name": "Regal Augusta Exchange",
                 "address": "1144 Agerton Lane",
@@ -20644,7 +20370,7 @@
             "item": {
                 "state": "GA",
                 "city": "McDonough",
-                "theatre_code": "1519",
+                "theater_code": "1519",
                 "path_name": "regal-mcdonough-1519",
                 "name": "Regal McDonough",
                 "address": "115 Foster Drive",
@@ -20719,7 +20445,7 @@
             "item": {
                 "state": "GA",
                 "city": "Newnan",
-                "theatre_code": "1891",
+                "theater_code": "1891",
                 "path_name": "regal-georgian-1891",
                 "name": "Regal Georgian",
                 "address": "232 Newnan Crossing Bypass",
@@ -20769,7 +20495,7 @@
             "item": {
                 "state": "GA",
                 "city": "Griffin",
-                "theatre_code": "1424",
+                "theater_code": "1424",
                 "path_name": "regal-griffin-1424",
                 "name": "Regal Griffin",
                 "address": "1367 N. Express Way",
@@ -20819,7 +20545,7 @@
             "item": {
                 "state": "AR",
                 "city": "North Little Rock",
-                "theatre_code": "0541",
+                "theater_code": "0541",
                 "path_name": "regal-mccain-mall-0541",
                 "name": "Regal McCain Mall",
                 "address": "3929 McCain Boulevard",
@@ -20838,7 +20564,7 @@
             "item": {
                 "state": "NV",
                 "city": "North Las Vegas",
-                "theatre_code": "1933",
+                "theater_code": "1933",
                 "path_name": "regal-aliante-1933",
                 "name": "Regal Aliante",
                 "address": "7300 Aliante Parkway",
@@ -20888,7 +20614,7 @@
             "item": {
                 "state": "NV",
                 "city": "Las Vegas",
-                "theatre_code": "0659",
+                "theater_code": "0659",
                 "path_name": "regal-red-rock-0659",
                 "name": "Regal Red Rock",
                 "address": "11011 West Charleston Blvd",
@@ -20938,7 +20664,7 @@
             "item": {
                 "state": "NV",
                 "city": "Las Vegas",
-                "theatre_code": "0575",
+                "theater_code": "0575",
                 "path_name": "regal-summerlin-luxury-0575",
                 "name": "Regal Summerlin Luxury",
                 "address": "2070 Park Center Drive",
@@ -20988,7 +20714,7 @@
             "item": {
                 "state": "NV",
                 "city": "Las Vegas",
-                "theatre_code": "1463",
+                "theater_code": "1463",
                 "path_name": "regal-cinebarre-palace-station-1463",
                 "name": "Regal Cinebarre Palace Station",
                 "address": "2411 W. Sahara Ave",
@@ -21038,7 +20764,7 @@
             "item": {
                 "state": "NV",
                 "city": "Las Vegas",
-                "theatre_code": "0837",
+                "theater_code": "0837",
                 "path_name": "regal-boulder-station-0837",
                 "name": "Regal Boulder Station",
                 "address": "4111 Boulder Highway",
@@ -21088,7 +20814,7 @@
             "item": {
                 "state": "NV",
                 "city": "Henderson",
-                "theatre_code": "0838",
+                "theater_code": "0838",
                 "path_name": "regal-sunset-station-0838",
                 "name": "Regal Sunset Station",
                 "address": "1301-A W Sunset Road",
@@ -21138,7 +20864,7 @@
             "item": {
                 "state": "NV",
                 "city": "Henderson",
-                "theatre_code": "0637",
+                "theater_code": "0637",
                 "path_name": "regal-green-valley-ranch-0637",
                 "name": "Regal Green Valley Ranch",
                 "address": "2300 Paseo Verde",
@@ -21188,8 +20914,8 @@
             "item": {
                 "state": "TX",
                 "city": "Dallas",
-                "theatre_code": "1306",
-                "path_name": "regal-ua-galaxy-theatre-dallas-1306",
+                "theater_code": "1306",
+                "path_name": "regal-ua-galaxy-theater-dallas-1306",
                 "name": "Regal UA Galaxy - Dallas",
                 "address": "11801 Mccree Road",
                 "latitude": 32.8726,
@@ -21213,7 +20939,7 @@
             "item": {
                 "state": "TX",
                 "city": "Ft Worth",
-                "theatre_code": "1317",
+                "theater_code": "1317",
                 "path_name": "regal-fossil-creek-1317",
                 "name": "Regal Fossil Creek",
                 "address": "N. 6100 Freeway",
@@ -21238,7 +20964,7 @@
             "item": {
                 "state": "TX",
                 "city": "Early",
-                "theatre_code": "1643",
+                "theater_code": "1643",
                 "path_name": "regal-heartland-1643",
                 "name": "Regal Heartland",
                 "address": "300 Early Blvd",
@@ -21257,7 +20983,7 @@
             "item": {
                 "state": "TX",
                 "city": "Killeen",
-                "theatre_code": "1636",
+                "theater_code": "1636",
                 "path_name": "regal-killeen-1636",
                 "name": "Regal Killeen",
                 "address": "2501 E. Central Texas Expwy",
@@ -21282,7 +21008,7 @@
             "item": {
                 "state": "TX",
                 "city": "Austin",
-                "theatre_code": "0949",
+                "theater_code": "0949",
                 "path_name": "regal-gateway-0949",
                 "name": "Regal Gateway",
                 "address": "9700 Stonelake Blvd",
@@ -21317,7 +21043,7 @@
             "item": {
                 "state": "TX",
                 "city": "Austin",
-                "theatre_code": "0953",
+                "theater_code": "0953",
                 "path_name": "regal-westgate-0953",
                 "name": "Regal Westgate",
                 "address": "4477 South Lamar Blvd.",
@@ -21347,7 +21073,7 @@
             "item": {
                 "state": "TX",
                 "city": "Austin",
-                "theatre_code": "0950",
+                "theater_code": "0950",
                 "path_name": "regal-metropolitan-0950",
                 "name": "Regal Metropolitan",
                 "address": "901 Little Texas Lane",
@@ -21377,7 +21103,7 @@
             "item": {
                 "state": "TX",
                 "city": "Beaumont",
-                "theatre_code": "1639",
+                "theater_code": "1639",
                 "path_name": "regal-star-1639",
                 "name": "Regal Star",
                 "address": "4455 Dowlen Rd",
@@ -21396,7 +21122,7 @@
             "item": {
                 "state": "TX",
                 "city": "Spring",
-                "theatre_code": "1469",
+                "theater_code": "1469",
                 "path_name": "regal-benders-landing-screenx-1469",
                 "name": "Regal Benders Landing",
                 "address": "4495 Riley Fuzzel Road",
@@ -21431,7 +21157,7 @@
             "item": {
                 "state": "TX",
                 "city": "Tomball",
-                "theatre_code": "1441",
+                "theater_code": "1441",
                 "path_name": "regal-lone-star-1441",
                 "name": "Regal Lone Star",
                 "address": "24720 Tomball Parkway",
@@ -21466,7 +21192,7 @@
             "item": {
                 "state": "TX",
                 "city": "Houston",
-                "theatre_code": "1052",
+                "theater_code": "1052",
                 "path_name": "regal-edwards-houston-marqe-1052",
                 "name": "Regal Edwards Houston Marq'E",
                 "address": "7600 Katy Freeway",
@@ -21501,7 +21227,7 @@
             "item": {
                 "state": "TX",
                 "city": "Houston",
-                "theatre_code": "1051",
+                "theater_code": "1051",
                 "path_name": "regal-edwards-greenway-grand-palace-1051",
                 "name": "Regal Greenway Grand Palace",
                 "address": "3839 Weslayan Street",
@@ -21536,7 +21262,7 @@
             "item": {
                 "state": "TX",
                 "city": "San Antonio",
-                "theatre_code": "0940",
+                "theater_code": "0940",
                 "path_name": "regal-northwoods-0940",
                 "name": "Regal Northwoods",
                 "address": "17640 Henderson Pass",
@@ -21576,7 +21302,7 @@
             "item": {
                 "state": "TX",
                 "city": "Live Oak",
-                "theatre_code": "0795",
+                "theater_code": "0795",
                 "path_name": "regal-live-oak-rpx-0795",
                 "name": "Regal Live Oak",
                 "address": "7901 Pat Booker Road",
@@ -21616,7 +21342,7 @@
             "item": {
                 "state": "TX",
                 "city": "San Antonio",
-                "theatre_code": "0581",
+                "theater_code": "0581",
                 "path_name": "regal-huebner-oaks-0581",
                 "name": "Regal Huebner Oaks",
                 "address": "11075 W Interstate 10  Ste 1H",
@@ -21656,7 +21382,7 @@
             "item": {
                 "state": "TX",
                 "city": "San Antonio",
-                "theatre_code": "0939",
+                "theater_code": "0939",
                 "path_name": "regal-alamo-quarry-0939",
                 "name": "Regal Alamo Quarry",
                 "address": "255 E.Basse",
@@ -21696,7 +21422,7 @@
             "item": {
                 "state": "TX",
                 "city": "San Antonio",
-                "theatre_code": "0765",
+                "theater_code": "0765",
                 "path_name": "regal-cielo-vista-0765",
                 "name": "Regal Cielo Vista",
                 "address": "2828 Cinema Ridge",
@@ -21736,7 +21462,7 @@
             "item": {
                 "state": "MI",
                 "city": "Lansing",
-                "theatre_code": "0596",
+                "theater_code": "0596",
                 "path_name": "regal-lansing-mall-rpx-0596",
                 "name": "Regal Lansing Mall",
                 "address": "5330 West Saginaw Highway",
@@ -21755,7 +21481,7 @@
             "item": {
                 "state": "AK",
                 "city": "Fairbanks",
-                "theatre_code": "0601",
+                "theater_code": "0601",
                 "path_name": "regal-goldstream-0601",
                 "name": "Regal Goldstream",
                 "address": "1855 Airport Way",
@@ -21774,7 +21500,7 @@
             "item": {
                 "state": "AK",
                 "city": "Anchorage",
-                "theatre_code": "1994",
+                "theater_code": "1994",
                 "path_name": "regal-tikahtnu-1994",
                 "name": "Regal Tikahtnu",
                 "address": "1102 North Muldoon Rd Suite B",
@@ -21799,7 +21525,7 @@
             "item": {
                 "state": "AK",
                 "city": "Anchorage",
-                "theatre_code": "0922",
+                "theater_code": "0922",
                 "path_name": "regal-dimond-center-cinemas-0922",
                 "name": "Regal Dimond Center",
                 "address": "800 E. Dimond  Blvd, Suite 210",
@@ -21824,7 +21550,7 @@
             "item": {
                 "state": "IL",
                 "city": "Crystal Lake",
-                "theatre_code": "0621",
+                "theater_code": "0621",
                 "path_name": "regal-crystal-lake-showplace-0621",
                 "name": "Regal Crystal Lake Showplace",
                 "address": "5000 W. Route 14",
@@ -21859,7 +21585,7 @@
             "item": {
                 "state": "IL",
                 "city": "Chicago",
-                "theatre_code": "1789",
+                "theater_code": "1789",
                 "path_name": "regal-city-north-1789",
                 "name": "Regal City North",
                 "address": "2600 N. Western Avenue",
@@ -21894,7 +21620,7 @@
             "item": {
                 "state": "IL",
                 "city": "Chicago",
-                "theatre_code": "1793",
+                "theater_code": "1793",
                 "path_name": "regal-webster-place-1793",
                 "name": "Regal Webster Place",
                 "address": "1471 W. Webster Avenue",
@@ -21929,7 +21655,7 @@
             "item": {
                 "state": "IL",
                 "city": "Bolingbrook",
-                "theatre_code": "1787",
+                "theater_code": "1787",
                 "path_name": "regal-bolingbrook-1787",
                 "name": "Regal Bolingbrook",
                 "address": "1221 W. Boughton Road",
@@ -21964,7 +21690,7 @@
             "item": {
                 "state": "OR",
                 "city": "Hillsboro",
-                "theatre_code": "0850",
+                "theater_code": "0850",
                 "path_name": "regal-evergreen-parkway-rpx-0850",
                 "name": "Regal Evergreen Parkway",
                 "address": "2625 NE 106th Ave",
@@ -22008,11 +21734,6 @@
                         "drive_min": 33
                     },
                     {
-                        "code": "0843",
-                        "road_miles": 27.5,
-                        "drive_min": 34
-                    },
-                    {
                         "code": "0853",
                         "road_miles": 29.5,
                         "drive_min": 35
@@ -22054,7 +21775,7 @@
             "item": {
                 "state": "OR",
                 "city": "Portland",
-                "theatre_code": "0807",
+                "theater_code": "0807",
                 "path_name": "regal-lloyd-center-0807",
                 "name": "Regal Lloyd Center",
                 "address": "1510 NE Multnomah Street",
@@ -22076,11 +21797,6 @@
                         "code": "0847",
                         "road_miles": 8.4,
                         "drive_min": 16
-                    },
-                    {
-                        "code": "0843",
-                        "road_miles": 13.8,
-                        "drive_min": 21
                     },
                     {
                         "code": "0846",
@@ -22144,7 +21860,7 @@
             "item": {
                 "state": "OR",
                 "city": "Portland",
-                "theatre_code": "0633",
+                "theater_code": "0633",
                 "path_name": "regal-fox-tower-0633",
                 "name": "Regal Fox Tower",
                 "address": "846 S.W. Park Ave",
@@ -22176,11 +21892,6 @@
                         "code": "0846",
                         "road_miles": 12.7,
                         "drive_min": 20
-                    },
-                    {
-                        "code": "0843",
-                        "road_miles": 14.1,
-                        "drive_min": 21
                     },
                     {
                         "code": "0850",
@@ -22234,7 +21945,7 @@
             "item": {
                 "state": "OR",
                 "city": "Gresham",
-                "theatre_code": "0856",
+                "theater_code": "0856",
                 "path_name": "regal-stark-street-0856",
                 "name": "Regal Stark Street",
                 "address": "2929 N.E. Kane Drive",
@@ -22255,11 +21966,6 @@
                     {
                         "code": "0633",
                         "road_miles": 17.4,
-                        "drive_min": 28
-                    },
-                    {
-                        "code": "0843",
-                        "road_miles": 19.3,
                         "drive_min": 28
                     },
                     {
@@ -22324,7 +22030,7 @@
             "item": {
                 "state": "OR",
                 "city": "Portland",
-                "theatre_code": "0656",
+                "theater_code": "0656",
                 "path_name": "regal-pioneer-place-0656",
                 "name": "Regal Pioneer Place",
                 "address": "340 SW Morrison Street",
@@ -22356,11 +22062,6 @@
                         "code": "0846",
                         "road_miles": 13.3,
                         "drive_min": 19
-                    },
-                    {
-                        "code": "0843",
-                        "road_miles": 14.7,
-                        "drive_min": 20
                     },
                     {
                         "code": "0850",
@@ -22414,7 +22115,7 @@
             "item": {
                 "state": "OR",
                 "city": "Hillsboro",
-                "theatre_code": "0855",
+                "theater_code": "0855",
                 "path_name": "regal-movies-on-tv-0855",
                 "name": "Regal Movies On TV",
                 "address": "SW 2929 234th Avenue",
@@ -22458,11 +22159,6 @@
                         "drive_min": 42
                     },
                     {
-                        "code": "0843",
-                        "road_miles": 30.0,
-                        "drive_min": 43
-                    },
-                    {
                         "code": "0845",
                         "road_miles": 34.7,
                         "drive_min": 47
@@ -22504,7 +22200,7 @@
             "item": {
                 "state": "OR",
                 "city": "Tigard",
-                "theatre_code": "0652",
+                "theater_code": "0652",
                 "path_name": "regal-bridgeport-village-0652",
                 "name": "Regal Bridgeport Village",
                 "address": "7329 SW Bridgeport Road",
@@ -22548,11 +22244,6 @@
                         "drive_min": 30
                     },
                     {
-                        "code": "0843",
-                        "road_miles": 25.0,
-                        "drive_min": 32
-                    },
-                    {
                         "code": "0846",
                         "road_miles": 23.6,
                         "drive_min": 32
@@ -22589,7 +22280,7 @@
             "item": {
                 "state": "OR",
                 "city": "Oregon City",
-                "theatre_code": "0853",
+                "theater_code": "0853",
                 "path_name": "regal-hilltop-cinema-0853",
                 "name": "Regal Hilltop",
                 "address": "325 Beavercreek Road",
@@ -22616,11 +22307,6 @@
                         "code": "0633",
                         "road_miles": 22.2,
                         "drive_min": 31
-                    },
-                    {
-                        "code": "0843",
-                        "road_miles": 26.3,
-                        "drive_min": 33
                     },
                     {
                         "code": "0845",
@@ -22674,7 +22360,7 @@
             "item": {
                 "state": "OR",
                 "city": "Salem",
-                "theatre_code": "0679",
+                "theater_code": "0679",
                 "path_name": "regal-willamette-town-center-0679",
                 "name": "Regal Willamette Town Center",
                 "address": "831 Lancaster Dr NE Suite #8",
@@ -22749,7 +22435,7 @@
             "item": {
                 "state": "OR",
                 "city": "Salem",
-                "theatre_code": "0863",
+                "theater_code": "0863",
                 "path_name": "regal-santiam-0863",
                 "name": "Regal Santiam",
                 "address": "365 Lancaster Drive SE",
@@ -22819,7 +22505,7 @@
             "item": {
                 "state": "OR",
                 "city": "Albany",
-                "theatre_code": "0833",
+                "theater_code": "0833",
                 "path_name": "regal-albany-cinemas-0833",
                 "name": "Regal Albany",
                 "address": "1350 SE Waverly Drive",
@@ -22854,7 +22540,7 @@
             "item": {
                 "state": "OR",
                 "city": "Eugene",
-                "theatre_code": "0670",
+                "theater_code": "0670",
                 "path_name": "regal-valley-river-center-0670",
                 "name": "Regal Valley River Center",
                 "address": "500 Valley River Center",
@@ -22879,7 +22565,7 @@
             "item": {
                 "state": "OR",
                 "city": "Bend",
-                "theatre_code": "0758",
+                "theater_code": "0758",
                 "path_name": "regal-old-mill-0758",
                 "name": "Regal Old Mill",
                 "address": "680 SW Powerhouse Drive",
@@ -22898,7 +22584,7 @@
             "item": {
                 "state": "ID",
                 "city": "Coeur d'Alene",
-                "theatre_code": "0654",
+                "theater_code": "0654",
                 "path_name": "regal-riverstone-0654",
                 "name": "Regal Riverstone",
                 "address": "2416 Old Mill Loop",
@@ -22928,7 +22614,7 @@
             "item": {
                 "state": "ID",
                 "city": "Nampa",
-                "theatre_code": "1039",
+                "theater_code": "1039",
                 "path_name": "regal-edwards-nampa-spectrum-1039",
                 "name": "Regal Edwards Nampa Spectrum",
                 "address": "2001 North Cassia Street",
@@ -22953,7 +22639,7 @@
             "item": {
                 "state": "ID",
                 "city": "Boise",
-                "theatre_code": "1027",
+                "theater_code": "1027",
                 "path_name": "regal-edwards-boise-1027",
                 "name": "Regal Edwards Boise",
                 "address": "7701 W Overland Road",
@@ -22978,7 +22664,7 @@
             "item": {
                 "state": "ID",
                 "city": "Ammon",
-                "theatre_code": "1040",
+                "theater_code": "1040",
                 "path_name": "regal-edwards-grand-teton-1040",
                 "name": "Regal Edwards Grand Teton",
                 "address": "2707 South 25th East",
@@ -22997,7 +22683,7 @@
             "item": {
                 "state": "LA",
                 "city": "Bossier City",
-                "theatre_code": "0664",
+                "theater_code": "0664",
                 "path_name": "regal-louisiana-boardwalk-0664",
                 "name": "Regal Louisiana Boardwalk",
                 "address": "2 River Colony Drive",
@@ -23016,7 +22702,7 @@
             "item": {
                 "state": "LA",
                 "city": "Leesville",
-                "theatre_code": "1200",
+                "theater_code": "1200",
                 "path_name": "regal-ua-lee-hills-1200",
                 "name": "Regal UA Lee Hills",
                 "address": "1350 Boone St",
@@ -23035,7 +22721,7 @@
             "item": {
                 "state": "LA",
                 "city": "Kenner",
-                "theatre_code": "1480",
+                "theater_code": "1480",
                 "path_name": "regal-grand-esplanade-gpx-1480",
                 "name": "Regal Grand Esplanade",
                 "address": "1401 W. Esplanade Ave.",
@@ -23054,7 +22740,7 @@
             "item": {
                 "state": "CO",
                 "city": "Longmont",
-                "theatre_code": "1673",
+                "theater_code": "1673",
                 "path_name": "regal-village-at-the-peaks-rpx-1673",
                 "name": "Regal Village At The Peaks",
                 "address": "1230 S Hover Road",
@@ -23089,7 +22775,7 @@
                     }
                 ],
                 "phone_number": "(844) 462-7342",
-                "timezone": "US/Pacific",
+                "timezone": "US/Mountain",
                 "unlimited_tier": 2,
                 "cluster_key": "cluster_07",
                 "is_lead": false
@@ -23099,7 +22785,7 @@
             "item": {
                 "state": "CO",
                 "city": "Denver",
-                "theatre_code": "1315",
+                "theater_code": "1315",
                 "path_name": "regal-ua-denver-pavilions-rpx-1315",
                 "name": "Regal UA Denver Pavilions",
                 "address": "500 16Th Street #310",
@@ -23144,7 +22830,7 @@
             "item": {
                 "state": "CO",
                 "city": "Lakewood",
-                "theatre_code": "1550",
+                "theater_code": "1550",
                 "path_name": "regal-ua-colorado-mills-1550",
                 "name": "Regal UA Colorado Mills",
                 "address": "14500 W. Colfax Ave, Suite 600",
@@ -23189,7 +22875,7 @@
             "item": {
                 "state": "CO",
                 "city": "Denver",
-                "theatre_code": "1308",
+                "theater_code": "1308",
                 "path_name": "regal-ua-colorado-center-1308",
                 "name": "Regal UA Colorado Center",
                 "address": "2000 S. Colorado Blvd, Suite C",
@@ -23239,7 +22925,7 @@
             "item": {
                 "state": "CO",
                 "city": "Sheridan",
-                "theatre_code": "1943",
+                "theater_code": "1943",
                 "path_name": "regal-river-point-1943",
                 "name": "Regal River Point",
                 "address": "3565 South Platte River Drive",
@@ -23289,7 +22975,7 @@
             "item": {
                 "state": "CO",
                 "city": "Centennial",
-                "theatre_code": "1610",
+                "theater_code": "1610",
                 "path_name": "regal-southglenn-1610",
                 "name": "Regal SouthGlenn",
                 "address": "6901 S. Vine Street",
@@ -23339,7 +23025,7 @@
             "item": {
                 "state": "CO",
                 "city": "Grand Junction",
-                "theatre_code": "0698",
+                "theater_code": "0698",
                 "path_name": "regal-canyon-view-0698",
                 "name": "Regal Canyon View",
                 "address": "648 Market Street",
@@ -23351,14 +23037,14 @@
                 "timezone": "US/Mountain",
                 "unlimited_tier": 2,
                 "cluster_key": "cluster_07",
-                "is_lead": true
+                "is_lead": false
             }
         },
         {
             "item": {
                 "state": "CO",
                 "city": "Colorado Springs",
-                "theatre_code": "1609",
+                "theater_code": "1609",
                 "path_name": "regal-interquest-rpx-1609",
                 "name": "Regal Interquest",
                 "address": "1120 Interquest Pkwy",
@@ -23393,7 +23079,7 @@
             "item": {
                 "state": "KY",
                 "city": "Wilder",
-                "theatre_code": "1526",
+                "theater_code": "1526",
                 "path_name": "regal-wilder-1526",
                 "name": "Regal Wilder",
                 "address": "103 Crossing Drive",
@@ -23418,7 +23104,7 @@
             "item": {
                 "state": "KY",
                 "city": "Lexington",
-                "theatre_code": "0728",
+                "theater_code": "0728",
                 "path_name": "regal-hamburg-pavilion-0728",
                 "name": "Regal Hamburg Pavilion",
                 "address": "1949 Starshoot Road",
@@ -23437,7 +23123,7 @@
             "item": {
                 "state": "KY",
                 "city": "Bowling Green",
-                "theatre_code": "1525",
+                "theater_code": "1525",
                 "path_name": "regal-bowling-green-1525",
                 "name": "Regal Bowling Green",
                 "address": "323 Great Escape Drive",
@@ -23467,7 +23153,7 @@
             "item": {
                 "state": "KY",
                 "city": "Bowling Green",
-                "theatre_code": "1581",
+                "theater_code": "1581",
                 "path_name": "regal-greenwood-mall-1581",
                 "name": "Regal Greenwood Mall",
                 "address": "2625 Scottsville Rd.",
@@ -23497,7 +23183,7 @@
             "item": {
                 "state": "AL",
                 "city": "Birmingham",
-                "theatre_code": "0760",
+                "theater_code": "0760",
                 "path_name": "regal-trussville-0760",
                 "name": "Regal Trussville",
                 "address": "5895 Trussville Crossings Pkwy",
@@ -23516,7 +23202,7 @@
             "item": {
                 "state": "MS",
                 "city": "Brookhaven",
-                "theatre_code": "1204",
+                "theater_code": "1204",
                 "path_name": "regal-ua-westbrook-1204",
                 "name": "Regal UA Westbrook",
                 "address": "454 Brookway Blvd.",
@@ -23535,7 +23221,7 @@
             "item": {
                 "state": "NM",
                 "city": "Santa Fe",
-                "theatre_code": "1465",
+                "theater_code": "1465",
                 "path_name": "regal-santa-fe-place-1465",
                 "name": "Regal Santa Fe Place",
                 "address": "4250 Cerrillos Rd",
@@ -23565,7 +23251,7 @@
             "item": {
                 "state": "NM",
                 "city": "Albuquerque",
-                "theatre_code": "1307",
+                "theater_code": "1307",
                 "path_name": "regal-ua-cottonwood-1307",
                 "name": "Regal UA Cottonwood",
                 "address": "10000 NW Coors Blvd.",
@@ -23595,7 +23281,7 @@
             "item": {
                 "state": "NM",
                 "city": "Albuquerque",
-                "theatre_code": "1992",
+                "theater_code": "1992",
                 "path_name": "regal-winrock-1992",
                 "name": "Regal Winrock",
                 "address": "2100 Louisina Blvd NE, Bld 400",
@@ -23625,7 +23311,7 @@
             "item": {
                 "state": "UT",
                 "city": "Taylorsville",
-                "theatre_code": "1426",
+                "theater_code": "1426",
                 "path_name": "regal-crossroads-rpx-taylorsville-1426",
                 "name": "Regal Crossroads - Taylorsville",
                 "address": "5516 South Redwood Road",
@@ -23643,45 +23329,15 @@
         {
             "item": {
                 "state": "KS",
-                "city": "Topeka",
-                "theatre_code": "1619",
-                "path_name": "regal-west-ridge-1619",
-                "name": "Regal West Ridge",
-                "address": "1727 SW Wanamaker Rd",
-                "latitude": 39.0355,
-                "longitude": -95.7617,
-                "zip": "66604",
-                "nearby_theaters": [
-                    {
-                        "code": "1618",
-                        "road_miles": 35.0,
-                        "drive_min": 37
-                    }
-                ],
-                "phone_number": "(844) 462-7342",
-                "timezone": "US/Central",
-                "cluster_key": "cluster_07",
-                "is_lead": false
-            }
-        },
-        {
-            "item": {
-                "state": "KS",
                 "city": "Lawrence",
-                "theatre_code": "1618",
+                "theater_code": "1618",
                 "path_name": "regal-southwind-1618",
                 "name": "Regal Southwind",
                 "address": "3433 Iowa Street",
                 "latitude": 38.9221,
                 "longitude": -95.2601,
                 "zip": "66046",
-                "nearby_theaters": [
-                    {
-                        "code": "1619",
-                        "road_miles": 35.0,
-                        "drive_min": 37
-                    }
-                ],
+                "nearby_theaters": [],
                 "phone_number": "(844) 462-7342",
                 "timezone": "US/Central",
                 "unlimited_tier": 1,
@@ -23693,7 +23349,7 @@
             "item": {
                 "state": "KS",
                 "city": "Wichita",
-                "theatre_code": "1443",
+                "theater_code": "1443",
                 "path_name": "regal-warren-west-1443",
                 "name": "Regal Warren West",
                 "address": "9150 W 21st St.",
@@ -23718,7 +23374,7 @@
             "item": {
                 "state": "KS",
                 "city": "Wichita",
-                "theatre_code": "1444",
+                "theater_code": "1444",
                 "path_name": "regal-warren-east-1444",
                 "name": "Regal Warren East",
                 "address": "11611 E. 13th St.",
@@ -23736,14 +23392,14 @@
                 "timezone": "US/Central",
                 "unlimited_tier": 1,
                 "cluster_key": "cluster_07",
-                "is_lead": false
+                "is_lead": true
             }
         },
         {
             "item": {
                 "state": "OK",
                 "city": "Bartlesville",
-                "theatre_code": "1630",
+                "theater_code": "1630",
                 "path_name": "regal-bartlesville-movies-1630",
                 "name": "Regal Bartlesville",
                 "address": "100  Washington Park Mall",
@@ -23762,7 +23418,7 @@
             "item": {
                 "state": "OK",
                 "city": "Broken Arrow",
-                "theatre_code": "1448",
+                "theater_code": "1448",
                 "path_name": "regal-warren-broken-arrow-1448",
                 "name": "Regal Warren Broken Arrow",
                 "address": "1700 W. Aspen Creek Dr.",
@@ -23781,7 +23437,7 @@
             "item": {
                 "state": "OK",
                 "city": "Midwest City",
-                "theatre_code": "1482",
+                "theater_code": "1482",
                 "path_name": "regal-midwest-city-1482",
                 "name": "Regal Warren Midwest City",
                 "address": "5905 SE 15th Street",
@@ -23811,7 +23467,7 @@
             "item": {
                 "state": "OK",
                 "city": "Moore",
-                "theatre_code": "1447",
+                "theater_code": "1447",
                 "path_name": "regal-warren-moore-1447",
                 "name": "Regal Warren Moore",
                 "address": "1000 Telephone Rd.",
@@ -23841,7 +23497,7 @@
             "item": {
                 "state": "OK",
                 "city": "Norman",
-                "theatre_code": "1628",
+                "theater_code": "1628",
                 "path_name": "regal-spotlight-1628",
                 "name": "Regal Spotlight",
                 "address": "1100 N. Interstate Dr",
@@ -23871,7 +23527,7 @@
             "item": {
                 "state": "MA",
                 "city": "Marlborough",
-                "theatre_code": "1721",
+                "theater_code": "1721",
                 "path_name": "regal-solomon-pond-1721",
                 "name": "Regal Solomon Pond",
                 "address": "591 Donald J Lynch Blvd",
@@ -23896,7 +23552,7 @@
             "item": {
                 "state": "MA",
                 "city": "Bellingham",
-                "theatre_code": "1713",
+                "theater_code": "1713",
                 "path_name": "regal-bellingham-1713",
                 "name": "Regal Bellingham",
                 "address": "259 Hartford Ave",
@@ -23926,7 +23582,7 @@
             "item": {
                 "state": "MA",
                 "city": "Springfield",
-                "theatre_code": "1467",
+                "theater_code": "1467",
                 "path_name": "regal-mgm-springfield-1467",
                 "name": "Regal MGM Springfield",
                 "address": "1 MGM Way",
@@ -23945,7 +23601,7 @@
             "item": {
                 "state": "MA",
                 "city": "Kingston",
-                "theatre_code": "1717",
+                "theater_code": "1717",
                 "path_name": "regal-independence-mall-rpx-1717",
                 "name": "Regal Independence Mall",
                 "address": "101 Kingston Collection Way",
@@ -23975,7 +23631,7 @@
             "item": {
                 "state": "MA",
                 "city": "Mashpee",
-                "theatre_code": "1718",
+                "theater_code": "1718",
                 "path_name": "regal-mashpee-commons-1718",
                 "name": "Regal Mashpee Commons",
                 "address": "15 Steeple Street",
@@ -24000,7 +23656,7 @@
             "item": {
                 "state": "DC",
                 "city": "Washington",
-                "theatre_code": "1551",
+                "theater_code": "1551",
                 "path_name": "regal-gallery-place-4dx-1551",
                 "name": "Regal Gallery Place",
                 "address": "701 Seventh Street Northwest",
@@ -24095,7 +23751,7 @@
             "item": {
                 "state": "AZ",
                 "city": "Gilbert",
-                "theatre_code": "1606",
+                "theater_code": "1606",
                 "path_name": "regal-gilbert-1606",
                 "name": "Regal Gilbert",
                 "address": "1012 S. Gilbert Rd.",
@@ -24114,7 +23770,7 @@
             "item": {
                 "state": "HI",
                 "city": "Kaneohe",
-                "theatre_code": "1829",
+                "theater_code": "1829",
                 "path_name": "regal-windward-1829",
                 "name": "Regal Windward",
                 "address": "46-056 Kamehameha Hwy SPC N6",
@@ -24149,7 +23805,7 @@
             "item": {
                 "state": "HI",
                 "city": "Pearl City",
-                "theatre_code": "1827",
+                "theater_code": "1827",
                 "path_name": "regal-pearl-highlands-1827",
                 "name": "Regal Pearl Highlands",
                 "address": "1000 Kamehameha Hwy #231",
@@ -24184,7 +23840,7 @@
             "item": {
                 "state": "HI",
                 "city": "Kapolei",
-                "theatre_code": "1951",
+                "theater_code": "1951",
                 "path_name": "regal-kapolei-commons-1951",
                 "name": "Regal Kapolei Commons",
                 "address": "4450 Kapolei Parkway Suite 500",
@@ -24219,7 +23875,7 @@
             "item": {
                 "state": "HI",
                 "city": "Honolulu",
-                "theatre_code": "1828",
+                "theater_code": "1828",
                 "path_name": "regal-dole-cannery-1828",
                 "name": "Regal Dole Cannery",
                 "address": "735 B Iwilei Road",
@@ -24254,7 +23910,7 @@
             "item": {
                 "state": "HI",
                 "city": "Kahului",
-                "theatre_code": "1614",
+                "theater_code": "1614",
                 "path_name": "regal-maui-mall-megaplex-1614",
                 "name": "Regal Maui Mall",
                 "address": "70 E. Kaahnumanu Ave Suite A",
@@ -24273,7 +23929,7 @@
             "item": {
                 "state": "HI",
                 "city": "Hilo",
-                "theatre_code": "1652",
+                "theater_code": "1652",
                 "path_name": "regal-prince-kuhio-1652",
                 "name": "Regal Prince Kuhio",
                 "address": "111 East Puainako Street",
@@ -24292,7 +23948,7 @@
             "item": {
                 "state": "HI",
                 "city": "Keauhou-Kona",
-                "theatre_code": "1830",
+                "theater_code": "1830",
                 "path_name": "regal-keauhou-1830",
                 "name": "Regal Keauhou",
                 "address": "78-6831 Ali'l Drive Suite 342",
@@ -24311,7 +23967,7 @@
             "item": {
                 "state": "MO",
                 "city": "St Joseph",
-                "theatre_code": "1624",
+                "theater_code": "1624",
                 "path_name": "regal-hollywood-st-joseph-1624",
                 "name": "Regal Hollywood - St. Joseph",
                 "address": "5405 N. Belt Hwy Bldg M",
@@ -24330,7 +23986,7 @@
             "item": {
                 "state": "MO",
                 "city": "Columbia",
-                "theatre_code": "1621",
+                "theater_code": "1621",
                 "path_name": "regal-columbia-rpx-1621",
                 "name": "Regal Columbia",
                 "address": "2800 Goodwin Point",
@@ -24349,7 +24005,7 @@
             "item": {
                 "state": "MO",
                 "city": "Rolla",
-                "theatre_code": "1653",
+                "theater_code": "1653",
                 "path_name": "regal-forum-1653",
                 "name": "Regal Forum",
                 "address": "1101 E. 18th Street",
@@ -24368,7 +24024,7 @@
             "item": {
                 "state": "MO",
                 "city": "Joplin",
-                "theatre_code": "1622",
+                "theater_code": "1622",
                 "path_name": "regal-northstar-1622",
                 "name": "Regal Northstar",
                 "address": "201  N Northpark Lane",
@@ -24387,7 +24043,7 @@
             "item": {
                 "state": "MT",
                 "city": "Bozeman",
-                "theatre_code": "1625",
+                "theater_code": "1625",
                 "path_name": "regal-gallatin-valley-1625",
                 "name": "Regal Gallatin Valley",
                 "address": "2825 W. Main Street",
@@ -24406,7 +24062,7 @@
             "item": {
                 "state": "GU",
                 "city": "Tamuning",
-                "theatre_code": "1645",
+                "theater_code": "1645",
                 "path_name": "regal-guam-megaplex-1645",
                 "name": "Regal Guam",
                 "address": "235 Pass St.",
@@ -24425,7 +24081,7 @@
             "item": {
                 "state": "AS",
                 "city": "Pago Pago",
-                "theatre_code": "1647",
+                "theater_code": "1647",
                 "path_name": "regal-nuuuli-place-twin-1647",
                 "name": "Regal Nu'uuli Place Twin",
                 "address": "202 Pago Plaza",
@@ -24444,7 +24100,7 @@
             "item": {
                 "state": "WY",
                 "city": "Laramie",
-                "theatre_code": "1655",
+                "theater_code": "1655",
                 "path_name": "regal-fox-theater-1655",
                 "name": "Regal Fox Theater",
                 "address": "505 S 20th St",
@@ -24463,7 +24119,7 @@
             "item": {
                 "state": "CT",
                 "city": "Waterford",
-                "theatre_code": "1703",
+                "theater_code": "1703",
                 "path_name": "regal-waterford-1703",
                 "name": "Regal Waterford",
                 "address": "123 Cross Rd",
@@ -24471,11 +24127,6 @@
                 "longitude": -72.1659,
                 "zip": "06385",
                 "nearby_theaters": [
-                    {
-                        "code": "1313",
-                        "road_miles": 60.1,
-                        "drive_min": 138
-                    },
                     {
                         "code": "1138",
                         "road_miles": 78.7,
@@ -24493,7 +24144,7 @@
             "item": {
                 "state": "ME",
                 "city": "Augusta",
-                "theatre_code": "1704",
+                "theater_code": "1704",
                 "path_name": "regal-augusta-1704",
                 "name": "Regal Augusta",
                 "address": "23 Market Place Dr",
@@ -24512,7 +24163,7 @@
             "item": {
                 "state": "NH",
                 "city": "Newington",
-                "theatre_code": "1728",
+                "theater_code": "1728",
                 "path_name": "regal-fox-run-rpx-1728",
                 "name": "Regal Fox Run",
                 "address": "45 Gosling Road",
