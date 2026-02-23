@@ -1032,11 +1032,14 @@ search_mode = st.sidebar.selectbox(
 )
 
 if search_mode == "Theater Code":
-    val = st.session_state.get('initial_url_code', "")
+    if "initial_url_code" in st.session_state and st.session_state.initial_url_code:
+        val = st.session_state.initial_url_code
+    else:
+        val = ""
     code_in = st.sidebar.text_input("Theater Code", value=val)
     
     if "initial_url_code" in st.session_state and code_in != st.session_state.initial_url_code:
-        del st.session_state.initial_url_code
+        st.session_state.initial_url_code = None
 
     if code_in:
         search_performed = True
@@ -1121,7 +1124,7 @@ if selected_theater:
 
     tz_off = st.session_state.get('auto_tz_offset', -5)
     local_today = (datetime.now(timezone.utc) + timedelta(hours=tz_off)).date()
-    q_date = st.sidebar.date_input("Select Date", value=local_today, min_value=local_today, format="MM/DD/YYYY")
+    q_date = st.sidebar.date_input("Select Date", value=local_today, min_value=local_today, max_value = local_today + timedelta(days=6), format="MM/DD/YYYY")
     d_str, today_cache_str = q_date.strftime('%m-%d-%Y'), local_today.strftime('%m-%d-%Y')
 
     t_lon = t_item.get('longitude')
@@ -1153,7 +1156,7 @@ if selected_theater:
             msg.toast(log_msg)
             if status_context: status_context.write(log_msg)
             registry_ingest(raw_payload)
-            st.session_state.registry['loaded_dates'] = list(raw_payload.keys())
+            st.session_state.registry['loaded_dates'].update(raw_payload.keys())
         else:
             log_msg = f"🌐 Cache miss. Synchronizing 7-Day Data from Regal API..."
             msg.toast(log_msg)  
