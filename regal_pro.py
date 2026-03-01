@@ -142,7 +142,7 @@ def registry_ingest(raw_payload):
                 try:
                     open_date = datetime.strptime(od[:10], "%Y-%m-%d").date()
                     translated_meta[mc]['is_new'] = (
-                        datetime.now().date() - timedelta(days=14) <= 
+                        datetime.now().date() - timedelta(days=7) <= 
                         open_date <= 
                         datetime.now().date() + timedelta(days=14)
                     )
@@ -231,6 +231,15 @@ def get_theaters_playing_movie(m_code, local_codes):
     except Exception as e:
         st.write(e)
         return set()
+
+def update_theater_from_input():
+    code_in = st.session_state.theater_code_input
+    if code_in:
+        match = next((t for t in st.session_state.app_config['theaters'] 
+                     if str(t['theater_code']) == str(code_in)), None)
+        if match:
+            st.session_state.active_theater_code = match['theater_code']
+            st.query_params["theater"] = match['theater_code']
 
 def is_dst(dt):
     year = dt.year
@@ -427,7 +436,7 @@ def flatten_data(data, theater_code_override=None):
             catalog[m_code] = catalog.get(m_code, {'rating': 'NR', 'duration': 0})
             catalog[m_code].update({
                 'title': m.get('Title', 'Unknown'),
-                'is_new': (lambda d: d and datetime.now().date() - timedelta(days=14) <= datetime.strptime(d[:10], "%Y-%m-%d").date() <= datetime.now().date() + timedelta(days=14))(m.get('OpeningDate')),
+                'is_new': (lambda d: d and datetime.now().date() - timedelta(days=7) <= datetime.strptime(d[:10], "%Y-%m-%d").date() <= datetime.now().date() + timedelta(days=14))(m.get('OpeningDate')),
                 'rating': m.get('Rating', catalog[m_code]['rating']),
                 'duration': int(m.get('Duration', catalog[m_code]['duration']))
             })
@@ -1014,6 +1023,8 @@ if "init_complete" not in st.session_state:
     st.session_state.search_mode_pref = "Theater Code" if url_t_code else "Zip Code"
     st.session_state.init_complete = True
     st.session_state.initial_url_code = url_t_code
+    if url_t_code:
+        st.session_state.theater_code_input = url_t_code
 else:
     url_t_code = None
 
@@ -1032,11 +1043,7 @@ search_mode = st.sidebar.selectbox(
 )
 
 if search_mode == "Theater Code":
-    if "initial_url_code" in st.session_state and st.session_state.initial_url_code:
-        val = st.session_state.initial_url_code
-    else:
-        val = ""
-    code_in = st.sidebar.text_input("Theater Code", value=val)
+    code_in = st.sidebar.text_input("Theater Code", key="theater_code_input", on_change=update_theater_from_input)
     
     if "initial_url_code" in st.session_state and code_in != st.session_state.initial_url_code:
         st.session_state.initial_url_code = None
@@ -1105,6 +1112,7 @@ if results:
     if new_code != st.session_state.active_theater_code:
         st.session_state.active_theater_code = new_code
         st.query_params["theater"] = new_code
+        st.session_state.theater_code_input = new_code
         st.rerun()
 
 if selected_theater:
@@ -1130,7 +1138,7 @@ if selected_theater:
     t_lon = t_item.get('longitude')
     if t_lon:
         st.session_state.auto_tz_offset = get_offset_from_lon(
-            t_lon, t_item.get('state_code'), 
+            t_lon, t_item.get('state'), 
             target_date=datetime.combine(q_date, dt_time(0,0))
         )
 
@@ -1236,7 +1244,7 @@ if selected_theater:
             f_payload = fetch_data(api_url, t_item['path_name'], status_context if debug_mode else None, msg)
             if f_payload:
                 save_future_to_storage("future-shows", f_file, f_payload)
-                log_msg = f"✅ Successfully cached future data for {tc} to storage."
+                log_msg = f"✅ Successfully cached future data for {t_item['name']} to storage."
                 msg.toast(log_msg)
                 if status_context: status_context.write(log_msg)
             
