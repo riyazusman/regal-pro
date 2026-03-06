@@ -427,6 +427,9 @@ def fetch_data(api_url, path_name, status_context, msg, max_retries=3):
     return None
 
 def flatten_data(data, theater_code_override=None):
+    if not isinstance(data, dict):
+        return [], {}, st.session_state.registry['movies'], {}
+    
     flat_list = []
     catalog = st.session_state.registry['movies']
 
@@ -743,55 +746,41 @@ def find_multi_day_itineraries(target_codes, target_days, params, drive_map, anc
     return itinerary_by_day
 
 def run_anchored_search(anchor_show, target_codes, day_str, params, drive_map):
+    """
+    Unified Search Strategy: Generates all possible itineraries for the day
+    and filters for those containing the specific anchor showtime.
+    """
+    # 1. Setup the environment for the target date
     day_flat = st.session_state.registry['schedule'].get(day_str, [])
     d_obj = datetime.strptime(day_str, '%m-%d-%Y').date()
 
+    # Apply the same 'past shows' cutoff used in the standard search
     if d_obj == current_local_time.date():
         cutoff = current_local_time - timedelta(minutes=30)
         day_flat = [s for s in day_flat if s['Showtime'] >= cutoff]
     
-    wing_codes = [c for c in target_codes if c != anchor_show['master_code']]
+    # 2. Execute a standard FULL SEARCH for the day
+    # We use the exact same logic that the non-anchored search uses.
+    all_paths = find_itineraries([], target_codes, day_flat, params, d_obj, drive_map)
     
-    after_paths = find_itineraries([anchor_show], wing_codes, day_flat, params, d_obj, drive_map)
-    if not after_paths: after_paths = [[anchor_show]]
+    # 3. Filter results to ensure the anchor is present
+    # We match on master_code, Showtime, and TheaterCode for absolute precision.
+    anchored_results = []
+    for path in all_paths:
+        is_match = any(
+            s['master_code'] == anchor_show['master_code'] and 
+            s['Showtime'] == anchor_show['Showtime'] and 
+            s['TheaterCode'] == anchor_show['TheaterCode'] 
+            for s in path
+        )
+        if is_match:
+            anchored_results.append(path)
 
-    combined_itineraries = []
-    for a_path in after_paths:
-        before_params = params.copy()
-        before_params['max_per_day'] = params['max_per_day'] - len(a_path)
-        latest_cutoff = anchor_show['Showtime'] - timedelta(minutes=params['buffer'])
-        before_params['end'] = latest_cutoff.time()
+    # 4. Fallback: If no paths contained the anchor, return the anchor as a solo option
+    if not anchored_results:
+        return [[anchor_show]]
         
-        raw_before = find_itineraries([], wing_codes, day_flat, before_params, d_obj, drive_map)
-        
-        valid_before = []
-        if not raw_before:
-            valid_before = [[]]
-        else:
-            for b_path in raw_before:
-                last_m = b_path[-1]
-                last_m_end = last_m['Showtime'] + timedelta(minutes=last_m['Duration'])
-                travel = 0
-                if last_m['TheaterCode'] != anchor_show['TheaterCode']:
-                    nb = last_m['TheaterCode'] if last_m['TheaterCode'] != params['primary_code'] else anchor_show['TheaterCode']
-                    travel = drive_map.get(nb, {}).get('time', 20)
-                
-                gap_to_anchor = int((anchor_show['Showtime'] - last_m_end).total_seconds() / 60)
-
-                if (gap_to_anchor >= (travel + params['buffer'])) and (gap_to_anchor <= params['gap_cap']):
-                    valid_before.append(b_path)
-        
-        if not valid_before: valid_before = [[]]
-        
-        for b_path in valid_before:
-            b_codes = set(s['master_code'] for s in b_path)
-            a_codes = set(s['master_code'] for s in a_path)
-            if b_codes.intersection(a_codes): continue
-            full_path = b_path + a_path
-            if len(full_path) <= params['max_per_day']:
-                combined_itineraries.append(full_path)
-                
-    return combined_itineraries
+    return anchored_results
 
 def calculate_path_score(path, primary_code):
     movie_count = len(path)
@@ -892,15 +881,21 @@ def get_conflict_report(path, missing_codes, all_screenings, p, anchor_show=None
                 # Check 2: Travel & Gap
                 is_after = ms_start >= ps_end
                 is_before = ms_end <= ps_start
-                gap = int(abs((ms_start - ps_end).total_seconds() / 60)) if is_after else int(abs((ps_start - ms_end).total_seconds() / 60))
-                
-                # Use the new optimized drive lookup
-                travel_time, _ = get_drive_stats(ms['TheaterCode'], ps['TheaterCode'])
-                
-                if gap < (travel_time + p['buffer']):
-                    reasons.append((2, f"Insufficient travel/buffer time for **{ps['Title']}**."))
-                elif gap > p['gap_cap']:
-                    reasons.append((5, f"Wait time for **{ps['Title']}** ({gap}m) exceeds your Max Gap."))
+
+                if is_after:
+                    is_neighbor = not any(x['Showtime'] >= ps_end and x['Showtime'] <= ms_start for x in full_path if x != ps)
+                else:
+                    is_neighbor = not any((x['Showtime'] + timedelta(minutes=x['Duration'])) >= ms_end and x['Showtime'] <= ps_start for x in full_path if x != ps)
+
+                if is_neighbor:
+                    gap = int(abs((ms_start - ps_end).total_seconds() / 60)) if is_after else int(abs((ps_start - ms_end).total_seconds() / 60))
+                    travel_time, _ = get_drive_stats(ms['TheaterCode'], ps['TheaterCode'])
+                    
+                    if gap < (travel_time + p['buffer']):
+                        reasons.append((2, f"Insufficient travel time to/from **{ps['Title']}**."))
+                    elif gap > p['gap_cap']:
+                        direction = "after" if is_after else "before"
+                        reasons.append((5, f"Wait time {direction} **{ps['Title']}** ({gap}m) exceeds your Max Gap."))
 
             if not reasons:
                 any_valid = True
@@ -1623,9 +1618,15 @@ if selected_theater and schedule:
         allowed_codes = {tc} | {nt['code'] for nt in nearby_data}
         
         with tab_gen:
-            full_cluster_schedule = st.session_state.registry['schedule'].get(d_str, [])
-            nearby_schedule = [s for s in full_cluster_schedule if s['TheaterCode'] in allowed_codes]
+            all_dates_schedule = []
+            for date_key in st.session_state.registry['schedule']:
+                all_dates_schedule.extend(st.session_state.registry['schedule'][date_key])
+            nearby_weekly_schedule = [s for s in all_dates_schedule if s['TheaterCode'] in allowed_codes]
             movie_meta = st.session_state.registry['movies']
+            playing_today_codes = {
+                s['master_code'] for s in nearby_weekly_schedule 
+                if s['Showtime'].date() == q_date
+            }
 
             theater_info = {tc: {"name": t_item['name'], "dist": 0, "time": 0}}
             
@@ -1637,34 +1638,24 @@ if selected_theater and schedule:
                     "time": nt.get('mins', 0)
                 }
 
-            if nearby_data:
-                for nt in nearby_data:
-                    n_code = nt['code'] # This matches the key in our new map
-                    n_name = master_name_map.get(n_code, f"Theater {n_code}")
-                    n_miles = nt.get('miles', 0)
-                    n_mins = nt.get('mins', 20)
-                    theater_info[n_code] = {
-                        "name": n_name, 
-                        "dist": n_miles, 
-                        "time": n_mins
-                    }
-
             movie_list_data = []
             seen_mc = set()
-            for s in nearby_schedule:
+            for s in nearby_weekly_schedule:
                 mc = s['master_code']
                 if mc not in seen_mc:
                     meta = movie_meta.get(mc, {})
+                    # Add the pin emoji if the movie is playing today
+                    prefix = "📌 " if mc in playing_today_codes else ""
                     movie_list_data.append({
                         "code": mc, 
                         "title": meta.get('title', 'Unknown'), 
-                        "label": f"{meta.get('title')} ({meta.get('rating')})"
+                        "label": f"{prefix}{meta.get('title')} ({meta.get('rating')})",
+                        "playing_today": mc in playing_today_codes
                     })
                     seen_mc.add(mc)
             movie_list_data.sort(key=lambda x: x['title'])
 
-            st.info(f"Showing {len(movie_list_data)} movies playing at **{t_item['name']}** and nearby theaters on **{q_date.strftime('%A, %b %d')}**")
-
+            st.info(f"Showing {len(movie_list_data)} movies playing at **{t_item['name']}** and nearby theaters this week. 📌 indicates showtimes available on **{q_date.strftime('%b %d')}**.")
 
             st.markdown("###### 🍿 Select a Movie")
             st.markdown("""
@@ -1721,9 +1712,16 @@ if selected_theater and schedule:
 
             sel_code = st.session_state.selected_movie_code
             if sel_code:
-                m_today_data = [s for s in nearby_schedule if s['master_code'] == sel_code]
-                if m_today_data:
-                    meta = movie_meta.get(sel_code, {})
+                m_full_week_data = [s for s in nearby_weekly_schedule if s['master_code'] == sel_code]
+                m_today_data = [s for s in m_full_week_data if s['Showtime'].date() == q_date]
+                meta = movie_meta.get(sel_code, {})
+                
+                if not m_today_data:
+                    st.warning(f"⚠️ **{meta.get('title')}** has no showtimes on **{q_date.strftime('%A, %b %d')}**.")
+                    
+                    available_dates = sorted(list(set(s['Showtime'].strftime('%b %d') for s in m_full_week_data)))
+                    st.info(f"📅 This movie is playing nearby on: **{', '.join(available_dates)}**. Change your 'Select Date' in the sidebar to see times.")
+                else:
                     new_tag = " | 🔴 New Release" if meta.get('is_new') else ""
                     unlimited_tag = "| 🎫 No Unlimited" if is_unlimited_excluded(m_code, m_today_data[0]['raw_attrs']) else ""
                     badges, badges_type = get_rating_badges(sel_code)
@@ -1806,11 +1804,6 @@ if selected_theater and schedule:
                                             st.markdown(f"<p style='font-size: 0.8rem; color: #e67e22; margin-top: -5px;'>🗓️ <b>Scheduled Dates:</b> {date_str}</p>", unsafe_allow_html=True)
 
                                         st.divider()
-                else:
-                    meta = st.session_state.global_movie_catalog.get(sel_code, {})
-                    sel_title = meta.get('title', f"Movie {sel_code}")
-                    st.warning(f"No showtimes found for **{sel_title}** on {q_date.strftime('%b %d')}.")
-                    st.info("Try selecting a different date or theater in the sidebar.")
         with tab_else:
             local_weekly_codes = set()
             for date_key in st.session_state.registry['schedule']:
@@ -1843,7 +1836,7 @@ if selected_theater and schedule:
                 
                 elsewhere_display_list.sort(key=lambda x: x['title'].replace("📍 ", ""))
                 
-                st.info(f"Showing **{len(elsewhere_display_list)}** movies playing across the US. 📍 indicates availability at theaters within your nearby radius.")
+                st.info(f"Showing **{len(elsewhere_display_list)}** movies playing across the US this week  . 📍 indicates availability at theaters within your nearby radius.")
 
                 if "sel_elsewhere_code" not in st.session_state or st.session_state.sel_elsewhere_code not in nationwide_codes:
                     st.session_state.sel_elsewhere_code = elsewhere_display_list[0]['code']
@@ -2043,6 +2036,14 @@ if selected_theater and schedule:
                     if not multi_itinerary:
                         st.error("Could not find a valid multi-day schedule for these movies. Consider expanding selections and broadening filters.")
                     else:
+                        if enable_anchor and anchor_show:
+                            t_name = cluster_theaters.get(anchor_show['TheaterCode'], "Selected Theater")
+                            d_fmt = anchor_show['Showtime'].strftime('%b %d')
+                            t_fmt = anchor_show['Showtime'].strftime('%I:%M %p')
+                            
+                            st.info(f"📍 **Anchored Search active**: Generated schedule is  guaranteed to include "
+                                    f"**{anchor_show['Title']}** at **{t_fmt}** @**{t_name}** on **{d_fmt}**.")
+                            
                         st.success(f"🗓️ Multi-Day Plan Generated: {len(multi_itinerary)} days used.")
                         
                         total_movies = sum(len(p) for p in multi_itinerary.values())
@@ -2129,6 +2130,14 @@ if selected_theater and schedule:
                     if not paths: 
                         st.error("No valid schedules found. Consider expanding selections and broadening filters.")
                     else:
+                        if enable_anchor and anchor_show:
+                            t_name = cluster_theaters.get(anchor_show['TheaterCode'], "Selected Theater")
+                            d_fmt = anchor_show['Showtime'].strftime('%b %d')
+                            t_fmt = anchor_show['Showtime'].strftime('%I:%M %p')
+                            
+                            st.info(f"📍 **Anchored Search active**: All paths below are guaranteed to include "
+                                    f"**{anchor_show['Title']}** at **{t_fmt}** @**{t_name}** on **{d_fmt}**.")
+                            
                         processed_paths = []
                         for p_raw in paths:
                             stats = calculate_path_score(p_raw, primary_code)

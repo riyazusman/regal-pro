@@ -1,5 +1,6 @@
 @echo off
 echo Starting Regal Movie Scheduler Setup...
+cd C:\Users\riyaz\Dev\Python\RegalPro
 if not exist "venv" (
     echo Creating virtual environment...
     python -m venv venv
@@ -9,5 +10,4 @@ call venv\Scripts\activate
 echo Checking dependencies...
 pip install -r requirements.txt
 echo Launching Application...
-streamlit run regal_pro.py
-pause
+streamlit run regal_pro.py --server.headless true --server.port 8501
