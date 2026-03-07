@@ -203,6 +203,16 @@ def load_app_config():
         st.error("Missing app_config.json. Please run the sync_app_config routine.")
         return None
 
+def sync_theater_selection():
+    if "temp_theater_select" in st.session_state:
+        selected_name = st.session_state.temp_theater_select
+        new_code = opts[selected_name]['theater_code']
+        
+        if new_code != st.session_state.active_theater_code:
+            st.session_state.active_theater_code = new_code
+            st.query_params["theater"] = new_code
+            st.session_state["theater_code_input"] = new_code
+
 def load_monthly_specials():
     try:
         if os.path.exists(SPECIALS_FILE):
@@ -1100,16 +1110,15 @@ if results:
             idx = i
             break
 
-    sel_label = st.sidebar.selectbox("Select Theater", options=list(opts.keys()), index=idx)
+    sel_label = st.sidebar.selectbox(
+        "Select Theater", 
+        options=list(opts.keys()), 
+        index=idx,
+        key="temp_theater_select",
+        on_change=sync_theater_selection
+    )
     selected_theater = opts[sel_label]
     new_code = selected_theater['theater_code']
-
-    if new_code != st.session_state.get('active_theater_code'):
-        st.session_state.active_theater_code = new_code
-        st.query_params["theater"] = new_code
-        
-        st.session_state["theater_code_input"] = new_code 
-        st.rerun()
 
 if selected_theater:
     st.session_state.theater = selected_theater
