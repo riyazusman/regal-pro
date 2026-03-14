@@ -10,7 +10,7 @@
             "Series": "XOXO",
             "Prefix": "FEBS",
             "EndDate": "2026-02-28",
-            "Active": true
+            "Active": false
         },
         {
             "Series": "MARS",
@@ -21,7 +21,13 @@
         {
             "Series": "BP26",
             "Prefix": "BP26",
-            "EndDate": "2026-03-31",
+            "EndDate": "2026-03-15",
+            "Active": true
+        },
+        {
+            "Series": "LOL",
+            "Prefix": "LOL",
+            "EndDate": "2026-04-30",
             "Active": true
         }
     ]

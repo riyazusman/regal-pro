@@ -509,7 +509,7 @@ def check_metadata_gaps(flat_list):
 
 def is_unlimited_excluded(m_code, attr_set):
     meta = st.session_state.global_movie_catalog.get(m_code, {})
-    return meta.get('studio') == "Regal Cinemedia" or "No Pass/SS" in attr_set or "No Passes or Super Savers" in attr_set
+    return meta.get('studio') in ("Regal Cinemedia","Trafalgar Releasing, Ltd","Edward Gurrola III") or "No Pass/SS" in attr_set or "No Passes or Super Savers" in attr_set
 
 def get_rating_badges(m_code):
     meta = st.session_state.global_movie_catalog.get(m_code, {})
