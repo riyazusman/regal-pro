@@ -3,6 +3,9 @@ archived/
 build/
 dist/
 venv/
+local_backups/
+admin-dashboard/
 local_cluster_sweep.py
 db_meta_seed.py
 *.bat
+RegalPro.code-workspace

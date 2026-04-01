@@ -16,13 +16,13 @@
             "Series": "MARS",
             "Prefix": "MARS",
             "EndDate": "2026-03-31",
-            "Active": true
+            "Active": false
         },
         {
             "Series": "BP26",
             "Prefix": "BP26",
             "EndDate": "2026-03-15",
-            "Active": true
+            "Active": false
         },
         {
             "Series": "LOL",

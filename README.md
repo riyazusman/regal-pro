@@ -2,8 +2,6 @@
 
 The current version of app is deployed at [Streamlit Community](https://regal-pro.streamlit.app/). Use this if you simply want use the app.
 
-A compiled binary is available on the [releases page](https://github.com/riyazusman/regal-pro/releases/). Use this if you want a local executable, but don't want to install python or any libraries.
-
 If you want to build or run from source, instructions are at the end of this document.
 
 ## 🌟 Key Features
@@ -82,4 +80,3 @@ If Regal Pro has helped you catch that perfect triple-feature, consider supporti
 1. Your web browser should automatically open to a new tab at http://localhost:8501.
 2. The Regal Pro interface will appear.
 3. To stop the app: Go back to the Terminal and press Ctrl + C on your keyboard.
-
