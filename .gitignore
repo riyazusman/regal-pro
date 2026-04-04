@@ -1,11 +1,9 @@
 .streamlit/
 archived/
-build/
-dist/
 venv/
 local_backups/
 admin-dashboard/
+gcp_cloud_run/
 local_cluster_sweep.py
-db_meta_seed.py
 *.bat
 RegalPro.code-workspace
