@@ -28,6 +28,24 @@
             "Series": "LOL",
             "Prefix": "LOL",
             "EndDate": "2026-04-30",
+            "Active": false
+        },
+		{
+            "Series": "MAYS",
+            "Prefix": "MAYS",
+            "EndDate": "2026-05-31",
+            "Active": true
+        },
+		{
+            "Series": "UFO",
+            "Prefix": "UFO",
+            "EndDate": "2026-06-30",
+            "Active": true
+        },
+		{
+            "Series": "SM26",
+            "Prefix": "SM26",
+            "EndDate": "2026-08-31",
             "Active": true
         }
     ]
