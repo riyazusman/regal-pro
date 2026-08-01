@@ -124,6 +124,7 @@ def registry_ingest(raw_payload):
                     'title': f"New Release ({mc})",
                     'rating': "NR",
                     'duration': 120,
+                    'studio': 'Unknown Studio',
                     'is_new': True
                 }
         st.session_state.registry['movies'].update(placeholder_updates)
@@ -350,7 +351,7 @@ def fetch_data(api_url, path_name, status_context, msg, max_retries=3):
             st.error("Proxy secrets not configured!")
             return None
         
-        log_msg = "🚀 Fetching data using Scraping API..."
+        log_msg = "🚀 Fetching data..."
         msg.toast(log_msg)
         if status_context: status_context.write(log_msg)
         scraping_payload = {"url": api_url, "geo": "United States", "device_type": "desktop_chrome"}
@@ -463,8 +464,6 @@ def flatten_data(data, theater_code_override=None):
             if not m_code: continue
             m_meta = catalog.get(m_code, {})
             for perf in film.get("Performances", []):
-                if not m_meta.get('title'):
-                    st.write(t_code)
                 flat_list.append({
                     "TheaterCode": t_code, 
                     "master_code": m_code,
@@ -609,8 +608,13 @@ def find_itineraries(current_path, remaining_codes, screenings, p, selected_date
         return []
     
     valid_paths = []
-    window_start = datetime.combine(selected_date, p['start'])
-    window_end = datetime.combine(selected_date, p['end'])
+
+    if extreme_mode:
+        window_start = datetime.combine(selected_date, dt_time(0, 1))
+        window_end = datetime.combine(selected_date, dt_time(23, 59)) + timedelta(hours=6)
+    else:
+        window_start = datetime.combine(selected_date, p['start'])
+        window_end = datetime.combine(selected_date, p['end'])
     
     if window_end <= window_start: 
         window_end += timedelta(days=1)
@@ -629,7 +633,10 @@ def find_itineraries(current_path, remaining_codes, screenings, p, selected_date
         
         for s in potential_shows:
             show_start = s['Showtime']
-            calc_dur = s['Duration'] if s['Duration'] > 0 else 120
+            if extreme_mode:
+                calc_dur = 91
+            else:
+                calc_dur = s['Duration'] if s['Duration'] > 0 else 120
             show_end = show_start + timedelta(minutes=calc_dur)
             if show_start < window_start or show_end > window_end: 
                 continue
@@ -646,12 +653,16 @@ def find_itineraries(current_path, remaining_codes, screenings, p, selected_date
                 
                 req_buffer = p['long_buffer'] if p['break_after'] == len(current_path) else p['buffer']
                 total_min_gap = drive_time + req_buffer
+
+                if extreme_mode:
+                    prev_end = prev['Showtime'] + timedelta(minutes=91)
+                    total_min_gap = 0
                 
                 if p['unlimited'] and show_start < prev['Showtime'] + timedelta(minutes=91): 
                     continue
                 if show_start < prev_end + timedelta(minutes=total_min_gap): 
                     continue
-                if (show_start - prev_end).total_seconds()/60 > p['gap_cap']: 
+                if (show_start - prev_end).total_seconds()/60 > p['gap_cap'] and not extreme_mode: 
                     continue
 
             new_rem = [c for c in remaining_codes if c != m_code]
@@ -756,10 +767,6 @@ def find_multi_day_itineraries(target_codes, target_days, params, drive_map, anc
     return itinerary_by_day
 
 def run_anchored_search(anchor_show, target_codes, day_str, params, drive_map):
-    """
-    Unified Search Strategy: Generates all possible itineraries for the day
-    and filters for those containing the specific anchor showtime.
-    """
     # 1. Setup the environment for the target date
     day_flat = st.session_state.registry['schedule'].get(day_str, [])
     d_obj = datetime.strptime(day_str, '%m-%d-%Y').date()
@@ -979,6 +986,12 @@ def clean_movie_title(title):
         title = re.sub(p, '', title, flags=re.IGNORECASE)
     title = re.sub(r'\s*\([^)]*\)', '', title)
     return title.strip()
+
+def format_movie_label_grouped(m_code):
+                    meta = st.session_state.global_movie_catalog.get(m_code, {})
+                    title = meta.get('title', f"Unknown ({m_code})")
+                    _, prefix = get_movie_group_info(m_code)
+                    return f"{prefix} {title}"
 
 def sync_movie_metadata():
     all_codes = list(st.session_state.global_movie_catalog.keys())
@@ -1295,6 +1308,9 @@ with st.sidebar.expander("⚙️ Advanced Settings", expanded=False):
     if st.button("🔄 Force Refresh"): st.session_state.last_fetch_key = None
     print_mode = st.checkbox("🖨️ Print View")
     #debug_mode = st.checkbox("🐞 Debug Mode", value=debug_mode, help="Show raw API responses for troubleshooting.")
+    extreme_mode = False
+    if not IS_CLOUD:
+        extreme_mode = st.checkbox("🔥 Extreme Scheduling Mode", help="Ignore runtimes, distances, and buffers. Just chain movies 90 mins apart.")
     
 st.sidebar.link_button("🐞 Report a Bug","https://docs.google.com/forms/d/e/1FAIpQLSce6X3DtCwDJZUjf_Cc4IbJLA7q0Nvk_Grw7lOgyqLtxYIYPQ/viewform?usp=dialog")
 st.sidebar.link_button("☕ Buy Me a Coffee","https://buymeacoffee.com/riyazusman")
@@ -1358,20 +1374,33 @@ if selected_theater and schedule:
             with st.expander("🔍 Filters & Sorting", expanded=not print_mode):
                 c1, c2, c3, c4 = st.columns(4)
                 with c1:
+                    f_code = st.multiselect("Movie", 
+                                            options=sorted(list(set(s['master_code'] for s in flat_data))),
+                                            format_func=format_movie_label_grouped,
+                                            placeholder="All",
+                                            key=f"f_code_{t_key}",
+                                            help = "🔴 New Release  🎬 Regular Release  🎫 Unlimited Excluded")
+                    t_ranges = {"8AM - 12N": (8, 12), "12N - 4PM": (12, 16), "4PM - 8PM": (16, 20), "8PM - 12M": (20, 24)}
+                    f_times = st.multiselect("Time Window", 
+                                            options=list(t_ranges.keys()), 
+                                            placeholder="All",
+                                            key=f"f_times_{t_key}")
+                    f_avail = st.checkbox("Hide past shows", value=True, key=f"f_avail_{t_key}")
+                with c2:
                     f_type = st.multiselect("Screen Type", 
                                             options=sorted(list(set(s['ScreenType'] for s in flat_data))), 
                                             placeholder="All",
                                             key=f"f_type_{t_key}")
                     f_rating = st.multiselect("Rating", 
-                                              options=sorted(list(set(s['Rating'] for s in flat_data))), 
-                                              placeholder="All",
-                                              key=f"f_rating_{t_key}")
-                with c2:
+                                            options=sorted(list(set(s['Rating'] for s in flat_data))), 
+                                            placeholder="All",
+                                            key=f"f_rating_{t_key}")
+                    f_new = st.checkbox("New Releases Only", value=False, key=f"f_new_{t_key}")
+                with c3:
                     f_audi = st.multiselect("Auditorium", 
                                             options=sorted(list(set(s['Auditorium'] for s in flat_data)), key=lambda x: int(x) if x.isdigit() else 999), 
                                             placeholder="All",
                                             key=f"f_audi_{t_key}")
-                    
                     current_st = set(f_type) if f_type else set(s['ScreenType'] for s in flat_data)
                     all_expanded_attrs = set(a for s in flat_data for a in s['raw_attrs'])
                     deduped_attrs = sorted([a for a in all_expanded_attrs if a not in current_st])
@@ -1380,14 +1409,6 @@ if selected_theater and schedule:
                                             options=deduped_attrs, 
                                             placeholder="All",
                                             key=f"f_attr_{t_key}")
-                with c3:
-                    t_ranges = {"8AM - 12N": (8, 12), "12N - 4PM": (12, 16), "4PM - 8PM": (16, 20), "8PM - 12M": (20, 24)}
-                    f_times = st.multiselect("Time Window", 
-                                             options=list(t_ranges.keys()), 
-                                             placeholder="All",
-                                             key=f"f_times_{t_key}")
-                    f_avail = st.checkbox("Hide past shows", value=True, key=f"f_avail_{t_key}")
-                    f_new = st.checkbox("New Releases Only", value=False, key=f"f_new_{t_key}")
                 with c4:
                     sort_by = st.selectbox("Sort By", 
                                            ["Movie Title", "Showtime", "Auditorium"],
@@ -1397,7 +1418,8 @@ if selected_theater and schedule:
                                              key=f"view_mode_{t_key}")
                     
             filtered = [s for s in flat_data if (
-                not f_type or s['ScreenType'] in f_type) and 
+                not f_code or s['master_code'] in f_code) and
+                (not f_type or s['ScreenType'] in f_type) and 
                 (not f_rating or s['Rating'] in f_rating) and 
                 (not f_audi or s['Auditorium'] in f_audi) and 
                 (not f_attr or set(f_attr).issubset(s['raw_attrs'])) and 
@@ -1477,7 +1499,7 @@ if selected_theater and schedule:
                                 row.append(f"{final_time}{meta_text}")
                             
                             st.markdown(f"&nbsp;&nbsp;&nbsp;&nbsp;{' | '.join(row)}", unsafe_allow_html=True)
-                            st.caption(f"🎥 {meta['studio']}")
+                            st.caption(f"🎥 {meta.get('studio', 'Unknown Studio')}")
                         footer_col, link_col = st.columns([4, 1])
                         with footer_col:
                             if scheduled_days:
@@ -1534,7 +1556,7 @@ if selected_theater and schedule:
 
                     with nearby_cols[idx % 3]:
                         with st.container(border=True):
-                            st.markdown(f"**{meta['title']}** ({meta['rating']}) {new_tag} {unlimited_tag}", unsafe_allow_html=True)
+                            st.markdown(f"**{meta.get('title', 'New Release')}** ({meta.get('rating', 'NR')}) {new_tag} {unlimited_tag}", unsafe_allow_html=True)
                             st.markdown(f"<small>{badges}</small>", unsafe_allow_html=True, help=badges_type)
                             for t_name, dates in theater_dates.items():
                                 sorted_date_objs = sorted([datetime.strptime(d, "%m-%d-%Y") for d in dates])
@@ -1542,8 +1564,8 @@ if selected_theater and schedule:
                                 st.markdown(f"<p style='font-size: 0.8rem; margin-bottom: 2px;'>📍 <b>{t_name}</b></p>", unsafe_allow_html=True)
                                 st.markdown(f"<p style='font-size: 0.8rem; color: #e67e22; margin-top: -5px;'>🗓️ {date_str}</p>", unsafe_allow_html=True)
                             
-                            st.caption(f"⏱️ {meta['duration']} min")
-                            st.caption(f"🎥 {meta['studio']}")
+                            st.caption(f"⏱️ {meta.get('duration', '120')} min")
+                            st.caption(f"🎥 {meta.get('studio', 'Unknown Studio')}")
             else:
                 st.info("No exclusive nearby movies found for the upcoming 7 days.")
 
@@ -1622,7 +1644,7 @@ if selected_theater and schedule:
                           
     elif nav_tab == "🎬 Movie Explorer":
         st.subheader("🎬 Movie Explorer")
-        tab_gen, tab_else = st.tabs(["🎥 Playing Nearby", "🌍 Playing Elsewhere"])
+        tab_gen, tab_else = st.tabs(["🎥 Playing Nearby", "🌍 Playing Nationwide"])
 
         nearby_data = st.session_state.app_config.get('nearby_map', {}).get(tc, [])
         allowed_codes = {tc} | {nt['code'] for nt in nearby_data}
@@ -1933,12 +1955,6 @@ if selected_theater and schedule:
                         st.session_state.global_movie_catalog.get(x, {}).get('title', '').lower()
                     )
                 )
-
-                def format_movie_label_grouped(m_code):
-                    meta = st.session_state.global_movie_catalog.get(m_code, {})
-                    title = meta.get('title', f"Unknown ({m_code})")
-                    _, prefix = get_movie_group_info(m_code)
-                    return f"{prefix} {title}"
 
                 target_movies = st.multiselect(
                     "3\\. Select Movies (Ordered by Preference)", 
