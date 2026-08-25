@@ -46,13 +46,26 @@
             "Series": "SMX26",
             "Prefix": "SMX26",
             "EndDate": "2026-08-31",
-            "Active": true
+            "Active": false
         },
 		{
             "Series": "Pride",
             "Prefix": "Pride",
             "EndDate": "2026-06-30",
             "Active": false
+        },
+				{
+            "Series": "HP26",
+            "Prefix": "HP26",
+            "EndDate": "2026-09-30",
+            "Active": true
+        },
+		{
+            "Series": "MOM2",
+            "Prefix": "MOM2",
+            "EndDate": "2026-09-30",
+            "Active": true
         }
+		
     ]
 }
