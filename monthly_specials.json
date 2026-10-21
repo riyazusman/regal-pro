@@ -58,14 +58,31 @@
             "Series": "HP26",
             "Prefix": "HP26",
             "EndDate": "2026-09-30",
-            "Active": true
+            "Active": false
         },
 		{
             "Series": "MOM2",
             "Prefix": "MOM2",
             "EndDate": "2026-09-30",
+            "Active": false
+        },
+		{
+            "Series": "SOS26",
+            "Prefix": "SOS26",
+            "EndDate": "2026-10-31",
+            "Active": true
+        },
+		{
+            "Series": "007",
+            "Prefix": "007",
+            "EndDate": "2026-10-31",
+            "Active": true
+        },
+        		{
+            "Series": "CUT26",
+            "Prefix": "CUT26",
+            "EndDate": "2026-11-30",
             "Active": true
         }
-		
     ]
 }
