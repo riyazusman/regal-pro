@@ -1,9 +1,10 @@
 .streamlit/
-archived/
 venv/
-local_backups/
-admin-dashboard/
-gcp_cloud_run/
-local_cluster_sweep.py
 *.bat
 RegalPro.code-workspace
+QUICK_FIXES.md
+IMPLEMENTATION_GUIDE.md
+CODE_REVIEW.md
+.mcp.json
+__pycache__/
+*.pyc
