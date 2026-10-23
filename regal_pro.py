@@ -19,6 +19,7 @@ from supabase import create_client, Client
 from core.engine import SchedulerEngine
 from core.models import SchedulerConstraints
 from core.text_utils import clean_movie_title
+from core.date_utils import parse_and_sort_dates
 from core.share_utils import (
     serialize_showing,
     deserialize_showing,
@@ -568,18 +569,22 @@ def flatten_data(data, theater_code_override=None):
         for fs in data.get("futureShows", []):
             m_code = fs.get('hoCode')
             if not m_code: continue
-            dates = []
+            date_objs = []
             for d in fs.get('dates', []):
                 date_val = d.get('date') or d.get('calendarShowDate') # Fallback for different API versions
                 if date_val:
                     try:
-                        dates.append(datetime.strptime(date_val, "%m-%d-%Y").strftime("%b %d"))
+                        date_objs.append(datetime.strptime(date_val, "%m-%d-%Y"))
                     except: continue
-            if dates:
+            if date_objs:
+                sorted_date_objs = sorted(list(set(date_objs)))
+                formatted_dates = [d.strftime("%b %d") for d in sorted_date_objs]
                 if primary_t not in theater_future_map: theater_future_map[primary_t] = []
                 theater_future_map[primary_t].append({
                     'master_code': m_code, 'title': fs.get('title'),
-                    'scheduled_dates': sorted(list(set(dates))), 'rating': 'NR', 'duration': 0
+                    'scheduled_dates': formatted_dates,
+                    'first_date': sorted_date_objs[0].strftime("%Y-%m-%d"),
+                    'rating': 'NR', 'duration': 0
                 })
 
     return flat_list, attr_map, catalog, theater_future_map
@@ -1321,7 +1326,7 @@ if selected_theater and schedule:
         theater_views = ["🍿 Now Playing", "🚗 Playing Nearby", "📅 Upcoming"]
         sub_nav_key = f"sub_nav_{t_key}"
         if st.session_state.get(sub_nav_key) not in theater_views:
-            raw_view_param = st.query_params.get("view", "").lower()
+            raw_view_param = (st.query_params.get("tview") or st.query_params.get("view", "")).lower()
             st.session_state[sub_nav_key] = THEATER_VIEW_MAP.get(raw_view_param, "🍿 Now Playing")
 
         sub_nav = st.radio("Sub Navigation", 
@@ -1329,7 +1334,9 @@ if selected_theater and schedule:
                            horizontal=True, 
                            label_visibility="collapsed",
                            key=sub_nav_key)
-        sync_query_param("view", THEATER_VIEW_REV_MAP.get(sub_nav, "now-playing"))
+        sync_query_param("tview", THEATER_VIEW_REV_MAP.get(sub_nav, "now-playing"))
+        sync_query_param("mview", None)
+        sync_query_param("view", None)
         
         if sub_nav == "🍿 Now Playing":
             st.subheader("🍿 Now Playing")
@@ -1509,38 +1516,41 @@ if selected_theater and schedule:
                 st.subheader("🚗 Exclusive Nearby This Week")
                 st.caption(f"These movies are NOT playing at {t_item['name']} any time this week.")
                 st.caption("🔴 New Release  🎫 Unlimited Excluded  ⭐ IMDB  🍅 Tomatometer  🍿 Popcornmeter  Ⓜ️ Metacritic  🟢 Letterboxd")
-                nearby_cols = st.columns(3)
-                for idx, m_code in enumerate(nearby_only_codes):
-                    theater_dates = {}
-                    for d_str, day_flat in st.session_state.registry['schedule'].items():
-                        for s in day_flat:
-                            if s['master_code'] == m_code and s['TheaterCode'] in cluster_theaters:
-                                t_name = cluster_theaters.get(s['TheaterCode'])
-                                if t_name not in theater_dates: theater_dates[t_name] = []
-                                if d_str not in theater_dates[t_name]: theater_dates[t_name].append(d_str)
-                    
-                    m_attrs = set()
-                    for s in all_flat_data:
-                        if s['master_code'] == m_code:
-                            m_attrs.update(s.get('raw_attrs', []))
-                    
-                    meta = st.session_state.global_movie_catalog.get(m_code, {'title': 'Unknown', 'rating': 'NR', 'duration': 0, 'is_new':False})
-                    new_tag = " 🔴" if meta.get('is_new') else ""
-                    unlimited_tag = " 🎫" if is_unlimited_excluded(m_code, m_attrs) else ""
-                    badges, badges_type = get_rating_badges(m_code)
+                cols_per_row = 3
+                for row_idx in range(0, len(nearby_only_codes), cols_per_row):
+                    row_codes = nearby_only_codes[row_idx:row_idx + cols_per_row]
+                    row_cols = st.columns(cols_per_row)
+                    for col_idx, m_code in enumerate(row_codes):
+                        theater_dates = {}
+                        for d_str, day_flat in st.session_state.registry['schedule'].items():
+                            for s in day_flat:
+                                if s['master_code'] == m_code and s['TheaterCode'] in cluster_theaters:
+                                    t_name = cluster_theaters.get(s['TheaterCode'])
+                                    if t_name not in theater_dates: theater_dates[t_name] = []
+                                    if d_str not in theater_dates[t_name]: theater_dates[t_name].append(d_str)
+                        
+                        m_attrs = set()
+                        for s in all_flat_data:
+                            if s['master_code'] == m_code:
+                                m_attrs.update(s.get('raw_attrs', []))
+                        
+                        meta = st.session_state.global_movie_catalog.get(m_code, {'title': 'Unknown', 'rating': 'NR', 'duration': 0, 'is_new':False})
+                        new_tag = " 🔴" if meta.get('is_new') else ""
+                        unlimited_tag = " 🎫" if is_unlimited_excluded(m_code, m_attrs) else ""
+                        badges, badges_type = get_rating_badges(m_code)
 
-                    with nearby_cols[idx % 3]:
-                        with st.container(border=True):
-                            st.markdown(f"**{meta.get('title', 'New Release')}** ({meta.get('rating', 'NR')}) {new_tag} {unlimited_tag}", unsafe_allow_html=True)
-                            st.markdown(f"<small>{badges}</small>", unsafe_allow_html=True, help=badges_type)
-                            for t_name, dates in theater_dates.items():
-                                sorted_date_objs = sorted([datetime.strptime(d, "%m-%d-%Y") for d in dates])
-                                date_str = ", ".join([d.strftime("%b %d") for d in sorted_date_objs])
-                                st.markdown(f"<p style='font-size: 0.8rem; margin-bottom: 2px;'>📍 <b>{t_name}</b></p>", unsafe_allow_html=True)
-                                st.markdown(f"<p style='font-size: 0.8rem; color: #e67e22; margin-top: -5px;'>🗓️ {date_str}</p>", unsafe_allow_html=True)
-                            
-                            st.caption(f"⏱️ {meta.get('duration', '120')} min")
-                            st.caption(f"🎥 {meta.get('studio', 'Unknown Studio')}")
+                        with row_cols[col_idx]:
+                            with st.container(border=True):
+                                st.markdown(f"**{meta.get('title', 'New Release')}** ({meta.get('rating', 'NR')}) {new_tag} {unlimited_tag}", unsafe_allow_html=True)
+                                st.markdown(f"<small>{badges}</small>", unsafe_allow_html=True, help=badges_type)
+                                for t_name, dates in theater_dates.items():
+                                    sorted_date_objs = sorted([datetime.strptime(d, "%m-%d-%Y") for d in dates])
+                                    date_str = ", ".join([d.strftime("%b %d") for d in sorted_date_objs])
+                                    st.markdown(f"<p style='font-size: 0.8rem; margin-bottom: 2px;'>📍 <b>{t_name}</b></p>", unsafe_allow_html=True)
+                                    st.markdown(f"<p style='font-size: 0.8rem; color: #e67e22; margin-top: -5px;'>🗓️ {date_str}</p>", unsafe_allow_html=True)
+                                
+                                st.caption(f"⏱️ {meta.get('duration', '120')} min")
+                                st.caption(f"🎥 {meta.get('studio', 'Unknown Studio')}")
             else:
                 st.info("No exclusive nearby movies found for the upcoming 7 days.")
 
@@ -1593,27 +1603,60 @@ if selected_theater and schedule:
                 if not display_movies:
                     st.warning(f"No upcoming movies found for the '{sel_prefix}' series at this theater.")
                 else:
-                    st.subheader(subheader)
-                    st.caption(f"These movies are scheduled to show at {t_item['name']}.")
+                    up_h_col1, up_h_col2 = st.columns([3, 1])
+                    with up_h_col1:
+                        st.subheader(subheader)
+                        st.caption(f"These movies are scheduled to show at {t_item['name']}.")
+                    with up_h_col2:
+                        up_sort_mode = st.selectbox(
+                            "Sort Upcoming Movies",
+                            options=["🗓️ Release Date", "🔤 Title (A-Z)"],
+                            index=0,
+                            key=f"up_sort_mode_{tc}",
+                            label_visibility="collapsed"
+                        )
                     st.caption("🎫 Unlimited Excluded  ⭐ IMDB  🍅 Tomatometer  🍿 Popcornmeter  Ⓜ️ Metacritic  🟢 Letterboxd")
-                    cols = st.columns(3)
-                    for i, f_movie in enumerate(display_movies):
-                        m_code = f_movie['master_code']
-                        meta = st.session_state.registry['movies'].get(m_code, {})
-                        badges, badges_type = get_rating_badges(m_code)
-                        display_title = meta.get('title')
-                        if sel_prefix != "ALL" and ":" in display_title:
-                            display_title = display_title.split(":", 1)[1].strip()
 
-                        with cols[i % 3]:
-                            with st.container(border=True): 
-                                unlimited_tag = " 🎫 " if is_unlimited_excluded(m_code, set()) else ""
-                                st.markdown(f"**{display_title}** ({meta.get('rating', 'NR')}) {unlimited_tag}")
-                                st.markdown(f"<small>{badges}</small>", unsafe_allow_html=True, help=badges_type)
-                                dates_str = ", ".join(f_movie['scheduled_dates'])
-                                st.markdown(f"<small style='color:#e67e22;'>🗓️ {dates_str}</small>", unsafe_allow_html=True)
-                                st.caption(f"⏱️ {meta.get('duration', 0)} min")
-                                st.caption(f"🎥 {meta.get('studio', 'Unknown Studio')}")
+                    if "Title" in up_sort_mode:
+                        display_movies = sorted(
+                            display_movies,
+                            key=lambda m: clean_movie_title(
+                                st.session_state.registry['movies'].get(m['master_code'], {}).get('title') or m.get('title', '')
+                            ).lower()
+                        )
+                    else:
+                        def _get_upcoming_date_key(m):
+                            sorted_dates, first_dt = parse_and_sort_dates(m.get('scheduled_dates', []))
+                            m['scheduled_dates'] = sorted_dates
+                            title = clean_movie_title(
+                                st.session_state.registry['movies'].get(m['master_code'], {}).get('title') or m.get('title', '')
+                            ).lower()
+                            return (first_dt, title)
+                        display_movies = sorted(display_movies, key=_get_upcoming_date_key)
+
+                    cols_per_row = 3
+                    for row_idx in range(0, len(display_movies), cols_per_row):
+                        row_movies = display_movies[row_idx:row_idx + cols_per_row]
+                        row_cols = st.columns(cols_per_row)
+                        for col_idx, f_movie in enumerate(row_movies):
+                            m_code = f_movie['master_code']
+                            meta = st.session_state.registry['movies'].get(m_code, {})
+                            badges, badges_type = get_rating_badges(m_code)
+                            display_title = meta.get('title') or f_movie.get('title', 'Unknown')
+                            if sel_prefix != "ALL" and ":" in display_title:
+                                display_title = display_title.split(":", 1)[1].strip()
+
+                            sorted_dates, _ = parse_and_sort_dates(f_movie.get('scheduled_dates', []))
+                            dates_str = ", ".join(sorted_dates)
+
+                            with row_cols[col_idx]:
+                                with st.container(border=True): 
+                                    unlimited_tag = " 🎫 " if is_unlimited_excluded(m_code, set()) else ""
+                                    st.markdown(f"**{display_title}** ({meta.get('rating', 'NR')}) {unlimited_tag}")
+                                    st.markdown(f"<small>{badges}</small>", unsafe_allow_html=True, help=badges_type)
+                                    st.markdown(f"<small style='color:#e67e22;'>🗓️ {dates_str}</small>", unsafe_allow_html=True)
+                                    st.caption(f"⏱️ {meta.get('duration', 0)} min")
+                                    st.caption(f"🎥 {meta.get('studio', 'Unknown Studio')}")
             else:
                 st.warning("No upcoming movies listed for this theater.")
                           
@@ -1624,7 +1667,7 @@ if selected_theater and schedule:
         movie_views = ["🎥 Playing Nearby", "🌍 Playing Nationwide"]
         m_sub_nav_key = f"movie_sub_nav_{t_key}"
         if st.session_state.get(m_sub_nav_key) not in movie_views:
-            raw_m_view = st.query_params.get("view", "").lower()
+            raw_m_view = (st.query_params.get("mview") or st.query_params.get("view", "")).lower()
             st.session_state[m_sub_nav_key] = MOVIE_VIEW_MAP.get(raw_m_view, "🎥 Playing Nearby")
 
         movie_sub_nav = st.radio(
@@ -1634,7 +1677,9 @@ if selected_theater and schedule:
             label_visibility="collapsed",
             key=m_sub_nav_key
         )
-        sync_query_param("view", MOVIE_VIEW_REV_MAP.get(movie_sub_nav, "nearby"))
+        sync_query_param("mview", MOVIE_VIEW_REV_MAP.get(movie_sub_nav, "nearby"))
+        sync_query_param("tview", None)
+        sync_query_param("view", None)
 
         st.markdown("""
             <style>
@@ -1917,15 +1962,20 @@ if selected_theater and schedule:
                                 state_map[st_full_name  ].append(f"{t['name']} ({t['city']})")
                         
                         sorted_states = sorted(state_map.keys())
-                        s_cols = st.columns(3)
-                        for idx, state in enumerate(sorted(sorted_states)):
-                            with s_cols[idx % 3]:
-                                with st.expander(f"📍 {state} ({len(state_map[state])})"):
-                                    for t_str in sorted(state_map[state]):
-                                        st.markdown(f"<small>{t_str}</small>", unsafe_allow_html=True)
+                        cols_per_row = 3
+                        for row_idx in range(0, len(sorted_states), cols_per_row):
+                            row_states = sorted_states[row_idx:row_idx + cols_per_row]
+                            row_cols = st.columns(cols_per_row)
+                            for col_idx, state in enumerate(row_states):
+                                with row_cols[col_idx]:
+                                    with st.expander(f"📍 {state} ({len(state_map[state])})"):
+                                        for t_str in sorted(state_map[state]):
+                                            st.markdown(f"<small>{t_str}</small>", unsafe_allow_html=True)
 
     elif nav_tab == "🗓️ Smart Scheduler":
         sync_query_param("view", None)
+        sync_query_param("tview", None)
+        sync_query_param("mview", None)
         sync_query_param("movie", None)
         st.subheader("🗓️ Smart Scheduler")
         st.info(f"Scheduling: **{t_item['name']}** and nearby theaters on **{q_date.strftime('%A, %b %d')}**")
