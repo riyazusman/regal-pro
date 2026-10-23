@@ -8,3 +8,4 @@ CODE_REVIEW.md
 .mcp.json
 __pycache__/
 *.pyc
+scratch/
