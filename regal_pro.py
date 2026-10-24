@@ -62,7 +62,7 @@ def get_resource_path(relative_path):
     return os.path.join(base_path, relative_path)
 
 # --- Page Configuration ---
-st.set_page_config(page_title="Regal Pro", layout="wide", page_icon="🎬")
+st.set_page_config(page_title="Regal Pro", layout="wide", page_icon="🎬", initial_sidebar_state="collapsed")
 
 # --- CSS for Navigation ---
 st.markdown("""
