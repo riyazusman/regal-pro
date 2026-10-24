@@ -89,12 +89,43 @@ st.markdown("""
         overflow: hidden;
         flex-shrink: 0;
         box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+        background: #1e2430;
     }
     .movie-poster-box img {
         width: 100%;
         height: 100%;
         object-fit: cover;
         display: block;
+    }
+    .movie-poster-placeholder {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, rgba(151,166,195,0.18) 0%, rgba(151,166,195,0.06) 100%);
+        border: 1px dashed rgba(151,166,195,0.3);
+        border-radius: inherit;
+        color: #97a6c3;
+        box-sizing: border-box;
+        text-align: center;
+        padding: 4px;
+        user-select: none;
+    }
+    .movie-poster-placeholder .ph-icon {
+        font-size: 1.5rem;
+        line-height: 1;
+        opacity: 0.85;
+    }
+    .movie-poster-placeholder .ph-text {
+        font-size: 0.55rem;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        margin-top: 4px;
+        opacity: 0.75;
+        white-space: nowrap;
     }
     @media (min-width: 768px) {
         .movie-header-card {
@@ -106,6 +137,13 @@ st.markdown("""
             height: 202px;
             border-radius: 8px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+        }
+        .movie-poster-placeholder .ph-icon {
+            font-size: 2.6rem;
+        }
+        .movie-poster-placeholder .ph-text {
+            font-size: 0.72rem;
+            margin-top: 6px;
         }
     }
     </style>
@@ -743,8 +781,17 @@ def render_movie_header_card(m_code, title=None, extra_tags=""):
     extra_str = f" {clean_extra}" if clean_extra else ""
     dur_str = f" | {duration} min" if duration else ""
     meta_line = f"<small style='color:grey;'>({rating}{dur_str}{extra_str}) • 🎥 {studio}</small>"
-    
-    img_html = f'<div class="movie-poster-box"><img src="{poster_url}" alt="" /></div>' if has_poster else ""
+    if has_poster:
+        img_html = f'<div class="movie-poster-box"><img src="{poster_url}" alt="" /></div>'
+    else:
+        img_html = (
+            '<div class="movie-poster-box">'
+            '<div class="movie-poster-placeholder">'
+            '<span class="ph-icon">🎬</span>'
+            '<span class="ph-text">No Poster</span>'
+            '</div>'
+            '</div>'
+        )
     
     card_html = (
         f'<div class="movie-header-card">'
@@ -1734,7 +1781,15 @@ if selected_theater and schedule:
 
                         with row_cols[col_idx]:
                             with st.container(border=True):
-                                img_html = f'<img src="{poster_url}" alt="" style="width:50px; min-width:50px; height:75px; object-fit:cover; border-radius:4px; box-shadow:0 1px 3px rgba(0,0,0,0.2);" onerror="this.style.display=\'none\';" />' if has_poster else ""
+                                if has_poster:
+                                    img_html = f'<img src="{poster_url}" alt="" style="width:50px; min-width:50px; height:75px; object-fit:cover; border-radius:4px; box-shadow:0 1px 3px rgba(0,0,0,0.2);" onerror="this.style.display=\'none\';" />'
+                                else:
+                                    img_html = (
+                                        '<div style="width:50px; min-width:50px; height:75px; border-radius:4px; background:linear-gradient(135deg, rgba(151,166,195,0.18) 0%, rgba(151,166,195,0.06) 100%); border:1px dashed rgba(151,166,195,0.3); display:flex; flex-direction:column; align-items:center; justify-content:center; flex-shrink:0; color:#97a6c3; box-sizing:border-box;">'
+                                        '<span style="font-size:1.3rem; line-height:1;">🎬</span>'
+                                        '<span style="font-size:0.5rem; font-weight:700; margin-top:2px; opacity:0.75; text-transform:uppercase;">NO POSTER</span>'
+                                        '</div>'
+                                    )
                                 card_html = (
                                     f'<div style="display:flex; gap:10px; align-items:flex-start; margin-bottom:6px;">'
                                     f'{img_html}'
@@ -1873,7 +1928,15 @@ if selected_theater and schedule:
 
                             with row_cols[col_idx]:
                                 with st.container(border=True): 
-                                    img_html = f'<img src="{poster_url}" alt="" style="width:50px; min-width:50px; height:75px; object-fit:cover; border-radius:4px; box-shadow:0 1px 3px rgba(0,0,0,0.2);" onerror="this.style.display=\'none\';" />' if has_poster else ""
+                                    if has_poster:
+                                        img_html = f'<img src="{poster_url}" alt="" style="width:50px; min-width:50px; height:75px; object-fit:cover; border-radius:4px; box-shadow:0 1px 3px rgba(0,0,0,0.2);" onerror="this.style.display=\'none\';" />'
+                                    else:
+                                        img_html = (
+                                            '<div style="width:50px; min-width:50px; height:75px; border-radius:4px; background:linear-gradient(135deg, rgba(151,166,195,0.18) 0%, rgba(151,166,195,0.06) 100%); border:1px dashed rgba(151,166,195,0.3); display:flex; flex-direction:column; align-items:center; justify-content:center; flex-shrink:0; color:#97a6c3; box-sizing:border-box;">'
+                                            '<span style="font-size:1.3rem; line-height:1;">🎬</span>'
+                                            '<span style="font-size:0.5rem; font-weight:700; margin-top:2px; opacity:0.75; text-transform:uppercase;">NO POSTER</span>'
+                                            '</div>'
+                                        )
                                     card_html = (
                                         f'<div style="display:flex; gap:10px; align-items:flex-start; margin-bottom:6px;">'
                                         f'{img_html}'
@@ -2073,24 +2136,6 @@ if selected_theater and schedule:
                 st.session_state.selected_movie_code = selected_from_dropdown
                 sync_query_param("movie", selected_from_dropdown)
 
-            col_prev, col_count, col_next = st.columns([1, 2, 1])
-            with col_prev:
-                has_prev = (sel_idx > 0)
-                if st.button("⬅️ Prev", key=f"btn_prev_nearby_{tc}", disabled=not has_prev, use_container_width=True):
-                    new_code = active_codes[sel_idx - 1]
-                    st.session_state.selected_movie_code = new_code
-                    sync_query_param("movie", new_code)
-                    st.rerun()
-            with col_count:
-                st.markdown(f"<div style='text-align: center; color: grey; font-size: 0.85rem; padding-top: 6px;'>Movie <b>{sel_idx + 1}</b> of <b>{len(active_codes)}</b></div>", unsafe_allow_html=True)
-            with col_next:
-                has_next = (sel_idx < len(active_codes) - 1)
-                if st.button("Next ➡️", key=f"btn_next_nearby_{tc}", disabled=not has_next, use_container_width=True):
-                    new_code = active_codes[sel_idx + 1]
-                    st.session_state.selected_movie_code = new_code
-                    sync_query_param("movie", new_code)
-                    st.rerun()
-
             sel_code = st.session_state.selected_movie_code
             if sel_code:
                 m_full_week_data = [s for s in nearby_weekly_schedule if s['master_code'] == sel_code]
@@ -2100,6 +2145,23 @@ if selected_theater and schedule:
                 unlimited_tag = "| 🎫 No Unlimited" if (m_today_data and is_unlimited_excluded(sel_code, m_today_data[0]['raw_attrs'])) else ""
 
                 render_movie_header_card(sel_code, meta.get('title'), extra_tags=f"{new_tag} {unlimited_tag}")
+
+                col_prev, col_next = st.columns(2)
+                with col_prev:
+                    has_prev = (sel_idx > 0)
+                    if st.button("⬅️ Prev", key=f"btn_prev_nearby_{tc}", disabled=not has_prev, use_container_width=True):
+                        new_code = active_codes[sel_idx - 1]
+                        st.session_state.selected_movie_code = new_code
+                        sync_query_param("movie", new_code)
+                        st.rerun()
+                with col_next:
+                    has_next = (sel_idx < len(active_codes) - 1)
+                    if st.button("Next ➡️", key=f"btn_next_nearby_{tc}", disabled=not has_next, use_container_width=True):
+                        new_code = active_codes[sel_idx + 1]
+                        st.session_state.selected_movie_code = new_code
+                        sync_query_param("movie", new_code)
+                        st.rerun()
+                st.caption(f"<div style='text-align: center; color: grey; font-size: 0.8rem; margin-top: -8px; margin-bottom: 6px;'>Movie <b>{sel_idx + 1}</b> of <b>{len(active_codes)}</b></div>", unsafe_allow_html=True)
 
                 if not m_today_data:
                     st.warning(f"⚠️ **{meta.get('title')}** has no showtimes on **{q_date.strftime('%A, %b %d')}**.")
@@ -2287,10 +2349,9 @@ if selected_theater and schedule:
                     title = m.get('title', 'Unknown')
                     count = m.get('count', 0)
                     in_cluster = m.get('in_cluster', False)
-                    prefix = "📍 " if in_cluster else ""
-                    cluster_tag = " (In Cluster)" if in_cluster else ""
+                    prefix = "📍 " if in_cluster else "✈️ "
                     theaters_str = f"{count} {'theater' if count == 1 else 'theaters'}"
-                    return f"{prefix}{title} — {theaters_str}{cluster_tag}"
+                    return f"{prefix}{title} — {theaters_str}"
 
                 select_key = f"nationwide_movie_select_{tc}"
                 st.session_state[select_key] = current_sel
@@ -2314,27 +2375,26 @@ if selected_theater and schedule:
                     st.session_state.selected_movie_code = selected_from_dropdown
                     sync_query_param("movie", selected_from_dropdown)
 
-                col_prev, col_count, col_next = st.columns([1, 2, 1])
-                with col_prev:
-                    has_prev = (sel_idx > 0)
-                    if st.button("⬅️ Prev", key=f"btn_prev_nationwide_{tc}", disabled=not has_prev, use_container_width=True):
-                        new_code = active_codes[sel_idx - 1]
-                        st.session_state.selected_movie_code = new_code
-                        sync_query_param("movie", new_code)
-                        st.rerun()
-                with col_count:
-                    st.markdown(f"<div style='text-align: center; color: grey; font-size: 0.85rem; padding-top: 6px;'>Movie <b>{sel_idx + 1}</b> of <b>{len(active_codes)}</b></div>", unsafe_allow_html=True)
-                with col_next:
-                    has_next = (sel_idx < len(active_codes) - 1)
-                    if st.button("Next ➡️", key=f"btn_next_nationwide_{tc}", disabled=not has_next, use_container_width=True):
-                        new_code = active_codes[sel_idx + 1]
-                        st.session_state.selected_movie_code = new_code
-                        sync_query_param("movie", new_code)
-                        st.rerun()
-
                 sel_code = st.session_state.selected_movie_code
                 if sel_code:
                     render_movie_header_card(sel_code)
+
+                    col_prev, col_next = st.columns(2)
+                    with col_prev:
+                        has_prev = (sel_idx > 0)
+                        if st.button("⬅️ Prev", key=f"btn_prev_nationwide_{tc}", disabled=not has_prev, use_container_width=True):
+                            new_code = active_codes[sel_idx - 1]
+                            st.session_state.selected_movie_code = new_code
+                            sync_query_param("movie", new_code)
+                            st.rerun()
+                    with col_next:
+                        has_next = (sel_idx < len(active_codes) - 1)
+                        if st.button("Next ➡️", key=f"btn_next_nationwide_{tc}", disabled=not has_next, use_container_width=True):
+                            new_code = active_codes[sel_idx + 1]
+                            st.session_state.selected_movie_code = new_code
+                            sync_query_param("movie", new_code)
+                            st.rerun()
+                    st.caption(f"<div style='text-align: center; color: grey; font-size: 0.8rem; margin-top: -8px; margin-bottom: 6px;'>Movie <b>{sel_idx + 1}</b> of <b>{len(active_codes)}</b></div>", unsafe_allow_html=True)
                     
                     target_theaters = get_theaters_playing_movie(sel_code, set(), status_context)
                     
