@@ -642,6 +642,43 @@ def get_movie_regal_url(m_code, title=None):
         return generate_regal_url(clean_movie_title(t), m_code)
     return ""
 
+def render_movie_header_card(m_code, title=None, extra_tags=""):
+    """Render a uniform, responsive movie card header with icon-sized poster, scores, and links."""
+    meta = st.session_state.get('global_movie_catalog', {}).get(m_code, {}) or st.session_state.get('registry', {}).get('movies', {}).get(m_code, {})
+    disp_title = title or meta.get('title', 'Unknown Title')
+    duration = meta.get('duration', 0)
+    rating = meta.get('rating', 'NR')
+    studio = meta.get('studio', 'Unknown Studio')
+    poster_url = meta.get('poster')
+    has_poster = bool(poster_url and str(poster_url).strip().startswith("http"))
+    
+    regal_url = get_movie_regal_url(m_code, disp_title)
+    regal_link = f' | <a href="{regal_url}" target="_blank" style="text-decoration:none; color:#e67e22; font-weight:600;">🎟️ Regal Page ↗</a>' if regal_url else ""
+    badges, badges_type = get_rating_badges(m_code)
+    if not badges and regal_link.startswith(' | '):
+        regal_link = regal_link[3:]
+    badges_html = f"<small>{badges}{regal_link}</small>"
+    
+    clean_extra = f" {extra_tags}".strip()
+    extra_str = f" {clean_extra}" if clean_extra else ""
+    dur_str = f" | {duration} min" if duration else ""
+    meta_line = f"<small style='color:grey;'>({rating}{dur_str}{extra_str}) • 🎥 {studio}</small>"
+    
+    # 60px thumbnail with onerror hiding to completely prevent broken '0' text
+    img_html = f'<img src="{poster_url}" alt="" style="width:60px; min-width:60px; height:90px; object-fit:cover; border-radius:6px; box-shadow:0 2px 5px rgba(0,0,0,0.2);" onerror="this.style.display=\'none\';" />' if has_poster else ""
+    
+    card_html = f"""
+    <div style="display: flex; gap: 14px; align-items: flex-start; margin-bottom: 8px;">
+        {img_html}
+        <div style="flex: 1; min-width: 0;">
+            <div style="font-size: 1.25rem; font-weight: 700; line-height: 1.2; margin-bottom: 2px;">{disp_title}</div>
+            <div style="margin-bottom: 4px;">{meta_line}</div>
+            <div>{badges_html}</div>
+        </div>
+    </div>
+    """
+    st.markdown(card_html, unsafe_allow_html=True, help=badges_type)
+
 def format_scheduled_date_links(date_objs, theater_code, tab="theater", sub_view=None, movie_code=None):
     """Generate HTML hyperlinked date badges for quick date-switching."""
     links = []
@@ -1512,65 +1549,60 @@ if selected_theater and schedule:
                     unlimited_tag = "| 🎫 No Unlimited" if is_unlimited_excluded(m_code, m_shows[0]['raw_attrs']) else ""
 
                     with st.expander(f"🍿 {title} ({m_shows[0]['Rating']}) | 🕒 {m_shows[0]['Duration']} min {new_tag} {unlimited_tag}", expanded=True):
-                        if has_poster:
-                            p_col, c_col = st.columns([1, 6])
-                            with p_col:
-                                st.image(poster_url, use_container_width=True)
-                            with c_col:
-                                st.markdown(badges_with_link, unsafe_allow_html=True, help=badges_type)
-                                for mt in sorted(list(set(s['ScreenType'] for s in m_shows))):
-                                    ts = [s for s in m_shows if s['ScreenType'] == mt]
-                                    t_common = set.intersection(*(s['raw_attrs'] for s in ts)) if ts else set()
-                                    common_attribs = sorted(t_common - {mt})
-                                    st.markdown(f'<div style="margin-bottom: 6px;"><span style="background-color: rgba(151, 166, 195, 0.15); padding: 4px 12px; border-radius: 4px; border-left: 4px solid #ff4b4b;"><span style="font-weight: bold;">{mt}</span> <span style="color: grey; font-size: 0.85em; font-weight: normal; margin-left: 10px;">({", ".join(sorted(common_attribs)) if common_attribs else ""})</span></span></div>', unsafe_allow_html=True)
+                        render_movie_header_card(m_code, title=title, extra_tags=f"{new_tag} {unlimited_tag}")
 
-                                    row = []
-                                    for s in ts:
-                                        is_past = (q_date == current_local_time.date() and s['Showtime'] < current_local_time)
-                                        delta_attribs = get_attr_diff(s['raw_attrs'], t_common)
-                                        t_str = s['Showtime'].strftime('%I:%M %p')
-                                        if is_past:
-                                            final_time = f"<del>{t_str}</del>" 
-                                            meta_text = f"  <small style='color:grey'><del>(Audi {s['Auditorium']}) {delta_attribs}</del></small>"
-                                        else:
-                                            final_time = f"{t_str}" 
-                                            meta_text = f"  <small style='color:grey'>(Audi {s['Auditorium']}) {delta_attribs}</small>"
-                                        row.append(f"{final_time}{meta_text}")
-                                    
-                                    st.markdown(f"&nbsp;&nbsp;&nbsp;&nbsp;{' | '.join(row)}", unsafe_allow_html=True)
-                                st.caption(f"🎥 {meta.get('studio', 'Unknown Studio')}  •  ⏱️ {m_shows[0]['Duration']} min  •  Rated {m_shows[0]['Rating']}")
-                        else:
-                            st.markdown(badges_with_link, unsafe_allow_html=True, help=badges_type)
-                            for mt in sorted(list(set(s['ScreenType'] for s in m_shows))):
-                                ts = [s for s in m_shows if s['ScreenType'] == mt]
-                                t_common = set.intersection(*(s['raw_attrs'] for s in ts)) if ts else set()
-                                common_attribs = sorted(t_common - {mt})
-                                st.markdown(f'<div style="margin-bottom: 6px;"><span style="background-color: rgba(151, 166, 195, 0.15); padding: 4px 12px; border-radius: 4px; border-left: 4px solid #ff4b4b;"><span style="font-weight: bold;">{mt}</span> <span style="color: grey; font-size: 0.85em; font-weight: normal; margin-left: 10px;">({", ".join(sorted(common_attribs)) if common_attribs else ""})</span></span></div>', unsafe_allow_html=True)
+                        for mt in sorted(list(set(s['ScreenType'] for s in m_shows))):
+                            ts = [s for s in m_shows if s['ScreenType'] == mt]
+                            t_common = set.intersection(*(s['raw_attrs'] for s in ts)) if ts else set()
+                            common_attribs = sorted(t_common - {mt})
+                            st.markdown(f'<div style="margin-bottom: 6px;"><span style="background-color: rgba(151, 166, 195, 0.15); padding: 4px 12px; border-radius: 4px; border-left: 4px solid #ff4b4b;"><span style="font-weight: bold;">{mt}</span> <span style="color: grey; font-size: 0.85em; font-weight: normal; margin-left: 10px;">({", ".join(sorted(common_attribs)) if common_attribs else ""})</span></span></div>', unsafe_allow_html=True)
 
-                                row = []
-                                for s in ts:
-                                    is_past = (q_date == current_local_time.date() and s['Showtime'] < current_local_time)
-                                    delta_attribs = get_attr_diff(s['raw_attrs'], t_common)
-                                    t_str = s['Showtime'].strftime('%I:%M %p')
-                                    if is_past:
-                                        final_time = f"<del>{t_str}</del>" 
-                                        meta_text = f"  <small style='color:grey'><del>(Audi {s['Auditorium']}) {delta_attribs}</del></small>"
-                                    else:
-                                        final_time = f"{t_str}" 
-                                        meta_text = f"  <small style='color:grey'>(Audi {s['Auditorium']}) {delta_attribs}</small>"
-                                    row.append(f"{final_time}{meta_text}")
-                                
-                                st.markdown(f"&nbsp;&nbsp;&nbsp;&nbsp;{' | '.join(row)}", unsafe_allow_html=True)
-                            st.caption(f"🎥 {meta.get('studio', 'Unknown Studio')}  •  ⏱️ {m_shows[0]['Duration']} min  •  Rated {m_shows[0]['Rating']}")
+                            row = []
+                            for s in ts:
+                                is_past = (q_date == current_local_time.date() and s['Showtime'] < current_local_time)
+                                delta_attribs = get_attr_diff(s['raw_attrs'], t_common)
+                                t_str = s['Showtime'].strftime('%I:%M %p')
+                                if is_past:
+                                    final_time = f"<del>{t_str}</del>" 
+                                    meta_text = f"  <small style='color:grey'><del>(Audi {s['Auditorium']}) {delta_attribs}</del></small>"
+                                else:
+                                    final_time = f"{t_str}" 
+                                    meta_text = f"  <small style='color:grey'>(Audi {s['Auditorium']}) {delta_attribs}</small>"
+                                row.append(f"{final_time}{meta_text}")
+                            
+                            st.markdown(f"&nbsp;&nbsp;&nbsp;&nbsp;{' | '.join(row)}", unsafe_allow_html=True)
 
                         footer_col, link_col = st.columns([4, 1])
                         with footer_col:
                             if valid_date_objs:
-                                date_links = format_scheduled_date_links(sorted(valid_date_objs), tc, tab="theater", sub_view="now-playing")
-                                st.markdown(f"<div style='font-size: 0.82rem; color: #e67e22; padding-top: 2px;'>🗓️ <b>Scheduled Dates:</b> {date_links}</div>", unsafe_allow_html=True)
+                                st.caption("🗓️ **Scheduled Dates:**")
+                                sel_date = st.pills(
+                                    "Scheduled Dates",
+                                    options=sorted(valid_date_objs),
+                                    format_func=lambda d: d.strftime("%b %d"),
+                                    key=f"np_dates_{m_code}_{tc}",
+                                    label_visibility="collapsed"
+                                )
+                                if sel_date:
+                                    d_iso = sel_date.strftime("%Y-%m-%d")
+                                    sync_query_param("date", d_iso)
+                                    st.session_state[f"date_pills_{tc}"] = d_iso
+                                    st.rerun()
+
                             if other_t_codes:
-                                theater_links = format_neighbor_theater_links(other_t_codes, q_date.strftime("%m-%d-%Y"), cluster_theaters, tab="theater", sub_view="now-playing")
-                                st.markdown(f"<div style='font-size: 0.82rem; color: #888; padding-top: 5px;'><b>Also Playing at:</b> {theater_links}</div>", unsafe_allow_html=True)
+                                st.caption("🚗 **Also Playing at:**")
+                                sel_nb = st.pills(
+                                    "Also Playing at",
+                                    options=other_t_codes,
+                                    format_func=lambda c: cluster_theaters.get(c, f"Theater {c}"),
+                                    key=f"np_theaters_{m_code}_{tc}",
+                                    label_visibility="collapsed"
+                                )
+                                if sel_nb:
+                                    st.session_state.active_theater_code = sel_nb
+                                    st.session_state.change_theater_mode = False
+                                    sync_query_param("theater", sel_nb)
+                                    st.rerun()
 
                         with link_col:
                             if other_t_codes or valid_date_objs:
@@ -1627,28 +1659,39 @@ if selected_theater and schedule:
 
                         with row_cols[col_idx]:
                             with st.container(border=True):
-                                if has_poster:
-                                    cp, ct = st.columns([1, 2.5])
-                                    with cp:
-                                        st.image(poster_url, use_container_width=True)
-                                    with ct:
-                                        st.markdown(f"**{meta.get('title', 'New Release')}** ({meta.get('rating', 'NR')}) {new_tag} {unlimited_tag}", unsafe_allow_html=True)
-                                        st.markdown(f"<small>{badges}{regal_link}</small>", unsafe_allow_html=True, help=badges_type)
-                                        st.caption(f"⏱️ {meta.get('duration', 120)} min  •  🎥 {meta.get('studio', 'Unknown')}")
-                                else:
-                                    st.markdown(f"**{meta.get('title', 'New Release')}** ({meta.get('rating', 'NR')}) {new_tag} {unlimited_tag}", unsafe_allow_html=True)
-                                    st.markdown(f"<small>{badges}{regal_link}</small>", unsafe_allow_html=True, help=badges_type)
-                                    st.caption(f"⏱️ {meta.get('duration', 120)} min  •  🎥 {meta.get('studio', 'Unknown')}")
+                                img_html = f'<img src="{poster_url}" alt="" style="width:50px; min-width:50px; height:75px; object-fit:cover; border-radius:4px; box-shadow:0 1px 3px rgba(0,0,0,0.2);" onerror="this.style.display=\'none\';" />' if has_poster else ""
+                                card_html = f"""
+                                <div style="display:flex; gap:10px; align-items:flex-start; margin-bottom:6px;">
+                                    {img_html}
+                                    <div style="flex:1; min-width:0;">
+                                        <div style="font-weight:700; font-size:0.95rem; line-height:1.2;">{meta.get('title', 'New Release')} <span style="font-size:0.85rem; font-weight:normal; color:grey;">({meta.get('rating', 'NR')})</span>{new_tag}{unlimited_tag}</div>
+                                        <div><small>{badges}{regal_link}</small></div>
+                                        <div style="font-size:0.75rem; color:grey; margin-top:2px;">⏱️ {meta.get('duration', 120)} min • 🎥 {meta.get('studio', 'Unknown')}</div>
+                                    </div>
+                                </div>
+                                """
+                                st.markdown(card_html, unsafe_allow_html=True, help=badges_type)
 
                                 for n_tc, dates in theater_dates.items():
                                     t_name = cluster_theaters.get(n_tc, f"Theater {n_tc}")
                                     sorted_date_objs = sorted([datetime.strptime(d, "%m-%d-%Y") for d in dates])
-                                    first_d_str = sorted_date_objs[0].strftime("%m-%d-%Y")
-                                    t_url = f"?theater={n_tc}&date={first_d_str}&tab=theater&tview=now-playing"
-                                    t_link = f'<a href="{t_url}" target="_self" style="color: #3498db; text-decoration: underline; font-weight: 600;">📍 {t_name}</a>'
-                                    d_links = format_scheduled_date_links(sorted_date_objs, n_tc, tab="theater", sub_view="now-playing")
-                                    st.markdown(f"<p style='font-size: 0.8rem; margin-bottom: 2px;'>{t_link}</p>", unsafe_allow_html=True)
-                                    st.markdown(f"<p style='font-size: 0.8rem; color: #e67e22; margin-top: -5px;'>🗓️ {d_links}</p>", unsafe_allow_html=True)
+                                    
+                                    st.caption(f"📍 **{t_name}**")
+                                    sel_ex_d = st.pills(
+                                        f"Dates for {n_tc} {m_code}",
+                                        options=sorted_date_objs,
+                                        format_func=lambda d: d.strftime("%b %d"),
+                                        key=f"ex_pills_{m_code}_{n_tc}",
+                                        label_visibility="collapsed"
+                                    )
+                                    if sel_ex_d:
+                                        st.session_state.active_theater_code = n_tc
+                                        st.session_state.change_theater_mode = False
+                                        sync_query_param("theater", n_tc)
+                                        d_iso = sel_ex_d.strftime("%Y-%m-%d")
+                                        sync_query_param("date", d_iso)
+                                        st.session_state[f"date_pills_{n_tc}"] = d_iso
+                                        st.rerun()
             else:
                 st.info("No exclusive nearby movies found for the upcoming 7 days.")
 
@@ -1751,35 +1794,23 @@ if selected_theater and schedule:
                             unlimited_tag = " 🎫 " if is_unlimited_excluded(m_code, set()) else ""
 
                             sorted_dates, _ = parse_and_sort_dates(f_movie.get('scheduled_dates', []))
-                            date_links = []
-                            for d_str in sorted_dates:
-                                try:
-                                    test_dt = datetime.strptime(f"{local_today.year} {d_str}", "%Y %b %d").date()
-                                    if local_today <= test_dt <= local_today + timedelta(days=9):
-                                        url = f"?theater={tc}&date={test_dt.strftime('%m-%d-%Y')}&tab=theater&tview=now-playing"
-                                        date_links.append(f'<a href="{url}" target="_self" style="color: #e67e22; text-decoration: underline; font-weight: 500;">{d_str}</a>')
-                                    else:
-                                        date_links.append(f'<span style="color: #e67e22;">{d_str}</span>')
-                                except Exception:
-                                    date_links.append(f'<span style="color: #e67e22;">{d_str}</span>')
-                            dates_str = ", ".join(date_links)
+                            dates_str = ", ".join(sorted_dates)
 
                             with row_cols[col_idx]:
                                 with st.container(border=True): 
-                                    if has_poster:
-                                        cp, ct = st.columns([1, 2.5])
-                                        with cp:
-                                            st.image(poster_url, use_container_width=True)
-                                        with ct:
-                                            st.markdown(f"**{display_title}** ({meta.get('rating', 'NR')}) {unlimited_tag}")
-                                            st.markdown(f"<small>{badges}{regal_link}</small>", unsafe_allow_html=True, help=badges_type)
-                                            st.caption(f"⏱️ {meta.get('duration', 0)} min  •  🎥 {meta.get('studio', 'Unknown')}")
-                                    else:
-                                        st.markdown(f"**{display_title}** ({meta.get('rating', 'NR')}) {unlimited_tag}")
-                                        st.markdown(f"<small>{badges}{regal_link}</small>", unsafe_allow_html=True, help=badges_type)
-                                        st.caption(f"⏱️ {meta.get('duration', 0)} min  •  🎥 {meta.get('studio', 'Unknown')}")
-
-                                    st.markdown(f"<small style='color:#e67e22;'>🗓️ {dates_str}</small>", unsafe_allow_html=True)
+                                    img_html = f'<img src="{poster_url}" alt="" style="width:50px; min-width:50px; height:75px; object-fit:cover; border-radius:4px; box-shadow:0 1px 3px rgba(0,0,0,0.2);" onerror="this.style.display=\'none\';" />' if has_poster else ""
+                                    card_html = f"""
+                                    <div style="display:flex; gap:10px; align-items:flex-start; margin-bottom:6px;">
+                                        {img_html}
+                                        <div style="flex:1; min-width:0;">
+                                            <div style="font-weight:700; font-size:0.95rem; line-height:1.2;">{display_title} <span style="font-size:0.85rem; font-weight:normal; color:grey;">({meta.get('rating', 'NR')})</span>{unlimited_tag}</div>
+                                            <div><small>{badges}{regal_link}</small></div>
+                                            <div style="font-size:0.75rem; color:grey; margin-top:2px;">⏱️ {meta.get('duration', 0)} min • 🎥 {meta.get('studio', 'Unknown')}</div>
+                                        </div>
+                                    </div>
+                                    """
+                                    st.markdown(card_html, unsafe_allow_html=True, help=badges_type)
+                                    st.markdown(f"<small style='color:#e67e22;'>🗓️ <b>Dates:</b> {dates_str}</small>", unsafe_allow_html=True)
             else:
                 st.warning("No upcoming movies listed for this theater.")
                           
@@ -1925,27 +1956,25 @@ if selected_theater and schedule:
                 new_tag = " | 🔴 New Release" if meta.get('is_new') else ""
                 unlimited_tag = "| 🎫 No Unlimited" if (m_today_data and is_unlimited_excluded(sel_code, m_today_data[0]['raw_attrs'])) else ""
 
-                if has_poster:
-                    p_col, c_col = st.columns([1, 5])
-                    with p_col:
-                        st.image(poster_url, use_container_width=True)
-                    with c_col:
-                        st.markdown(f"## {meta.get('title')}", unsafe_allow_html=True)
-                        st.markdown(f"#### <small style='color:grey'>({meta.get('rating', 'NR')} | {meta.get('duration', 0)} min {new_tag} {unlimited_tag}) | {badges}{regal_link} </small>", help=badges_type, unsafe_allow_html=True)
-                        st.caption(f"🎥 Studio: **{meta.get('studio', 'Unknown Studio')}**")
-                else:
-                    st.markdown(f"## {meta.get('title')}", unsafe_allow_html=True)
-                    st.markdown(f"#### <small style='color:grey'>({meta.get('rating', 'NR')} | {meta.get('duration', 0)} min {new_tag} {unlimited_tag}) | {badges}{regal_link} </small>", help=badges_type, unsafe_allow_html=True)
-                    st.caption(f"🎥 Studio: **{meta.get('studio', 'Unknown Studio')}**")
+                render_movie_header_card(sel_code, meta.get('title'), extra_tags=f"{new_tag} {unlimited_tag}")
 
                 if not m_today_data:
                     st.warning(f"⚠️ **{meta.get('title')}** has no showtimes on **{q_date.strftime('%A, %b %d')}**.")
                     available_dates = sorted(list(set(s['Showtime'].date() for s in m_full_week_data)))
-                    date_links = [
-                        f'<a href="?theater={tc}&date={d.strftime("%m-%d-%Y")}&tab=movies&mview=nearby&movie={sel_code}" target="_self" style="color: #e67e22; text-decoration: underline; font-weight: 500;">{d.strftime("%b %d")}</a>'
-                        for d in available_dates
-                    ]
-                    st.info(f"📅 This movie is playing nearby on: **{', '.join(date_links)}**. Click a date to view showtimes.")
+                    if available_dates:
+                        st.caption("📅 **This movie is playing nearby on (click a date to view showtimes):**")
+                        sel_avail = st.pills(
+                            "Available Dates",
+                            options=available_dates,
+                            format_func=lambda d: d.strftime("%a, %b %d"),
+                            key=f"m_avail_{sel_code}_{tc}",
+                            label_visibility="collapsed"
+                        )
+                        if sel_avail:
+                            d_iso = sel_avail.strftime("%Y-%m-%d")
+                            st.session_state[f"date_pills_{tc}"] = d_iso
+                            sync_query_param("date", d_iso)
+                            st.rerun()
                 else:
                     with st.expander("🔍 Advanced Filters", expanded=False):
                         f_col1, f_col2, f_col3 = st.columns(3)
@@ -1989,11 +2018,7 @@ if selected_theater and schedule:
                                         t_icon = "📍" if is_primary else "🚗"
                                         dist_txt = "(Current)" if is_primary else f"({info['time']}m / {info['dist']}mi)"
                                         
-                                        if not is_primary:
-                                            t_url = f"?theater={curr_tc}&date={q_date.strftime('%m-%d-%Y')}&tab=theater&tview=now-playing"
-                                            st.markdown(f"<a href='{t_url}' target='_self' style='text-decoration:none;'><b>{t_icon} {info['name']}</b></a> <small style='color:grey'>{dist_txt}</small>", unsafe_allow_html=True)
-                                        else:
-                                            st.markdown(f"**{t_icon} {info['name']}** <small style='color:grey'>{dist_txt}</small>", unsafe_allow_html=True)
+                                        st.markdown(f"**{t_icon} {info['name']}** <small style='color:grey'>{dist_txt}</small>", unsafe_allow_html=True)
                                         
                                         playing_on_dates = []
                                         for date_key, day_flat in st.session_state.registry['schedule'].items():
@@ -2023,12 +2048,8 @@ if selected_theater and schedule:
 
                                         if playing_on_dates:
                                             unique_dates = sorted([datetime.strptime(d, "%m-%d-%Y") for d in set(playing_on_dates)])
-                                            active_tc = t_item['theater_code']
-                                            date_links = [
-                                                f'<a href="?theater={active_tc}&date={d.strftime("%m-%d-%Y")}&tab=movies&mview=nearby&movie={sel_code}" target="_self" style="color: #e67e22; text-decoration: underline; font-weight: 500;">{d.strftime("%b %d")}</a>'
-                                                for d in unique_dates
-                                            ]
-                                            st.markdown(f"<p style='font-size: 0.8rem; color: #e67e22; margin-top: -5px;'>🗓️ <b>Scheduled Dates:</b> {', '.join(date_links)}</p>", unsafe_allow_html=True)
+                                            date_strs = ", ".join([d.strftime("%b %d") for d in unique_dates])
+                                            st.markdown(f"<p style='font-size: 0.8rem; color: #e67e22; margin-top: -5px;'>🗓️ <b>Scheduled Dates:</b> {date_strs}</p>", unsafe_allow_html=True)
 
                                         st.divider()
         elif movie_sub_nav == "🌍 Playing Nationwide":
@@ -2091,10 +2112,7 @@ if selected_theater and schedule:
                 sel_code = st.session_state.selected_movie_code
                 if sel_code:
                     sync_query_param("movie", sel_code)
-                    meta = st.session_state.global_movie_catalog.get(sel_code, {})
-                    st.markdown(f"### 🌍 {meta.get('title')} ({meta.get('rating')})")
-                    badges, badges_type = get_rating_badges(sel_code)
-                    st.markdown(f"<small>{badges}</small>", help=badges_type, unsafe_allow_html=True)
+                    render_movie_header_card(sel_code)
                     
                     target_theaters = get_theaters_playing_movie(sel_code, set(), status_context)
                     
