@@ -12,6 +12,8 @@ import re
 import gzip
 import io
 import gc
+import urllib.request
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone, time as dt_time
 from curl_cffi import requests as c_requests
 from streamlit_js_eval import get_geolocation, set_cookie, get_cookie
@@ -638,33 +640,65 @@ def is_unlimited_excluded(m_code, attr_set, catalog=None):
     meta = catalog.get(m_code, {})
     return meta.get('studio') in ("Regal Cinemedia","Trafalgar Releasing, Ltd","Edward Gurrola III") or "No Pass/SS" in attr_set or "No Passes or Super Savers" in attr_set
 
-def get_rating_badges(m_code):
-    meta = st.session_state.global_movie_catalog.get(m_code, {})
+def get_rating_badges(m_code, as_html=True):
+    meta = st.session_state.get('global_movie_catalog', {}).get(m_code, {}) or st.session_state.get('registry', {}).get('movies', {}).get(m_code, {})
     badges = []
     badges_type = []
     ratings_map = [
         ('imdb_score', '⭐', 'imdb_url', 'IMDB'),
-        ('rt_critics', '🍅', 'rt_url','Tomatometer'),
-        ('rt_users','🍿','rt_url','Popcornmeter'),
-        ('metacritic', 'Ⓜ️', 'metacritic_url','Metacritic'),
-        ('letterboxd', '🟢', 'letterboxd_url','Letterboxd')
+        ('rt_critics', '🍅', 'rt_url', 'Tomatometer'),
+        ('rt_users', '🍿', 'rt_url', 'Popcornmeter'),
+        ('metacritic', 'Ⓜ️', 'metacritic_url', 'Metacritic'),
+        ('letterboxd', '🟢', 'letterboxd_url', 'Letterboxd')
     ]
     
-    for score_key, icon, url_key,badge_type in ratings_map:
+    for score_key, icon, url_key, badge_type in ratings_map:
         score = meta.get(score_key)
         url = meta.get(url_key)
         if score:
             display_score = round(float(score), 1) if score_key == 'letterboxd' else score
             if url:
-                badges.append(f"{icon} [{display_score}]({url})")
+                if as_html:
+                    badges.append(f'{icon} <a href="{url}" target="_blank" style="text-decoration: underline; color: inherit; font-weight: 600;">{display_score}</a>')
+                else:
+                    badges.append(f"{icon} [{display_score}]({url})")
             else:
                 badges.append(f"{icon} {display_score}")
             badges_type.append(f"{icon} {badge_type}")
         else:
             if url:
-                badges.append(f"{icon} [N/A]({url})")
+                if as_html:
+                    badges.append(f'{icon} <a href="{url}" target="_blank" style="text-decoration: underline; color: inherit; font-weight: 600;">N/A</a>')
+                else:
+                    badges.append(f"{icon} [N/A]({url})")
                 badges_type.append(f"{icon} {badge_type}")
     return " | ".join(badges), " ".join(badges_type) if badges else ""
+
+_POSTER_CACHE = {}
+
+def is_poster_valid(url):
+    """Check if poster URL exists and is not a 404/expired CDN blob (cached)."""
+    if not url or not str(url).strip().startswith("http"):
+        return False
+    u = str(url).strip()
+    if u in _POSTER_CACHE:
+        return _POSTER_CACHE[u]
+    try:
+        req = urllib.request.Request(u, method='HEAD', headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=1.2) as r:
+            valid = (r.status == 200)
+    except Exception:
+        valid = False
+    _POSTER_CACHE[u] = valid
+    return valid
+
+def prefetch_poster_status(urls):
+    """Pre-check a batch of poster URLs in parallel to avoid render stalls."""
+    uncached = [str(u).strip() for u in urls if u and str(u).strip().startswith("http") and str(u).strip() not in _POSTER_CACHE]
+    if not uncached:
+        return
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        list(executor.map(is_poster_valid, uncached))
 
 def get_movie_regal_url(m_code, title=None):
     """Retrieve canonical or computed Regal movie page URL."""
@@ -685,7 +719,7 @@ def render_movie_header_card(m_code, title=None, extra_tags=""):
     rating = meta.get('rating', 'NR')
     studio = meta.get('studio', 'Unknown Studio')
     poster_url = meta.get('poster')
-    has_poster = bool(poster_url and str(poster_url).strip().startswith("http"))
+    has_poster = is_poster_valid(poster_url)
     
     regal_url = get_movie_regal_url(m_code, disp_title)
     regal_link = f' | <a href="{regal_url}" target="_blank" style="text-decoration:none; color:#e67e22; font-weight:600;">🎟️ Regal Page ↗</a>' if regal_url else ""
@@ -988,6 +1022,9 @@ def sync_movie_metadata():
             if (cat_entry.get('rating') in (None, 'NR', '')) and m_info.get('rating'):
                 update_dict['rating'] = m_info.get('rating')
             cat_entry.update(update_dict)
+    poster_urls = [m_info.get('poster') for m_info in db_metadata.values() if m_info.get('poster')]
+    if poster_urls:
+        prefetch_poster_status(poster_urls)
 
 def log_visit(t_item, metadata_gaps=None):
     try:
@@ -1687,7 +1724,7 @@ if selected_theater and schedule:
                         unlimited_tag = " 🎫" if is_unlimited_excluded(m_code, m_attrs) else ""
                         badges, badges_type = get_rating_badges(m_code)
                         poster_url = meta.get('poster')
-                        has_poster = bool(poster_url and str(poster_url).strip().startswith("http"))
+                        has_poster = is_poster_valid(poster_url)
                         regal_url = get_movie_regal_url(m_code, meta.get('title'))
                         regal_link = f' | <a href="{regal_url}" target="_blank" style="text-decoration:none; color:#e67e22; font-weight:600;">🎟️ Regal ↗</a>' if regal_url else ""
 
@@ -1821,7 +1858,7 @@ if selected_theater and schedule:
                                 display_title = display_title.split(":", 1)[1].strip()
 
                             poster_url = meta.get('poster')
-                            has_poster = bool(poster_url and str(poster_url).strip().startswith("http"))
+                            has_poster = is_poster_valid(poster_url)
                             regal_url = get_movie_regal_url(m_code, display_title)
                             regal_link = f' | <a href="{regal_url}" target="_blank" style="text-decoration:none; color:#e67e22; font-weight:600;">🎟️ Regal ↗</a>' if regal_url else ""
                             unlimited_tag = " 🎫 " if is_unlimited_excluded(m_code, set()) else ""
