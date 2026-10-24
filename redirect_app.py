@@ -53,7 +53,7 @@ st.markdown(f"""
     <div class="redirect-title">RegalPro Has Moved to a New Home</div>
     <div class="redirect-desc">
         We have upgraded to our permanent standalone domain at <strong>regalpro.app</strong>.<br>
-        Please update your bookmarks for faster access and upcoming updates.
+        Please update your bookmarks for faster access, new features and upcoming updates.
     </div>
 </div>
 """, unsafe_allow_html=True)
@@ -65,7 +65,7 @@ with col2:
 
 st.markdown(f"""
 <div class="countdown-text" style="text-align: center;">
-    Redirecting automatically in 3 seconds...
+    Redirecting automatically in 5 seconds...
 </div>
 
 <meta http-equiv="refresh" content="3;url={target_url}">
@@ -76,6 +76,6 @@ st.markdown(f"""
         }} catch (e) {{
             window.location.href = "{target_url}";
         }}
-    }}, 3000);
+    }}, 5000);
 </script>
 """, unsafe_allow_html=True)
