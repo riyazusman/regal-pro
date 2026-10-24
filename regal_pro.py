@@ -129,13 +129,13 @@ st.markdown("""
         .movie-poster-placeholder .ph-icon {
             font-size: 3rem;
         }
-    @media (max-width: 767px) {
-        div[class*="st-key-btn_next_top_"] {
+        div[class*="st-key-btn_next_bottom_"] {
             display: none !important;
         }
     }
-    @media (min-width: 768px) {
-        div[class*="st-key-btn_next_bottom_"] {
+    @media (max-width: 767px) {
+        div[data-testid="stColumn"]:has([class*="st-key-btn_next_top_"]),
+        div[class*="st-key-btn_next_top_"] {
             display: none !important;
         }
     }
