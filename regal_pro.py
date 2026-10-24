@@ -1,4 +1,4 @@
-# v2.7 RC 
+# v3.0 RC 
 import streamlit as st
 import json
 import math
@@ -1551,7 +1551,7 @@ with st.sidebar.expander("⚙️ Advanced Settings", expanded=False):
     if st.button("🔒 Privacy & Local Data", key="sidebar_privacy_btn", use_container_width=True):
         show_privacy_dialog()
     
-st.sidebar.link_button("🐞 Report a Bug","https://docs.google.com/forms/d/e/1FAIpQLSce6X3DtCwDJZUjf_Cc4IbJLA7q0Nvk_Grw7lOgyqLtxYIYPQ/viewform?usp=dialog")
+st.sidebar.link_button("🐞 Report a Bug","https://github.com/riyazusman/regal-pro/issues")
 st.sidebar.link_button("☕ Buy Me a Coffee","https://buymeacoffee.com/riyazusman")
 st.sidebar.link_button("📃 Source on Github","https://github.com/riyazusman/regal-pro")
 
@@ -3509,9 +3509,9 @@ st.markdown("<br>", unsafe_allow_html=True)
 st.divider()
 f_col1, f_col2, f_col3 = st.columns([2, 1, 1])
 with f_col1:
-    st.caption("🎬 **RegalPro** — Advanced Unofficial Showtimes & Itinerary Planner for Regal Cinemas.")
+    st.caption("🎬 **RegalPro**: Advanced Showtimes & Itinerary Planner for Regal Cinemas.")
 with f_col2:
     if st.button("🔒 Privacy & Local Data", key="footer_privacy_btn", help="Learn how your local preferences and privacy are protected"):
         show_privacy_dialog()
 with f_col3:
-    st.caption("[Report Bug](https://docs.google.com/forms/d/e/1FAIpQLSce6X3DtCwDJZUjf_Cc4IbJLA7q0Nvk_Grw7lOgyqLtxYIYPQ/viewform?usp=dialog) • [GitHub](https://github.com/riyazusman/regal-pro)")
+    st.caption("[Report a Bug](https://github.com/riyazusman/regal-pro/issues) • [Source on GitHub](https://github.com/riyazusman/regal-pro)")
