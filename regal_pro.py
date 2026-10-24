@@ -1978,47 +1978,123 @@ if selected_theater and schedule:
                 mc = s['master_code']
                 if mc not in seen_mc:
                     meta = movie_meta.get(mc, {})
-                    # Add the pin emoji if the movie is playing today
-                    prefix = "📌 " if mc in playing_today_codes else ""
                     movie_list_data.append({
                         "code": mc, 
                         "title": meta.get('title', 'Unknown'), 
-                        "label": f"{prefix}{meta.get('title')} ({meta.get('rating')})",
+                        "rating": meta.get('rating', 'NR'),
+                        "duration": meta.get('duration', 0),
+                        "is_new": bool(meta.get('is_new', False)),
                         "playing_today": mc in playing_today_codes
                     })
                     seen_mc.add(mc)
-            movie_list_data.sort(key=lambda x: x['title'])
+            movie_list_data.sort(key=lambda x: clean_movie_title(x['title']).lower())
 
-            st.info(f"Showing {len(movie_list_data)} movies playing at **{t_item['name']}** and nearby theaters this week. 📌 indicates showtimes available on **{q_date.strftime('%b %d')}**.")
+            today_count = sum(1 for m in movie_list_data if m['playing_today'])
+            new_count = sum(1 for m in movie_list_data if m['is_new'])
 
-            st.markdown("###### 🍿 Select a Movie")
+            st.caption(f"Showing **{len(movie_list_data)}** movies playing at **{t_item['name']}** and nearby theaters this week. 📌 indicates showtimes available on **{q_date.strftime('%b %d')}**.")
 
+            filter_options = [f"🍿 All ({len(movie_list_data)})", f"📌 Playing Today ({today_count})"]
+            if new_count > 0:
+                filter_options.append(f"🔴 New Releases ({new_count})")
+
+            filter_key = f"nearby_filter_pill_{tc}"
+            chosen_filter = st.pills(
+                "Filter Movies",
+                options=filter_options,
+                default=filter_options[0],
+                key=filter_key,
+                label_visibility="collapsed"
+            )
+            if not chosen_filter:
+                chosen_filter = filter_options[0]
+
+            if "Today" in chosen_filter:
+                active_movies = [m for m in movie_list_data if m['playing_today']]
+            elif "New Releases" in chosen_filter:
+                active_movies = [m for m in movie_list_data if m['is_new']]
+            else:
+                active_movies = movie_list_data
+
+            if not active_movies:
+                active_movies = movie_list_data
+
+            active_codes = [m['code'] for m in active_movies]
             nearby_codes = {m['code'] for m in movie_list_data}
             raw_movie_param = st.query_params.get("movie")
-            if st.session_state.get("selected_movie_code") not in nearby_codes:
-                if raw_movie_param and raw_movie_param in nearby_codes:
-                    st.session_state.selected_movie_code = raw_movie_param
-                elif movie_list_data:
-                    st.session_state.selected_movie_code = movie_list_data[0]['code']
-                else:
-                    st.session_state.selected_movie_code = None
 
-            with st.container(height=200, border=True):
-                cols_per_row = 2
-                for i in range(0, len(movie_list_data), cols_per_row):
-                    row_cols = st.columns(cols_per_row)
-                    for j, m_entry in enumerate(movie_list_data[i : i + cols_per_row]):
-                        m_code = m_entry['code']
-                        is_selected = (m_code == st.session_state.selected_movie_code)
-                        label = f"✅ {m_entry['label']}" if is_selected else m_entry['label']
-                        if row_cols[j].button(label, key=f"grid_{m_code}", help=m_entry['label'], use_container_width=True):
-                            st.session_state.selected_movie_code = m_code
-                            sync_query_param("movie", m_code)
-                            st.rerun()
+            current_sel = st.session_state.get("selected_movie_code")
+            if current_sel not in active_codes:
+                if raw_movie_param and raw_movie_param in active_codes:
+                    current_sel = raw_movie_param
+                elif current_sel in nearby_codes and "All" in chosen_filter:
+                    pass
+                elif active_codes:
+                    current_sel = active_codes[0]
+                else:
+                    current_sel = None
+
+            st.session_state.selected_movie_code = current_sel
+            if current_sel:
+                sync_query_param("movie", current_sel)
+
+            sel_idx = active_codes.index(current_sel) if current_sel in active_codes else 0
+
+            movie_dict = {m['code']: m for m in movie_list_data}
+            def format_nearby_movie(mc):
+                m = movie_dict.get(mc, {})
+                t = m.get('title', 'Unknown')
+                r = m.get('rating', 'NR')
+                dur = m.get('duration', 0)
+                dur_str = f" | {dur} min" if dur else ""
+                pin = "📌 " if m.get('playing_today') else ""
+                new = "🔴 " if m.get('is_new') else ""
+                return f"{pin}{new}{t} ({r}{dur_str})"
+
+            select_key = f"nearby_movie_select_{tc}"
+            if select_key in st.session_state and st.session_state[select_key] not in active_codes:
+                st.session_state[select_key] = active_codes[sel_idx] if active_codes else None
+
+            def on_nearby_movie_selected():
+                picked = st.session_state.get(select_key)
+                if picked:
+                    st.session_state.selected_movie_code = picked
+                    sync_query_param("movie", picked)
+
+            selected_from_dropdown = st.selectbox(
+                "Select Movie",
+                options=active_codes,
+                index=sel_idx,
+                format_func=format_nearby_movie,
+                key=select_key,
+                on_change=on_nearby_movie_selected,
+                label_visibility="collapsed"
+            )
+            if selected_from_dropdown and selected_from_dropdown != st.session_state.get("selected_movie_code"):
+                st.session_state.selected_movie_code = selected_from_dropdown
+                sync_query_param("movie", selected_from_dropdown)
+
+            col_prev, col_count, col_next = st.columns([1, 2, 1])
+            with col_prev:
+                has_prev = (sel_idx > 0)
+                if st.button("⬅️ Prev", key=f"btn_prev_nearby_{tc}", disabled=not has_prev, use_container_width=True):
+                    new_code = active_codes[sel_idx - 1]
+                    st.session_state.selected_movie_code = new_code
+                    st.session_state[select_key] = new_code
+                    sync_query_param("movie", new_code)
+                    st.rerun()
+            with col_count:
+                st.markdown(f"<div style='text-align: center; color: grey; font-size: 0.85rem; padding-top: 6px;'>Movie <b>{sel_idx + 1}</b> of <b>{len(active_codes)}</b></div>", unsafe_allow_html=True)
+            with col_next:
+                has_next = (sel_idx < len(active_codes) - 1)
+                if st.button("Next ➡️", key=f"btn_next_nearby_{tc}", disabled=not has_next, use_container_width=True):
+                    new_code = active_codes[sel_idx + 1]
+                    st.session_state.selected_movie_code = new_code
+                    st.session_state[select_key] = new_code
+                    sync_query_param("movie", new_code)
+                    st.rerun()
 
             sel_code = st.session_state.selected_movie_code
-            if sel_code:
-                sync_query_param("movie", sel_code)
             if sel_code:
                 m_full_week_data = [s for s in nearby_weekly_schedule if s['master_code'] == sel_code]
                 m_today_data = [s for s in m_full_week_data if s['Showtime'].date() == q_date]
@@ -2147,40 +2223,123 @@ if selected_theater and schedule:
                     
                     elsewhere_display_list.append({
                         "code": m_code, 
-                        "title": f"{prefix}{meta.get('title', f'Movie {m_code}')}",
-                        "count": count
+                        "title": meta.get('title', f'Movie {m_code}'),
+                        "count": count,
+                        "in_cluster": m_code in local_weekly_codes
                     })
                 
-                elsewhere_display_list.sort(key=lambda x: x['title'].replace("📍 ", ""))
+                elsewhere_display_list.sort(key=lambda x: clean_movie_title(x['title']).lower())
                 
-                st.info(f"Showing **{len(elsewhere_display_list)}** movies playing across the US this week. 📍 indicates availability at theaters within your nearby radius.")
+                total_nationwide = len(elsewhere_display_list)
+                in_cluster_count = sum(1 for m in elsewhere_display_list if m['in_cluster'])
+                elsewhere_only_count = total_nationwide - in_cluster_count
 
+                st.caption(f"Showing **{total_nationwide}** movies playing across the US this week. 📍 indicates availability at theaters within your nearby radius.")
+
+                nationwide_filter_options = [
+                    f"🌍 All ({total_nationwide})",
+                    f"📍 In Cluster ({in_cluster_count})",
+                    f"✈️ Elsewhere Only ({elsewhere_only_count})"
+                ]
+
+                filter_key = f"nationwide_filter_pill_{tc}"
+                chosen_filter = st.pills(
+                    "Filter Nationwide Movies",
+                    options=nationwide_filter_options,
+                    default=nationwide_filter_options[0],
+                    key=filter_key,
+                    label_visibility="collapsed"
+                )
+                if not chosen_filter:
+                    chosen_filter = nationwide_filter_options[0]
+
+                if "In Cluster" in chosen_filter:
+                    active_nationwide = [m for m in elsewhere_display_list if m['in_cluster']]
+                elif "Elsewhere" in chosen_filter:
+                    active_nationwide = [m for m in elsewhere_display_list if not m['in_cluster']]
+                else:
+                    active_nationwide = elsewhere_display_list
+
+                if not active_nationwide:
+                    active_nationwide = elsewhere_display_list
+
+                active_codes = [m['code'] for m in active_nationwide]
+                all_nationwide_codes = {m['code'] for m in elsewhere_display_list}
                 raw_movie_param = st.query_params.get("movie")
-                if st.session_state.get("selected_movie_code") not in nationwide_codes:
-                    if raw_movie_param and raw_movie_param in nationwide_codes:
-                        st.session_state.selected_movie_code = raw_movie_param
-                    elif elsewhere_display_list:
-                        st.session_state.selected_movie_code = elsewhere_display_list[0]['code']
-                    else:
-                        st.session_state.selected_movie_code = None
 
-                with st.container(height=200, border=True):
-                    cols_per_row = 2
-                    for i in range(0, len(elsewhere_display_list), cols_per_row):
-                        row_cols = st.columns(cols_per_row)
-                        for j, m_entry in enumerate(elsewhere_display_list[i : i + cols_per_row]):
-                            m_code = m_entry['code']
-                            label = f"{m_entry['title']} ({m_entry['count']})"
-                            is_sel = (m_code == st.session_state.selected_movie_code)
-                            if row_cols[j].button(f"✅ {label}" if is_sel else f"{label}", 
-                                                  key=f"else_btn_{m_code}", help=label, use_container_width=True):
-                                st.session_state.selected_movie_code = m_code
-                                sync_query_param("movie", m_code)
-                                st.rerun()
+                current_sel = st.session_state.get("selected_movie_code")
+                if current_sel not in active_codes:
+                    if raw_movie_param and raw_movie_param in active_codes:
+                        current_sel = raw_movie_param
+                    elif current_sel in all_nationwide_codes and "All" in chosen_filter:
+                        pass
+                    elif active_codes:
+                        current_sel = active_codes[0]
+                    else:
+                        current_sel = None
+
+                st.session_state.selected_movie_code = current_sel
+                if current_sel:
+                    sync_query_param("movie", current_sel)
+
+                sel_idx = active_codes.index(current_sel) if current_sel in active_codes else 0
+
+                nationwide_dict = {m['code']: m for m in elsewhere_display_list}
+                def format_nationwide_movie(mc):
+                    m = nationwide_dict.get(mc, {})
+                    title = m.get('title', 'Unknown')
+                    count = m.get('count', 0)
+                    in_cluster = m.get('in_cluster', False)
+                    prefix = "📍 " if in_cluster else ""
+                    cluster_tag = " (In Cluster)" if in_cluster else ""
+                    theaters_str = f"{count} {'theater' if count == 1 else 'theaters'}"
+                    return f"{prefix}{title} — {theaters_str}{cluster_tag}"
+
+                select_key = f"nationwide_movie_select_{tc}"
+                if select_key in st.session_state and st.session_state[select_key] not in active_codes:
+                    st.session_state[select_key] = active_codes[sel_idx] if active_codes else None
+
+                def on_nationwide_movie_selected():
+                    picked = st.session_state.get(select_key)
+                    if picked:
+                        st.session_state.selected_movie_code = picked
+                        sync_query_param("movie", picked)
+
+                selected_from_dropdown = st.selectbox(
+                    "Select Movie",
+                    options=active_codes,
+                    index=sel_idx,
+                    format_func=format_nationwide_movie,
+                    key=select_key,
+                    on_change=on_nationwide_movie_selected,
+                    label_visibility="collapsed"
+                )
+                if selected_from_dropdown and selected_from_dropdown != st.session_state.get("selected_movie_code"):
+                    st.session_state.selected_movie_code = selected_from_dropdown
+                    sync_query_param("movie", selected_from_dropdown)
+
+                col_prev, col_count, col_next = st.columns([1, 2, 1])
+                with col_prev:
+                    has_prev = (sel_idx > 0)
+                    if st.button("⬅️ Prev", key=f"btn_prev_nationwide_{tc}", disabled=not has_prev, use_container_width=True):
+                        new_code = active_codes[sel_idx - 1]
+                        st.session_state.selected_movie_code = new_code
+                        st.session_state[select_key] = new_code
+                        sync_query_param("movie", new_code)
+                        st.rerun()
+                with col_count:
+                    st.markdown(f"<div style='text-align: center; color: grey; font-size: 0.85rem; padding-top: 6px;'>Movie <b>{sel_idx + 1}</b> of <b>{len(active_codes)}</b></div>", unsafe_allow_html=True)
+                with col_next:
+                    has_next = (sel_idx < len(active_codes) - 1)
+                    if st.button("Next ➡️", key=f"btn_next_nationwide_{tc}", disabled=not has_next, use_container_width=True):
+                        new_code = active_codes[sel_idx + 1]
+                        st.session_state.selected_movie_code = new_code
+                        st.session_state[select_key] = new_code
+                        sync_query_param("movie", new_code)
+                        st.rerun()
 
                 sel_code = st.session_state.selected_movie_code
                 if sel_code:
-                    sync_query_param("movie", sel_code)
                     render_movie_header_card(sel_code)
                     
                     target_theaters = get_theaters_playing_movie(sel_code, set(), status_context)
