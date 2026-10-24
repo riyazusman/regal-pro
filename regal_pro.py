@@ -2052,8 +2052,7 @@ if selected_theater and schedule:
                 return f"{pin}{new}{t} ({r}{dur_str})"
 
             select_key = f"nearby_movie_select_{tc}"
-            if select_key in st.session_state and st.session_state[select_key] not in active_codes:
-                st.session_state[select_key] = active_codes[sel_idx] if active_codes else None
+            st.session_state[select_key] = current_sel
 
             def on_nearby_movie_selected():
                 picked = st.session_state.get(select_key)
@@ -2080,7 +2079,6 @@ if selected_theater and schedule:
                 if st.button("⬅️ Prev", key=f"btn_prev_nearby_{tc}", disabled=not has_prev, use_container_width=True):
                     new_code = active_codes[sel_idx - 1]
                     st.session_state.selected_movie_code = new_code
-                    st.session_state[select_key] = new_code
                     sync_query_param("movie", new_code)
                     st.rerun()
             with col_count:
@@ -2090,7 +2088,6 @@ if selected_theater and schedule:
                 if st.button("Next ➡️", key=f"btn_next_nearby_{tc}", disabled=not has_next, use_container_width=True):
                     new_code = active_codes[sel_idx + 1]
                     st.session_state.selected_movie_code = new_code
-                    st.session_state[select_key] = new_code
                     sync_query_param("movie", new_code)
                     st.rerun()
 
@@ -2296,8 +2293,7 @@ if selected_theater and schedule:
                     return f"{prefix}{title} — {theaters_str}{cluster_tag}"
 
                 select_key = f"nationwide_movie_select_{tc}"
-                if select_key in st.session_state and st.session_state[select_key] not in active_codes:
-                    st.session_state[select_key] = active_codes[sel_idx] if active_codes else None
+                st.session_state[select_key] = current_sel
 
                 def on_nationwide_movie_selected():
                     picked = st.session_state.get(select_key)
@@ -2324,7 +2320,6 @@ if selected_theater and schedule:
                     if st.button("⬅️ Prev", key=f"btn_prev_nationwide_{tc}", disabled=not has_prev, use_container_width=True):
                         new_code = active_codes[sel_idx - 1]
                         st.session_state.selected_movie_code = new_code
-                        st.session_state[select_key] = new_code
                         sync_query_param("movie", new_code)
                         st.rerun()
                 with col_count:
@@ -2334,7 +2329,6 @@ if selected_theater and schedule:
                     if st.button("Next ➡️", key=f"btn_next_nationwide_{tc}", disabled=not has_next, use_container_width=True):
                         new_code = active_codes[sel_idx + 1]
                         st.session_state.selected_movie_code = new_code
-                        st.session_state[select_key] = new_code
                         sync_query_param("movie", new_code)
                         st.rerun()
 
