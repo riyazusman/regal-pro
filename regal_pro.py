@@ -711,6 +711,18 @@ def get_movie_regal_url(m_code, title=None):
         return generate_regal_url(clean_movie_title(t), m_code)
     return ""
 
+def format_badges_and_regal_link(badges, regal_url, link_text="Regal Page ↗"):
+    """Combine score badges and Regal link without leading/trailing pipe symbols."""
+    regal_html = f'<a href="{regal_url}" target="_blank" style="text-decoration:none; color:#e67e22; font-weight:600;">🎟️ {link_text}</a>' if regal_url else ""
+    clean_badges = (badges or "").strip()
+    if clean_badges and regal_html:
+        return f"{clean_badges} | {regal_html}"
+    elif clean_badges:
+        return clean_badges
+    elif regal_html:
+        return regal_html
+    return ""
+
 def render_movie_header_card(m_code, title=None, extra_tags=""):
     """Render a uniform, responsive movie card header with desktop/mobile adaptive poster, scores, and links."""
     meta = st.session_state.get('global_movie_catalog', {}).get(m_code, {}) or st.session_state.get('registry', {}).get('movies', {}).get(m_code, {})
@@ -722,12 +734,10 @@ def render_movie_header_card(m_code, title=None, extra_tags=""):
     has_poster = is_poster_valid(poster_url)
     
     regal_url = get_movie_regal_url(m_code, disp_title)
-    regal_link = f' | <a href="{regal_url}" target="_blank" style="text-decoration:none; color:#e67e22; font-weight:600;">🎟️ Regal Page ↗</a>' if regal_url else ""
     badges, badges_type = get_rating_badges(m_code)
-    if not badges and regal_link.startswith(' | '):
-        regal_link = regal_link[3:]
+    badges_line = format_badges_and_regal_link(badges, regal_url, "Regal Page ↗")
     tooltip_attr = f' title="{badges_type}"' if badges_type else ""
-    badges_html = f"<small{tooltip_attr}>{badges}{regal_link}</small>"
+    badges_html = f"<small{tooltip_attr}>{badges_line}</small>" if badges_line else ""
     
     clean_extra = f" {extra_tags}".strip()
     extra_str = f" {clean_extra}" if clean_extra else ""
@@ -1609,14 +1619,6 @@ if selected_theater and schedule:
                         for date_key, day_flat in st.session_state.registry['schedule'].items() 
                         if any(s['master_code'] == m_code for s in day_flat)]
                     
-                    meta = movie_meta.get(m_code, {})
-                    poster_url = meta.get('poster')
-                    has_poster = bool(poster_url and str(poster_url).strip().startswith("http"))
-                    regal_url = get_movie_regal_url(m_code, title)
-                    regal_link_html = f' | <a href="{regal_url}" target="_blank" style="text-decoration: none; color: #e67e22; font-weight: 600;">🎟️ Regal Page ↗</a>' if regal_url else ""
-                    badges, badges_type = get_rating_badges(m_code)
-                    badges_with_link = f"<small>{badges}{regal_link_html}</small>"
-
                     new_tag = "| 🔴 New Release" if meta.get('is_new') else ""
                     unlimited_tag = "| 🎫 No Unlimited" if is_unlimited_excluded(m_code, m_shows[0]['raw_attrs']) else ""
 
@@ -1726,7 +1728,8 @@ if selected_theater and schedule:
                         poster_url = meta.get('poster')
                         has_poster = is_poster_valid(poster_url)
                         regal_url = get_movie_regal_url(m_code, meta.get('title'))
-                        regal_link = f' | <a href="{regal_url}" target="_blank" style="text-decoration:none; color:#e67e22; font-weight:600;">🎟️ Regal ↗</a>' if regal_url else ""
+                        badges_line = format_badges_and_regal_link(badges, regal_url, "Regal ↗")
+                        badges_row = f'<div><small>{badges_line}</small></div>' if badges_line else ""
 
                         with row_cols[col_idx]:
                             with st.container(border=True):
@@ -1736,7 +1739,7 @@ if selected_theater and schedule:
                                     f'{img_html}'
                                     f'<div style="flex:1; min-width:0;">'
                                     f'<div style="font-weight:700; font-size:0.95rem; line-height:1.2;">{meta.get("title", "New Release")} <span style="font-size:0.85rem; font-weight:normal; color:grey;">({meta.get("rating", "NR")})</span>{new_tag}{unlimited_tag}</div>'
-                                    f'<div><small>{badges}{regal_link}</small></div>'
+                                    f'{badges_row}'
                                     f'<div style="font-size:0.75rem; color:grey; margin-top:2px;">⏱️ {meta.get("duration", 120)} min • 🎥 {meta.get("studio", "Unknown")}</div>'
                                     f'</div>'
                                     f'</div>'
@@ -1860,7 +1863,8 @@ if selected_theater and schedule:
                             poster_url = meta.get('poster')
                             has_poster = is_poster_valid(poster_url)
                             regal_url = get_movie_regal_url(m_code, display_title)
-                            regal_link = f' | <a href="{regal_url}" target="_blank" style="text-decoration:none; color:#e67e22; font-weight:600;">🎟️ Regal ↗</a>' if regal_url else ""
+                            badges_line = format_badges_and_regal_link(badges, regal_url, "Regal ↗")
+                            badges_row = f'<div><small>{badges_line}</small></div>' if badges_line else ""
                             unlimited_tag = " 🎫 " if is_unlimited_excluded(m_code, set()) else ""
 
                             sorted_dates, _ = parse_and_sort_dates(f_movie.get('scheduled_dates', []))
@@ -1874,7 +1878,7 @@ if selected_theater and schedule:
                                         f'{img_html}'
                                         f'<div style="flex:1; min-width:0;">'
                                         f'<div style="font-weight:700; font-size:0.95rem; line-height:1.2;">{display_title} <span style="font-size:0.85rem; font-weight:normal; color:grey;">({meta.get("rating", "NR")})</span>{unlimited_tag}</div>'
-                                        f'<div><small>{badges}{regal_link}</small></div>'
+                                        f'{badges_row}'
                                         f'<div style="font-size:0.75rem; color:grey; margin-top:2px;">⏱️ {meta.get("duration", 0)} min • 🎥 {meta.get("studio", "Unknown")}</div>'
                                         f'</div>'
                                         f'</div>'
@@ -2018,11 +2022,6 @@ if selected_theater and schedule:
                 m_full_week_data = [s for s in nearby_weekly_schedule if s['master_code'] == sel_code]
                 m_today_data = [s for s in m_full_week_data if s['Showtime'].date() == q_date]
                 meta = movie_meta.get(sel_code, {})
-                poster_url = meta.get('poster')
-                has_poster = bool(poster_url and str(poster_url).strip().startswith("http"))
-                regal_url = get_movie_regal_url(sel_code, meta.get('title'))
-                regal_link = f' | <a href="{regal_url}" target="_blank" style="text-decoration:none; color:#e67e22; font-weight:600;">🎟️ View on Regal ↗</a>' if regal_url else ""
-                badges, badges_type = get_rating_badges(sel_code)
                 new_tag = " | 🔴 New Release" if meta.get('is_new') else ""
                 unlimited_tag = "| 🎫 No Unlimited" if (m_today_data and is_unlimited_excluded(sel_code, m_today_data[0]['raw_attrs'])) else ""
 
@@ -2032,7 +2031,7 @@ if selected_theater and schedule:
                     st.warning(f"⚠️ **{meta.get('title')}** has no showtimes on **{q_date.strftime('%A, %b %d')}**.")
                     available_dates = sorted(list(set(s['Showtime'].date() for s in m_full_week_data)))
                     if available_dates:
-                        st.caption("📅 **This movie is playing nearby on (click a date to view showtimes):**")
+                        st.caption("📅 **Scheduled Dates:**")
                         sel_avail = st.pills(
                             "Available Dates",
                             options=available_dates,
