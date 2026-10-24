@@ -1619,6 +1619,7 @@ if selected_theater and schedule:
                         for date_key, day_flat in st.session_state.registry['schedule'].items() 
                         if any(s['master_code'] == m_code for s in day_flat)]
                     
+                    meta = movie_meta.get(m_code, {})
                     new_tag = "| 🔴 New Release" if meta.get('is_new') else ""
                     unlimited_tag = "| 🎫 No Unlimited" if is_unlimited_excluded(m_code, m_shows[0]['raw_attrs']) else ""
 
