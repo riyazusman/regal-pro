@@ -129,30 +129,14 @@ st.markdown("""
         .movie-poster-placeholder .ph-icon {
             font-size: 3rem;
         }
-        div[class*="st-key-movie_nav_wrap_"] > div[data-testid="stVerticalBlock"] {
-            display: grid !important;
-            grid-template-columns: 140px 1fr 140px;
-            grid-template-areas:
-                "prev count next"
-                "card card  card";
-            align-items: center;
-            gap: 6px 14px;
+    @media (max-width: 767px) {
+        div[class*="st-key-btn_next_top_"] {
+            display: none !important;
         }
-        div[class*="st-key-movie_nav_wrap_"] [class*="st-key-btn_prev_"] {
-            grid-area: prev;
-            margin: 0 !important;
-        }
-        div[class*="st-key-movie_nav_wrap_"] div:has(> .movie-nav-counter) {
-            grid-area: count;
-            margin: 0 !important;
-        }
-        div[class*="st-key-movie_nav_wrap_"] [class*="st-key-btn_next_"] {
-            grid-area: next;
-            margin: 0 !important;
-        }
-        div[class*="st-key-movie_nav_wrap_"] div:has(> .movie-header-card) {
-            grid-area: card;
-            margin: 0 !important;
+    }
+    @media (min-width: 768px) {
+        div[class*="st-key-btn_next_bottom_"] {
+            display: none !important;
         }
     }
     </style>
@@ -2150,24 +2134,32 @@ if selected_theater and schedule:
                 new_tag = " | 🔴 New Release" if meta.get('is_new') else ""
                 unlimited_tag = "| 🎫 No Unlimited" if (m_today_data and is_unlimited_excluded(sel_code, m_today_data[0]['raw_attrs'])) else ""
 
-                with st.container(key=f"movie_nav_wrap_nearby_{tc}"):
-                    has_prev = (sel_idx > 0)
+                has_prev = (sel_idx > 0)
+                has_next = (sel_idx < len(active_codes) - 1)
+
+                col_prev, col_count, col_next = st.columns([1, 2, 1])
+                with col_prev:
                     if st.button("⬅️ Prev", key=f"btn_prev_nearby_{tc}", disabled=not has_prev, use_container_width=True):
                         new_code = active_codes[sel_idx - 1]
                         st.session_state.selected_movie_code = new_code
                         sync_query_param("movie", new_code)
                         st.rerun()
-
-                    st.markdown(f"<div class='movie-nav-counter' style='text-align: center; color: grey; font-size: 0.85rem; padding: 2px 0;'>Movie <b>{sel_idx + 1}</b> of <b>{len(active_codes)}</b></div>", unsafe_allow_html=True)
-
-                    render_movie_header_card(sel_code, meta.get('title'), extra_tags=f"{new_tag} {unlimited_tag}")
-
-                    has_next = (sel_idx < len(active_codes) - 1)
-                    if st.button("Next ➡️", key=f"btn_next_nearby_{tc}", disabled=not has_next, use_container_width=True):
+                with col_count:
+                    st.markdown(f"<div style='text-align: center; color: grey; font-size: 0.85rem; padding-top: 6px;'>Movie <b>{sel_idx + 1}</b> of <b>{len(active_codes)}</b></div>", unsafe_allow_html=True)
+                with col_next:
+                    if st.button("Next ➡️", key=f"btn_next_top_nearby_{tc}", disabled=not has_next, use_container_width=True):
                         new_code = active_codes[sel_idx + 1]
                         st.session_state.selected_movie_code = new_code
                         sync_query_param("movie", new_code)
                         st.rerun()
+
+                render_movie_header_card(sel_code, meta.get('title'), extra_tags=f"{new_tag} {unlimited_tag}")
+
+                if st.button("Next ➡️", key=f"btn_next_bottom_nearby_{tc}", disabled=not has_next, use_container_width=True):
+                    new_code = active_codes[sel_idx + 1]
+                    st.session_state.selected_movie_code = new_code
+                    sync_query_param("movie", new_code)
+                    st.rerun()
 
                 if not m_today_data:
                     st.warning(f"⚠️ **{meta.get('title')}** has no showtimes on **{q_date.strftime('%A, %b %d')}**.")
@@ -2383,24 +2375,32 @@ if selected_theater and schedule:
 
                 sel_code = st.session_state.selected_movie_code
                 if sel_code:
-                    with st.container(key=f"movie_nav_wrap_nationwide_{tc}"):
-                        has_prev = (sel_idx > 0)
+                    has_prev = (sel_idx > 0)
+                    has_next = (sel_idx < len(active_codes) - 1)
+
+                    col_prev, col_count, col_next = st.columns([1, 2, 1])
+                    with col_prev:
                         if st.button("⬅️ Prev", key=f"btn_prev_nationwide_{tc}", disabled=not has_prev, use_container_width=True):
                             new_code = active_codes[sel_idx - 1]
                             st.session_state.selected_movie_code = new_code
                             sync_query_param("movie", new_code)
                             st.rerun()
-
-                        st.markdown(f"<div class='movie-nav-counter' style='text-align: center; color: grey; font-size: 0.85rem; padding: 2px 0;'>Movie <b>{sel_idx + 1}</b> of <b>{len(active_codes)}</b></div>", unsafe_allow_html=True)
-
-                        render_movie_header_card(sel_code)
-
-                        has_next = (sel_idx < len(active_codes) - 1)
-                        if st.button("Next ➡️", key=f"btn_next_nationwide_{tc}", disabled=not has_next, use_container_width=True):
+                    with col_count:
+                        st.markdown(f"<div style='text-align: center; color: grey; font-size: 0.85rem; padding-top: 6px;'>Movie <b>{sel_idx + 1}</b> of <b>{len(active_codes)}</b></div>", unsafe_allow_html=True)
+                    with col_next:
+                        if st.button("Next ➡️", key=f"btn_next_top_nationwide_{tc}", disabled=not has_next, use_container_width=True):
                             new_code = active_codes[sel_idx + 1]
                             st.session_state.selected_movie_code = new_code
                             sync_query_param("movie", new_code)
                             st.rerun()
+
+                    render_movie_header_card(sel_code)
+
+                    if st.button("Next ➡️", key=f"btn_next_bottom_nationwide_{tc}", disabled=not has_next, use_container_width=True):
+                        new_code = active_codes[sel_idx + 1]
+                        st.session_state.selected_movie_code = new_code
+                        sync_query_param("movie", new_code)
+                        st.rerun()
                     
                     target_theaters = get_theaters_playing_movie(sel_code, set(), status_context)
                     
