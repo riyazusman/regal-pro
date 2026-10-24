@@ -101,7 +101,6 @@ st.markdown("""
         width: 100%;
         height: 100%;
         display: flex;
-        flex-direction: column;
         align-items: center;
         justify-content: center;
         background: linear-gradient(135deg, rgba(151,166,195,0.18) 0%, rgba(151,166,195,0.06) 100%);
@@ -109,23 +108,12 @@ st.markdown("""
         border-radius: inherit;
         color: #97a6c3;
         box-sizing: border-box;
-        text-align: center;
-        padding: 4px;
         user-select: none;
     }
     .movie-poster-placeholder .ph-icon {
-        font-size: 1.5rem;
+        font-size: 1.8rem;
         line-height: 1;
         opacity: 0.85;
-    }
-    .movie-poster-placeholder .ph-text {
-        font-size: 0.55rem;
-        font-weight: 700;
-        letter-spacing: 0.5px;
-        text-transform: uppercase;
-        margin-top: 4px;
-        opacity: 0.75;
-        white-space: nowrap;
     }
     @media (min-width: 768px) {
         .movie-header-card {
@@ -139,11 +127,32 @@ st.markdown("""
             box-shadow: 0 4px 12px rgba(0,0,0,0.25);
         }
         .movie-poster-placeholder .ph-icon {
-            font-size: 2.6rem;
+            font-size: 3rem;
         }
-        .movie-poster-placeholder .ph-text {
-            font-size: 0.72rem;
-            margin-top: 6px;
+        div[class*="st-key-movie_nav_wrap_"] > div[data-testid="stVerticalBlock"] {
+            display: grid !important;
+            grid-template-columns: 140px 1fr 140px;
+            grid-template-areas:
+                "prev count next"
+                "card card  card";
+            align-items: center;
+            gap: 6px 14px;
+        }
+        div[class*="st-key-movie_nav_wrap_"] [class*="st-key-btn_prev_"] {
+            grid-area: prev;
+            margin: 0 !important;
+        }
+        div[class*="st-key-movie_nav_wrap_"] div:has(> .movie-nav-counter) {
+            grid-area: count;
+            margin: 0 !important;
+        }
+        div[class*="st-key-movie_nav_wrap_"] [class*="st-key-btn_next_"] {
+            grid-area: next;
+            margin: 0 !important;
+        }
+        div[class*="st-key-movie_nav_wrap_"] div:has(> .movie-header-card) {
+            grid-area: card;
+            margin: 0 !important;
         }
     }
     </style>
@@ -788,7 +797,6 @@ def render_movie_header_card(m_code, title=None, extra_tags=""):
             '<div class="movie-poster-box">'
             '<div class="movie-poster-placeholder">'
             '<span class="ph-icon">🎬</span>'
-            '<span class="ph-text">No Poster</span>'
             '</div>'
             '</div>'
         )
@@ -1785,9 +1793,8 @@ if selected_theater and schedule:
                                     img_html = f'<img src="{poster_url}" alt="" style="width:50px; min-width:50px; height:75px; object-fit:cover; border-radius:4px; box-shadow:0 1px 3px rgba(0,0,0,0.2);" onerror="this.style.display=\'none\';" />'
                                 else:
                                     img_html = (
-                                        '<div style="width:50px; min-width:50px; height:75px; border-radius:4px; background:linear-gradient(135deg, rgba(151,166,195,0.18) 0%, rgba(151,166,195,0.06) 100%); border:1px dashed rgba(151,166,195,0.3); display:flex; flex-direction:column; align-items:center; justify-content:center; flex-shrink:0; color:#97a6c3; box-sizing:border-box;">'
-                                        '<span style="font-size:1.3rem; line-height:1;">🎬</span>'
-                                        '<span style="font-size:0.5rem; font-weight:700; margin-top:2px; opacity:0.75; text-transform:uppercase;">NO POSTER</span>'
+                                        '<div style="width:50px; min-width:50px; height:75px; border-radius:4px; background:linear-gradient(135deg, rgba(151,166,195,0.18) 0%, rgba(151,166,195,0.06) 100%); border:1px dashed rgba(151,166,195,0.3); display:flex; align-items:center; justify-content:center; flex-shrink:0; color:#97a6c3; box-sizing:border-box;">'
+                                        '<span style="font-size:1.5rem; line-height:1;">🎬</span>'
                                         '</div>'
                                     )
                                 card_html = (
@@ -1932,9 +1939,8 @@ if selected_theater and schedule:
                                         img_html = f'<img src="{poster_url}" alt="" style="width:50px; min-width:50px; height:75px; object-fit:cover; border-radius:4px; box-shadow:0 1px 3px rgba(0,0,0,0.2);" onerror="this.style.display=\'none\';" />'
                                     else:
                                         img_html = (
-                                            '<div style="width:50px; min-width:50px; height:75px; border-radius:4px; background:linear-gradient(135deg, rgba(151,166,195,0.18) 0%, rgba(151,166,195,0.06) 100%); border:1px dashed rgba(151,166,195,0.3); display:flex; flex-direction:column; align-items:center; justify-content:center; flex-shrink:0; color:#97a6c3; box-sizing:border-box;">'
-                                            '<span style="font-size:1.3rem; line-height:1;">🎬</span>'
-                                            '<span style="font-size:0.5rem; font-weight:700; margin-top:2px; opacity:0.75; text-transform:uppercase;">NO POSTER</span>'
+                                            '<div style="width:50px; min-width:50px; height:75px; border-radius:4px; background:linear-gradient(135deg, rgba(151,166,195,0.18) 0%, rgba(151,166,195,0.06) 100%); border:1px dashed rgba(151,166,195,0.3); display:flex; align-items:center; justify-content:center; flex-shrink:0; color:#97a6c3; box-sizing:border-box;">'
+                                            '<span style="font-size:1.5rem; line-height:1;">🎬</span>'
                                             '</div>'
                                         )
                                     card_html = (
@@ -2144,24 +2150,24 @@ if selected_theater and schedule:
                 new_tag = " | 🔴 New Release" if meta.get('is_new') else ""
                 unlimited_tag = "| 🎫 No Unlimited" if (m_today_data and is_unlimited_excluded(sel_code, m_today_data[0]['raw_attrs'])) else ""
 
-                render_movie_header_card(sel_code, meta.get('title'), extra_tags=f"{new_tag} {unlimited_tag}")
-
-                col_prev, col_next = st.columns(2)
-                with col_prev:
+                with st.container(key=f"movie_nav_wrap_nearby_{tc}"):
                     has_prev = (sel_idx > 0)
                     if st.button("⬅️ Prev", key=f"btn_prev_nearby_{tc}", disabled=not has_prev, use_container_width=True):
                         new_code = active_codes[sel_idx - 1]
                         st.session_state.selected_movie_code = new_code
                         sync_query_param("movie", new_code)
                         st.rerun()
-                with col_next:
+
+                    st.markdown(f"<div class='movie-nav-counter' style='text-align: center; color: grey; font-size: 0.85rem; padding: 2px 0;'>Movie <b>{sel_idx + 1}</b> of <b>{len(active_codes)}</b></div>", unsafe_allow_html=True)
+
+                    render_movie_header_card(sel_code, meta.get('title'), extra_tags=f"{new_tag} {unlimited_tag}")
+
                     has_next = (sel_idx < len(active_codes) - 1)
                     if st.button("Next ➡️", key=f"btn_next_nearby_{tc}", disabled=not has_next, use_container_width=True):
                         new_code = active_codes[sel_idx + 1]
                         st.session_state.selected_movie_code = new_code
                         sync_query_param("movie", new_code)
                         st.rerun()
-                st.caption(f"<div style='text-align: center; color: grey; font-size: 0.8rem; margin-top: -8px; margin-bottom: 6px;'>Movie <b>{sel_idx + 1}</b> of <b>{len(active_codes)}</b></div>", unsafe_allow_html=True)
 
                 if not m_today_data:
                     st.warning(f"⚠️ **{meta.get('title')}** has no showtimes on **{q_date.strftime('%A, %b %d')}**.")
@@ -2377,24 +2383,24 @@ if selected_theater and schedule:
 
                 sel_code = st.session_state.selected_movie_code
                 if sel_code:
-                    render_movie_header_card(sel_code)
-
-                    col_prev, col_next = st.columns(2)
-                    with col_prev:
+                    with st.container(key=f"movie_nav_wrap_nationwide_{tc}"):
                         has_prev = (sel_idx > 0)
                         if st.button("⬅️ Prev", key=f"btn_prev_nationwide_{tc}", disabled=not has_prev, use_container_width=True):
                             new_code = active_codes[sel_idx - 1]
                             st.session_state.selected_movie_code = new_code
                             sync_query_param("movie", new_code)
                             st.rerun()
-                    with col_next:
+
+                        st.markdown(f"<div class='movie-nav-counter' style='text-align: center; color: grey; font-size: 0.85rem; padding: 2px 0;'>Movie <b>{sel_idx + 1}</b> of <b>{len(active_codes)}</b></div>", unsafe_allow_html=True)
+
+                        render_movie_header_card(sel_code)
+
                         has_next = (sel_idx < len(active_codes) - 1)
                         if st.button("Next ➡️", key=f"btn_next_nationwide_{tc}", disabled=not has_next, use_container_width=True):
                             new_code = active_codes[sel_idx + 1]
                             st.session_state.selected_movie_code = new_code
                             sync_query_param("movie", new_code)
                             st.rerun()
-                    st.caption(f"<div style='text-align: center; color: grey; font-size: 0.8rem; margin-top: -8px; margin-bottom: 6px;'>Movie <b>{sel_idx + 1}</b> of <b>{len(active_codes)}</b></div>", unsafe_allow_html=True)
                     
                     target_theaters = get_theaters_playing_movie(sel_code, set(), status_context)
                     
