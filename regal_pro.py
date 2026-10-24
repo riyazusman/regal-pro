@@ -15,6 +15,8 @@ import gc
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone, time as dt_time
+import copy
+import uuid
 from curl_cffi import requests as c_requests
 from streamlit_js_eval import get_geolocation, set_cookie, get_cookie
 from supabase import create_client, Client
@@ -22,6 +24,19 @@ from core.engine import SchedulerEngine
 from core.models import SchedulerConstraints
 from core.text_utils import clean_movie_title, generate_regal_url
 from core.date_utils import parse_and_sort_dates
+from core.preferences import (
+    COOKIE_NAME,
+    decode_preferences,
+    encode_preferences,
+    get_default_preferences,
+    is_movie_watched,
+    sanitize_preferences,
+    set_home_theater,
+    toggle_favorite_theater,
+    toggle_watched_movie,
+    update_filter_defaults,
+    update_scheduler_defaults,
+)
 from core.share_utils import (
     serialize_showing,
     deserialize_showing,
@@ -413,6 +428,109 @@ def is_dst(dt):
     dst_end = datetime(year, 11, 1) + timedelta(days=(6 - datetime(year, 11, 1).weekday()))
     return dst_start <= dt.replace(tzinfo=None) < dst_end
 
+def load_user_preferences(prefs_cookie_raw=None):
+    """Load and cache user preferences in session state."""
+    if "user_prefs" not in st.session_state:
+        st.session_state.user_prefs = decode_preferences(prefs_cookie_raw)
+        st.session_state._prefs_cookie_raw = prefs_cookie_raw
+    elif prefs_cookie_raw and st.session_state.get("_prefs_cookie_raw") != prefs_cookie_raw:
+        st.session_state.user_prefs = decode_preferences(prefs_cookie_raw)
+        st.session_state._prefs_cookie_raw = prefs_cookie_raw
+    return st.session_state.user_prefs
+
+def persist_user_preferences(prefs):
+    """Persist sanitized user preferences in session state and client cookie."""
+    clean = sanitize_preferences(prefs)
+    st.session_state.user_prefs = clean
+    encoded = encode_preferences(clean)
+    st.session_state._prefs_cookie_raw = encoded
+    with st.container(height=1, border=False):
+        st.html("<style>div[height='1']{display:none;}</style>")
+        set_cookie(COOKIE_NAME, encoded, 400, component_key=f"set_prefs_{uuid.uuid4().hex[:8]}")
+
+def clear_all_cookies_and_preferences():
+    """Wipe all client-side preferences and geolocation cookies."""
+    st.session_state.user_prefs = get_default_preferences()
+    st.session_state._prefs_cookie_raw = None
+    if "active_theater_code" in st.session_state:
+        st.session_state.active_theater_code = None
+    with st.container(height=1, border=False):
+        st.html("<style>div[height='1']{display:none;}</style>")
+        u = uuid.uuid4().hex[:8]
+        set_cookie(COOKIE_NAME, '', -1, component_key=f"clr_p_{u}")
+        set_cookie('RegalProUserGeoLocation', '', -1, component_key=f"clr_geo_{u}")
+        set_cookie('RegalProUserGeoLatitude', '', -1, component_key=f"clr_lat_{u}")
+        set_cookie('RegalProUserGeoLongitude', '', -1, component_key=f"clr_lon_{u}")
+        set_cookie('RegalProUserZipCode', '', -1, component_key=f"clr_zip_{u}")
+
+@st.dialog("🔒 Privacy & Local Preferences")
+def show_privacy_dialog():
+    """Display transparency policy and local preferences control modal."""
+    st.markdown("""
+    ### 🛡️ Privacy & Cookie Transparency
+    
+    **RegalPro is engineered with a strict client-first privacy architecture:**
+    - **No User Accounts or Cloud Tracking**: RegalPro does **not** store any personal user profiles, browsing histories, IP addresses, or device identifiers on remote servers.
+    - **100% Client-Side Preferences**: All your customizations (Home Theater, Favorite Theaters, Watched Movies, Filter settings, and Scheduler defaults) are saved **exclusively on your device** via browser cookies.
+    - **Lightweight Server Telemetry**: Our server access counter logs only the requested 4-digit Regal theater code. It contains no user identifiers, IP logs, or personal tracking—it exists solely to prioritize automatic cache warming for high-traffic theaters to deliver instant showtimes.
+    - **Geolocation**: When enabled, GPS coordinates are processed solely inside your browser session to calculate drive distances. They are never transmitted or logged remotely.
+    """)
+    st.divider()
+
+    st.subheader("⚙️ Your Current Preferences")
+    prefs = st.session_state.get('user_prefs', get_default_preferences())
+    ht = prefs.get('home_theater')
+    favs = prefs.get('favorite_theaters', [])
+    watched = prefs.get('watched_movies', [])
+    filt = prefs.get('filters', {})
+    sched = prefs.get('scheduler', {})
+
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown(f"**🏠 Home Theater:** `{ht or 'None (using search/geolocation)'}`")
+        if ht:
+            if st.button("Unset Home Theater", key="dlg_unset_home"):
+                new_p = set_home_theater(prefs, None)
+                persist_user_preferences(new_p)
+                st.rerun()
+        st.markdown(f"**⭐ Favorite Theaters ({len(favs)}):**")
+        if favs:
+            st.caption(", ".join(favs))
+            if st.button("Clear Favorites", key="dlg_clear_favs"):
+                p_copy = copy.deepcopy(prefs)
+                p_copy['favorite_theaters'] = []
+                persist_user_preferences(p_copy)
+                st.rerun()
+        else:
+            st.caption("None favorited yet.")
+    with col2:
+        st.markdown(f"**👁️ Watched Movies ({len(watched)}):**")
+        if watched:
+            st.caption(f"{len(watched)} marked as watched")
+            if st.button("Clear Watched List", key="dlg_clear_watched"):
+                p_copy = copy.deepcopy(prefs)
+                p_copy['watched_movies'] = []
+                persist_user_preferences(p_copy)
+                st.rerun()
+        else:
+            st.caption("None marked as watched.")
+        st.markdown(f"**Default Filters:** Hide Past: `{filt.get('hide_past', True)}`, New Only: `{filt.get('new_only', False)}`")
+        st.markdown(f"**Default Scheduler:** Buffer: `{sched.get('buffer', 15)}m`, Max Gap: `{sched.get('gap_cap', 120)}m`, Unlimited Rule: `{sched.get('unlimited', True)}`")
+
+    st.divider()
+    st.write("##### 🗑️ Clear All Local Data")
+    st.caption("Erase all client-side cookies and preferences, resetting RegalPro to pristine factory defaults.")
+    
+    col_btn1, col_btn2 = st.columns([1, 1])
+    with col_btn1:
+        if st.button("🗑️ Reset All Preferences & Cookies", type="primary", use_container_width=True, key="dlg_clear_cookies_btn"):
+            clear_all_cookies_and_preferences()
+            st.toast("Cleared all local preferences and cookies!", icon="🗑️")
+            st.rerun()
+    with col_btn2:
+        if st.button("Close", use_container_width=True, key="dlg_close_btn"):
+            st.rerun()
+
 def get_location_cookie():
     with st.container(height=1, border=False):
         st.html("<style>div[height='1']{display:none;}</style>")
@@ -420,6 +538,12 @@ def get_location_cookie():
         latitude = get_cookie('RegalProUserGeoLatitude')
         longitude = get_cookie('RegalProUserGeoLongitude')
         zip_code = get_cookie('RegalProUserZipCode')
+        prefs_cookie = get_cookie(COOKIE_NAME)
+
+    if prefs_cookie:
+        load_user_preferences(prefs_cookie)
+    else:
+        load_user_preferences()
 
     if location_cookie and latitude is not None and longitude is not None:
         try:
@@ -770,7 +894,8 @@ def render_movie_header_card(m_code, title=None, extra_tags=""):
     tooltip_attr = f' title="{badges_type}"' if badges_type else ""
     badges_html = f"<small{tooltip_attr}>{badges_line}</small>" if badges_line else ""
     
-    clean_extra = f" {extra_tags}".strip()
+    watched_tag = " | 👁️ Watched" if is_movie_watched(st.session_state.get('user_prefs', {}), m_code) else ""
+    clean_extra = f" {extra_tags}{watched_tag}".strip()
     extra_str = f" {clean_extra}" if clean_extra else ""
     dur_str = f" | {duration} min" if duration else ""
     meta_line = f"<small style='color:grey;'>({rating}{dur_str}{extra_str}) • 🎥 {studio}</small>"
@@ -816,11 +941,13 @@ def format_neighbor_theater_links(theater_codes, date_str, cluster_theaters, tab
     links = []
     view_param = f"&tview={sub_view}" if tab == "theater" and sub_view else (f"&mview={sub_view}" if tab == "movies" and sub_view else "")
     movie_param = f"&movie={movie_code}" if movie_code else ""
+    user_favs = set(st.session_state.get('user_prefs', {}).get('favorite_theaters', []))
     
     for tc in theater_codes:
         t_name = cluster_theaters.get(tc, f"Theater {tc}")
+        fav_icon = "⭐ " if tc in user_favs else ""
         url = f"?theater={tc}&date={date_str}&tab={tab}{view_param}{movie_param}"
-        links.append(f'<a href="{url}" target="_self" style="color: #3498db; text-decoration: underline; font-weight: 500;">{t_name}</a>')
+        links.append(f'<a href="{url}" target="_self" style="color: #3498db; text-decoration: underline; font-weight: 500;">{fav_icon}{t_name}</a>')
     if len(theater_codes) <= 8:
         return ", ".join(links)
     else:
@@ -860,7 +987,8 @@ def format_movie_label_grouped(m_code, catalog=None, screenings=None):
     meta = catalog.get(m_code) or st.session_state.get('registry', {}).get('movies', {}).get(m_code, {})
     title = meta.get('title', f"Unknown ({m_code})")
     _, prefix = get_movie_group_info(m_code, catalog=catalog, screenings=screenings)
-    return f"{prefix} {title}"
+    watched_str = " [👁️ Watched]" if is_movie_watched(st.session_state.get('user_prefs', {}), m_code) else ""
+    return f"{prefix} {title}{watched_str}"
 
 def get_attr_diff(s_attrs_set, common_attrs_set):
     diff = s_attrs_set - common_attrs_set
@@ -1179,8 +1307,12 @@ selected_theater = None
 url_param_theater = st.query_params.get("theater")
 if url_param_theater:
     st.session_state.active_theater_code = url_param_theater
-elif "active_theater_code" not in st.session_state:
-    st.session_state.active_theater_code = None
+elif not st.session_state.get("active_theater_code"):
+    home_code = st.session_state.get('user_prefs', {}).get("home_theater")
+    if home_code and any(t['theater_code'] == home_code for t in theaters):
+        st.session_state.active_theater_code = home_code
+    else:
+        st.session_state.active_theater_code = None
 
 active_code = st.session_state.get("active_theater_code")
 if active_code:
@@ -1415,6 +1547,9 @@ with st.sidebar.expander("⚙️ Advanced Settings", expanded=False):
     extreme_mode = False
     if not IS_CLOUD:
         extreme_mode = st.checkbox("🔥 Extreme Scheduling Mode", help="Ignore runtimes, distances, and buffers. Just chain movies 90 mins apart.")
+    st.divider()
+    if st.button("🔒 Privacy & Local Data", key="sidebar_privacy_btn", use_container_width=True):
+        show_privacy_dialog()
     
 st.sidebar.link_button("🐞 Report a Bug","https://docs.google.com/forms/d/e/1FAIpQLSce6X3DtCwDJZUjf_Cc4IbJLA7q0Nvk_Grw7lOgyqLtxYIYPQ/viewform?usp=dialog")
 st.sidebar.link_button("☕ Buy Me a Coffee","https://buymeacoffee.com/riyazusman")
@@ -1444,12 +1579,35 @@ if selected_theater and schedule:
 
     # --- Top Mobile-Friendly Theater & Cluster Banner ---
     with st.container(border=True):
-        b_c1, b_c2 = st.columns([3, 1])
+        b_c1, b_c2 = st.columns([5, 3])
         with b_c1:
-            st.markdown(f"### 📍 {t_item['name']}")
+            is_home = st.session_state.user_prefs.get("home_theater") == tc
+            home_badge = " 🏠 [Home]" if is_home else ""
+            is_fav = tc in st.session_state.user_prefs.get("favorite_theaters", [])
+            fav_star = "⭐ " if is_fav else ""
+            st.markdown(f"### {fav_star}📍 {t_item['name']}{home_badge}")
             cluster_count = len(cluster_theaters)
             st.caption(f"🗺️ {t_item.get('city', '')}, {t_item.get('state', '')} | 🏛️ **{cluster_count}** theaters in cluster | 🗓️ **{q_date.strftime('%a, %b %d')}**")
         with b_c2:
+            sub_col1, sub_col2 = st.columns(2)
+            with sub_col1:
+                if not is_home:
+                    if st.button("🏠 Set Home", key=f"set_home_{tc}", use_container_width=True, help="Set as your default home theater when opening RegalPro"):
+                        new_prefs = set_home_theater(st.session_state.user_prefs, tc)
+                        persist_user_preferences(new_prefs)
+                        st.rerun()
+                else:
+                    if st.button("🏠 Home", key=f"unset_home_{tc}", use_container_width=True, help="Click to unset as default home theater"):
+                        new_prefs = set_home_theater(st.session_state.user_prefs, None)
+                        persist_user_preferences(new_prefs)
+                        st.rerun()
+            with sub_col2:
+                fav_btn_text = "⭐ Favorited" if is_fav else "☆ Favorite"
+                if st.button(fav_btn_text, key=f"toggle_fav_{tc}", use_container_width=True, help="Toggle theater as a favorite"):
+                    new_prefs = toggle_favorite_theater(st.session_state.user_prefs, tc)
+                    persist_user_preferences(new_prefs)
+                    st.rerun()
+
             if st.button("🔍 Change Theater", key="btn_change_theater", use_container_width=True):
                 st.session_state.change_theater_mode = True
                 if "temp_theater_select" in st.session_state:
@@ -1574,11 +1732,24 @@ if selected_theater and schedule:
                                             options=list(t_ranges.keys()), 
                                             placeholder="All",
                                             key=f"f_times_{t_key}")
-                    chk_c1, chk_c2 = st.columns(2)
+                    chk_c1, chk_c2, chk_c3 = st.columns([1, 1, 1])
                     with chk_c1:
-                        f_avail = st.checkbox("Hide past shows", value=True, key=f"f_avail_{t_key}")
+                        def_hide_past = st.session_state.user_prefs.get('filters', {}).get('hide_past', True)
+                        k_avail = f"f_avail_{t_key}"
+                        if k_avail not in st.session_state:
+                            st.session_state[k_avail] = def_hide_past
+                        f_avail = st.checkbox("Hide past shows", key=k_avail)
                     with chk_c2:
-                        f_new = st.checkbox("New Releases Only", value=False, key=f"f_new_{t_key}")
+                        def_new_only = st.session_state.user_prefs.get('filters', {}).get('new_only', False)
+                        k_new = f"f_new_{t_key}"
+                        if k_new not in st.session_state:
+                            st.session_state[k_new] = def_new_only
+                        f_new = st.checkbox("New Releases Only", key=k_new)
+                    with chk_c3:
+                        if st.button("💾 Save Defaults", key=f"save_def_filt_{t_key}", help="Save current filter settings as defaults"):
+                            new_p = update_filter_defaults(st.session_state.user_prefs, hide_past=f_avail, new_only=f_new)
+                            persist_user_preferences(new_p)
+                            st.toast("Saved filter defaults!", icon="💾")
                 with r_c2:
                     f_rating = st.multiselect("Rating", 
                                             options=sorted(list(set(s['Rating'] for s in flat_data))), 
@@ -1718,6 +1889,13 @@ if selected_theater and schedule:
                                     st.rerun()
 
                         with link_col:
+                            is_w = is_movie_watched(st.session_state.user_prefs, m_code)
+                            w_btn_label = "✅ Watched" if is_w else "👁️ Mark Watched"
+                            if st.button(w_btn_label, key=f"btn_w_grp_{m_code}_{tc}", use_container_width=True):
+                                new_prefs = toggle_watched_movie(st.session_state.user_prefs, m_code)
+                                persist_user_preferences(new_prefs)
+                                st.rerun()
+
                             if other_t_codes or valid_date_objs:
                                 if st.button("📅 Full Schedule", key=f"link_{m_code}_{t_item['theater_code']}", use_container_width=True):
                                     st.session_state.nav_redirect = "🎬 Movie Explorer"
@@ -1725,36 +1903,63 @@ if selected_theater and schedule:
                                     st.rerun()
 
         elif sub_nav == "🚗 Playing Nearby":
-            primary_codes_week = set()
-            all_codes_week = set()
-            
-            for date_key in st.session_state.registry['schedule']:
-                day_flat = st.session_state.registry['schedule'][date_key]
-                for s in day_flat:
-                    if s['TheaterCode'] not in cluster_theaters: continue
-                    
-                    if s['TheaterCode'] == tc:
-                        primary_codes_week.add(s['master_code'])
-                    all_codes_week.add(s['master_code'])
-            
-            nearby_only_codes = sorted(list(all_codes_week - primary_codes_week), key=lambda x: st.session_state.global_movie_catalog.get(x, {}).get('title', ''))
-
-            if nearby_only_codes:
+            nearby_cluster_codes = [c for c in cluster_theaters.keys() if c != tc]
+            if not nearby_cluster_codes:
+                st.info(f"No nearby cluster theaters configured for {t_item['name']}.")
+            else:
                 st.subheader("🚗 Exclusive Nearby This Week")
                 st.caption(f"These movies are NOT playing at {t_item['name']} any time this week.")
-                st.caption("🔴 New Release  🎫 Unlimited Excluded  ⭐ IMDB  🍅 Tomatometer  🍿 Popcornmeter  Ⓜ️ Metacritic  🟢 Letterboxd")
-                cols_per_row = 3
-                for row_idx in range(0, len(nearby_only_codes), cols_per_row):
-                    row_codes = nearby_only_codes[row_idx:row_idx + cols_per_row]
-                    row_cols = st.columns(cols_per_row)
-                    for col_idx, m_code in enumerate(row_codes):
-                        theater_dates = {}
-                        for d_str, day_flat in st.session_state.registry['schedule'].items():
-                            for s in day_flat:
-                                if s['master_code'] == m_code and s['TheaterCode'] in cluster_theaters:
-                                    n_tc = s['TheaterCode']
-                                    if n_tc not in theater_dates: theater_dates[n_tc] = []
-                                    if d_str not in theater_dates[n_tc]: theater_dates[n_tc].append(d_str)
+
+                user_favs = set(st.session_state.user_prefs.get('favorite_theaters', []))
+                fav_cluster = [c for c in nearby_cluster_codes if c in user_favs]
+                default_cluster = fav_cluster if fav_cluster else nearby_cluster_codes
+
+                def format_cluster_opt(c):
+                    name = cluster_theaters.get(c, f"Theater {c}")
+                    dist = drive_map.get(c, {}).get('dist')
+                    d_str = f" • {dist} mi" if dist else ""
+                    star = "⭐ " if c in user_favs else ""
+                    return f"{star}{name}{d_str}"
+
+                selected_nearby = st.multiselect(
+                    "Filter Nearby Cluster Theaters:",
+                    options=nearby_cluster_codes,
+                    default=default_cluster,
+                    format_func=format_cluster_opt,
+                    key=f"filter_ex_cluster_{tc}",
+                    help="Include or exclude specific nearby theaters to customize which exclusive movies to see."
+                )
+
+                included_theaters = set(selected_nearby) | {tc}
+                primary_codes_week = set()
+                all_codes_week = set()
+                
+                for date_key in st.session_state.registry['schedule']:
+                    day_flat = st.session_state.registry['schedule'][date_key]
+                    for s in day_flat:
+                        if s['TheaterCode'] not in included_theaters: continue
+                        
+                        if s['TheaterCode'] == tc:
+                            primary_codes_week.add(s['master_code'])
+                        else:
+                            all_codes_week.add(s['master_code'])
+                
+                nearby_only_codes = sorted(list(all_codes_week - primary_codes_week), key=lambda x: st.session_state.global_movie_catalog.get(x, {}).get('title', ''))
+
+                if nearby_only_codes:
+                    st.caption("🔴 New Release  🎫 Unlimited Excluded  ⭐ IMDB  🍅 Tomatometer  🍿 Popcornmeter  Ⓜ️ Metacritic  🟢 Letterboxd")
+                    cols_per_row = 3
+                    for row_idx in range(0, len(nearby_only_codes), cols_per_row):
+                        row_codes = nearby_only_codes[row_idx:row_idx + cols_per_row]
+                        row_cols = st.columns(cols_per_row)
+                        for col_idx, m_code in enumerate(row_codes):
+                            theater_dates = {}
+                            for d_str, day_flat in st.session_state.registry['schedule'].items():
+                                for s in day_flat:
+                                    if s['master_code'] == m_code and s['TheaterCode'] in selected_nearby:
+                                        n_tc = s['TheaterCode']
+                                        if n_tc not in theater_dates: theater_dates[n_tc] = []
+                                        if d_str not in theater_dates[n_tc]: theater_dates[n_tc].append(d_str)
                         
                         m_attrs = set()
                         for s in all_flat_data:
@@ -1812,8 +2017,8 @@ if selected_theater and schedule:
                                         d_iso = sel_ex_d.strftime("%Y-%m-%d")
                                         sync_query_param("date", d_iso)
                                         st.rerun()
-            else:
-                st.info("No exclusive nearby movies found for the upcoming 7 days.")
+                else:
+                    st.info("No exclusive nearby movies found for the selected theaters in the upcoming 7 days.")
 
         elif sub_nav == "📅 Upcoming":
             scoped_future_movies = st.session_state.registry['theaters'].get(tc, {}).get('future', [])
@@ -2102,7 +2307,8 @@ if selected_theater and schedule:
                 dur_str = f" | {dur} min" if dur else ""
                 pin = "📌 " if m.get('playing_today') else ""
                 new = "🔴 " if m.get('is_new') else ""
-                return f"{pin}{new}{t} ({r}{dur_str})"
+                is_w = "👁️ " if is_movie_watched(st.session_state.user_prefs, mc) else ""
+                return f"{is_w}{pin}{new}{t} ({r}{dur_str})"
 
             select_key = f"nearby_movie_select_{tc}"
             st.session_state[select_key] = current_sel
@@ -2155,6 +2361,15 @@ if selected_theater and schedule:
 
                 render_movie_header_card(sel_code, meta.get('title'), extra_tags=f"{new_tag} {unlimited_tag}")
 
+                w_c1, w_c2 = st.columns([1, 4])
+                with w_c1:
+                    is_w = is_movie_watched(st.session_state.user_prefs, sel_code)
+                    w_btn_label = "✅ Watched" if is_w else "👁️ Mark Watched"
+                    if st.button(w_btn_label, key=f"btn_w_nearby_{sel_code}", use_container_width=True):
+                        new_prefs = toggle_watched_movie(st.session_state.user_prefs, sel_code)
+                        persist_user_preferences(new_prefs)
+                        st.rerun()
+
                 if st.button("Next ➡️", key=f"btn_next_bottom_nearby_{tc}", disabled=not has_next, use_container_width=True):
                     new_code = active_codes[sel_idx + 1]
                     st.session_state.selected_movie_code = new_code
@@ -2189,7 +2404,7 @@ if selected_theater and schedule:
                         with f_col3:
                             all_m_attrs = set(a for s in m_today_data for a in s['raw_attrs'])
                             f_extra = st.multiselect("Attributes", options=sorted(list(all_m_attrs - set(m_formats))))
-                            f_hide = st.checkbox("Hide past shows", value=True)
+                            f_hide = st.checkbox("Hide past shows", value=st.session_state.user_prefs.get('filters', {}).get('hide_past', True), key=f"f_hide_movie_{sel_code}")
 
                     filtered_m = [s for s in m_today_data if 
                             (not f_fmt or s['ScreenType'] in f_fmt) and
@@ -2349,7 +2564,8 @@ if selected_theater and schedule:
                     in_cluster = m.get('in_cluster', False)
                     prefix = "📍 " if in_cluster else "✈️ "
                     theaters_str = f"{count} {'theater' if count == 1 else 'theaters'}"
-                    return f"{prefix}{title} — {theaters_str}"
+                    is_w = "👁️ " if is_movie_watched(st.session_state.user_prefs, mc) else ""
+                    return f"{is_w}{prefix}{title} — {theaters_str}"
 
                 select_key = f"nationwide_movie_select_{tc}"
                 st.session_state[select_key] = current_sel
@@ -2395,6 +2611,15 @@ if selected_theater and schedule:
                             st.rerun()
 
                     render_movie_header_card(sel_code)
+
+                    w_c1, w_c2 = st.columns([1, 4])
+                    with w_c1:
+                        is_w = is_movie_watched(st.session_state.user_prefs, sel_code)
+                        w_btn_label = "✅ Watched" if is_w else "👁️ Mark Watched"
+                        if st.button(w_btn_label, key=f"btn_w_nationwide_{sel_code}", use_container_width=True):
+                            new_prefs = toggle_watched_movie(st.session_state.user_prefs, sel_code)
+                            persist_user_preferences(new_prefs)
+                            st.rerun()
 
                     if st.button("Next ➡️", key=f"btn_next_bottom_nationwide_{tc}", disabled=not has_next, use_container_width=True):
                         new_code = active_codes[sel_idx + 1]
@@ -2651,8 +2876,21 @@ if selected_theater and schedule:
                         if s['TheaterCode'] in target_theaters:
                             global_reactive_codes.add(s['master_code'])
                 
+                # Exclude Watched Movies checkbox
+                sched_prefs = st.session_state.user_prefs.get('scheduler', {})
+                def_ex_watched = sched_prefs.get('exclude_watched', False)
+                k_ex_watched = f"sched_ex_watched_{primary_code}"
+                if k_ex_watched not in st.session_state:
+                    st.session_state[k_ex_watched] = def_ex_watched
+                exclude_watched = st.checkbox("Exclude Watched Movies", key=k_ex_watched, help="Filter out movies marked as watched in your local preferences.")
+
+                watched_set = set(st.session_state.user_prefs.get('watched_movies', [])) if exclude_watched else set()
+
                 # Ensure all selected target movies are in options so Streamlit multiselect calls format_func on them
                 all_display_codes = set(global_reactive_codes) | set(selected_targets)
+                if exclude_watched:
+                    all_display_codes = (all_display_codes - watched_set) | set(selected_targets)
+
                 sorted_codes = sorted(
                     list(all_display_codes), 
                     key=lambda x: (
@@ -2714,14 +2952,15 @@ if selected_theater and schedule:
                     st.session_state[k_bafter] = None
                 b_after = st.selectbox("Long break after movie #", options=break_opts, key=k_bafter, help="Set a longer break than after a specific movie.")
             with c2: 
+                sched_prefs = st.session_state.user_prefs.get('scheduler', {})
                 k_buff = f"sched_buff_{primary_code}"
                 if k_buff not in st.session_state:
-                    st.session_state[k_buff] = 15
+                    st.session_state[k_buff] = sched_prefs.get('buffer', 15)
                 buff = st.slider("Buffer (min)", 0, 60, key=k_buff, help="Set the minimum gap between two movies")
 
                 k_gcap = f"sched_gcap_{primary_code}"
                 if k_gcap not in st.session_state:
-                    st.session_state[k_gcap] = 120
+                    st.session_state[k_gcap] = sched_prefs.get('gap_cap', 120)
                 g_cap = st.slider("Max Gap (min)", 30, 240, key=k_gcap, help="Set the maximum gap between two movies")
 
                 k_bval = f"sched_bval_{primary_code}"
@@ -2731,13 +2970,24 @@ if selected_theater and schedule:
             with c3: 
                 k_unlimited = f"sched_unlimited_{primary_code}"
                 if k_unlimited not in st.session_state:
-                    st.session_state[k_unlimited] = True
+                    st.session_state[k_unlimited] = sched_prefs.get('unlimited', True)
                 unlimited = st.checkbox("Regal Unlimited Rule (90-min gap)", key=k_unlimited, help="Apply a minimum gap of 90-min between showtimes.")
 
                 k_fudge = f"sched_fudge_{primary_code}"
                 if k_fudge not in st.session_state:
                     st.session_state[k_fudge] = False
                 fudge = st.checkbox("Fudge Factor (5-min overlap)", key=k_fudge, help="Allow a 5 min overlap between showtimes if no better schedule possible.")
+
+                if st.button("💾 Save Settings as Defaults", key=f"save_sched_prefs_{primary_code}", help="Save these scheduler parameters as your default preferences"):
+                    new_prefs = update_scheduler_defaults(
+                        st.session_state.user_prefs,
+                        buffer=buff,
+                        gap_cap=g_cap,
+                        unlimited=unlimited,
+                        exclude_watched=exclude_watched
+                    )
+                    persist_user_preferences(new_prefs)
+                    st.toast("Saved scheduler defaults!", icon="💾")
 
                 max_option = n_movies if n_movies > 1 else 1
                 if len(target_days) > 1:
@@ -3253,3 +3503,15 @@ else:
                                 if "temp_theater_select" in st.session_state:
                                     del st.session_state.temp_theater_select
                                 st.rerun()
+
+# --- Shared Responsive Footer ---
+st.markdown("<br>", unsafe_allow_html=True)
+st.divider()
+f_col1, f_col2, f_col3 = st.columns([2, 1, 1])
+with f_col1:
+    st.caption("🎬 **RegalPro** — Advanced Unofficial Showtimes & Itinerary Planner for Regal Cinemas.")
+with f_col2:
+    if st.button("🔒 Privacy & Local Data", key="footer_privacy_btn", help="Learn how your local preferences and privacy are protected"):
+        show_privacy_dialog()
+with f_col3:
+    st.caption("[Report Bug](https://docs.google.com/forms/d/e/1FAIpQLSce6X3DtCwDJZUjf_Cc4IbJLA7q0Nvk_Grw7lOgyqLtxYIYPQ/viewform?usp=dialog) • [GitHub](https://github.com/riyazusman/regal-pro)")
