@@ -871,8 +871,8 @@ def get_time_options():
 
     times = []
     start = datetime.strptime("00:00", "%H:%M")
-    for _ in range(288): 
-        times.append(start.strftime("%H:%M")); start += timedelta(minutes=5)
+    for _ in range(48): 
+        times.append(start.strftime("%H:%M")); start += timedelta(minutes=30)
     return times
 
 def generate_ics(path, name_map=None):
