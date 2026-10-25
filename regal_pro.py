@@ -154,6 +154,27 @@ st.markdown("""
             display: none !important;
         }
     }
+    /* Equal height cards for Playing Nearby grid */
+    div[data-testid="stHorizontalBlock"]:has(.nearby-card-content) {
+        align-items: stretch !important;
+    }
+    div[data-testid="stColumn"]:has(.nearby-card-content) {
+        display: flex !important;
+        flex-direction: column !important;
+    }
+    div[data-testid="stColumn"]:has(.nearby-card-content) > div[data-testid="stVerticalBlockBorderWrapper"],
+    div[data-testid="stVerticalBlockBorderWrapper"]:has(.nearby-card-content) {
+        height: 100% !important;
+        flex: 1 1 auto !important;
+        display: flex !important;
+        flex-direction: column !important;
+    }
+    div[data-testid="stVerticalBlockBorderWrapper"]:has(.nearby-card-content) > div[data-testid="stVerticalBlock"] {
+        height: 100% !important;
+        flex: 1 1 auto !important;
+        display: flex !important;
+        flex-direction: column !important;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -1998,7 +2019,7 @@ if selected_theater and schedule:
                                                 '</div>'
                                             )
                                         card_html = (
-                                            f'<div style="display:flex; gap:10px; align-items:flex-start; margin-bottom:6px;">'
+                                            f'<div class="nearby-card-content" style="display:flex; gap:10px; align-items:flex-start; margin-bottom:6px;">'
                                             f'{img_html}'
                                             f'<div style="flex:1; min-width:0;">'
                                             f'<div style="font-weight:700; font-size:0.95rem; line-height:1.2;">{meta.get("title", "New Release")} <span style="font-size:0.85rem; font-weight:normal; color:grey;">({meta.get("rating", "NR")})</span>{new_tag}{unlimited_tag}</div>'
