@@ -1903,122 +1903,140 @@ if selected_theater and schedule:
                                     st.rerun()
 
         elif sub_nav == "🚗 Playing Nearby":
-            nearby_cluster_codes = [c for c in cluster_theaters.keys() if c != tc]
-            if not nearby_cluster_codes:
+            if len(cluster_theaters) <= 1:
                 st.info(f"No nearby cluster theaters configured for {t_item['name']}.")
             else:
-                st.subheader("🚗 Exclusive Nearby This Week")
-                st.caption(f"These movies are NOT playing at {t_item['name']} any time this week.")
+                st.subheader("🚗 Playing Nearby")
+                st.caption("These movies are playing at selected theaters any time this week.")
 
                 user_favs = set(st.session_state.user_prefs.get('favorite_theaters', []))
-                fav_cluster = [c for c in nearby_cluster_codes if c in user_favs]
-                default_cluster = fav_cluster if fav_cluster else nearby_cluster_codes
+                user_home = st.session_state.user_prefs.get('home_theater')
+                home_tc = user_home if (user_home and user_home in cluster_theaters) else tc
+
+                # Order cluster theaters with HOME first
+                cluster_options = [home_tc] + [c for c in cluster_theaters.keys() if c != home_tc]
+
+                # Default selection: HOME + Favorites
+                fav_neighbors = [c for c in cluster_options if c in user_favs and c != home_tc]
+                default_cluster = [home_tc] + fav_neighbors
 
                 def format_cluster_opt(c):
                     name = cluster_theaters.get(c, f"Theater {c}")
                     dist = drive_map.get(c, {}).get('dist')
                     d_str = f" • {dist} mi" if dist else ""
                     star = "⭐ " if c in user_favs else ""
-                    return f"{star}{name}{d_str}"
+                    home_icon = "🏠 " if c == home_tc else ""
+                    return f"{home_icon}{star}{name}{d_str}"
 
                 selected_nearby = st.multiselect(
-                    "Filter Nearby Cluster Theaters:",
-                    options=nearby_cluster_codes,
+                    "Filter Theaters:",
+                    options=cluster_options,
                     default=default_cluster,
                     format_func=format_cluster_opt,
-                    key=f"filter_ex_cluster_{tc}",
-                    help="Include or exclude specific nearby theaters to customize which exclusive movies to see."
+                    key=f"filter_playing_nearby_{tc}",
+                    help="Include or exclude specific theaters to customize which movies to see."
                 )
 
-                included_theaters = set(selected_nearby) | {tc}
-                primary_codes_week = set()
-                all_codes_week = set()
-                
-                for date_key in st.session_state.registry['schedule']:
-                    day_flat = st.session_state.registry['schedule'][date_key]
-                    for s in day_flat:
-                        if s['TheaterCode'] not in included_theaters: continue
-                        
-                        if s['TheaterCode'] == tc:
-                            primary_codes_week.add(s['master_code'])
-                        else:
-                            all_codes_week.add(s['master_code'])
-                
-                nearby_only_codes = sorted(list(all_codes_week - primary_codes_week), key=lambda x: st.session_state.global_movie_catalog.get(x, {}).get('title', ''))
-
-                if nearby_only_codes:
-                    st.caption("🔴 New Release  🎫 Unlimited Excluded  ⭐ IMDB  🍅 Tomatometer  🍿 Popcornmeter  Ⓜ️ Metacritic  🟢 Letterboxd")
-                    cols_per_row = 3
-                    for row_idx in range(0, len(nearby_only_codes), cols_per_row):
-                        row_codes = nearby_only_codes[row_idx:row_idx + cols_per_row]
-                        row_cols = st.columns(cols_per_row)
-                        for col_idx, m_code in enumerate(row_codes):
-                            theater_dates = {}
-                            for d_str, day_flat in st.session_state.registry['schedule'].items():
-                                for s in day_flat:
-                                    if s['master_code'] == m_code and s['TheaterCode'] in selected_nearby:
-                                        n_tc = s['TheaterCode']
-                                        if n_tc not in theater_dates: theater_dates[n_tc] = []
-                                        if d_str not in theater_dates[n_tc]: theater_dates[n_tc].append(d_str)
-                        
-                        m_attrs = set()
-                        for s in all_flat_data:
-                            if s['master_code'] == m_code:
-                                m_attrs.update(s.get('raw_attrs', []))
-                        
-                        meta = st.session_state.global_movie_catalog.get(m_code, {'title': 'Unknown', 'rating': 'NR', 'duration': 0, 'is_new':False})
-                        new_tag = " 🔴" if meta.get('is_new') else ""
-                        unlimited_tag = " 🎫" if is_unlimited_excluded(m_code, m_attrs) else ""
-                        badges, badges_type = get_rating_badges(m_code)
-                        poster_url = meta.get('poster')
-                        has_poster = is_poster_valid(poster_url)
-                        regal_url = get_movie_regal_url(m_code, meta.get('title'))
-                        badges_line = format_badges_and_regal_link(badges, regal_url, "Regal ↗")
-                        badges_row = f'<div><small>{badges_line}</small></div>' if badges_line else ""
-
-                        with row_cols[col_idx]:
-                            with st.container(border=True):
-                                if has_poster:
-                                    img_html = f'<img src="{poster_url}" alt="" style="width:50px; min-width:50px; height:75px; object-fit:cover; border-radius:4px; box-shadow:0 1px 3px rgba(0,0,0,0.2);" onerror="this.style.display=\'none\';" />'
-                                else:
-                                    img_html = (
-                                        '<div style="width:50px; min-width:50px; height:75px; border-radius:4px; background:linear-gradient(135deg, rgba(151,166,195,0.18) 0%, rgba(151,166,195,0.06) 100%); border:1px dashed rgba(151,166,195,0.3); display:flex; align-items:center; justify-content:center; flex-shrink:0; color:#97a6c3; box-sizing:border-box;">'
-                                        '<span style="font-size:1.5rem; line-height:1;">🎬</span>'
-                                        '</div>'
-                                    )
-                                card_html = (
-                                    f'<div style="display:flex; gap:10px; align-items:flex-start; margin-bottom:6px;">'
-                                    f'{img_html}'
-                                    f'<div style="flex:1; min-width:0;">'
-                                    f'<div style="font-weight:700; font-size:0.95rem; line-height:1.2;">{meta.get("title", "New Release")} <span style="font-size:0.85rem; font-weight:normal; color:grey;">({meta.get("rating", "NR")})</span>{new_tag}{unlimited_tag}</div>'
-                                    f'{badges_row}'
-                                    f'<div style="font-size:0.75rem; color:grey; margin-top:2px;">⏱️ {meta.get("duration", 120)} min • 🎥 {meta.get("studio", "Unknown")}</div>'
-                                    f'</div>'
-                                    f'</div>'
-                                )
-                                st.markdown(card_html, unsafe_allow_html=True)
-
-                                for n_tc, dates in theater_dates.items():
-                                    t_name = cluster_theaters.get(n_tc, f"Theater {n_tc}")
-                                    sorted_date_objs = sorted([datetime.strptime(d, "%m-%d-%Y") for d in dates])
-                                    
-                                    st.caption(f"📍 **{t_name}**")
-                                    sel_ex_d = st.pills(
-                                        f"Dates for {n_tc} {m_code}",
-                                        options=sorted_date_objs,
-                                        format_func=lambda d: d.strftime("%b %d"),
-                                        key=f"ex_pills_{m_code}_{n_tc}",
-                                        label_visibility="collapsed"
-                                    )
-                                    if sel_ex_d:
-                                        st.session_state.active_theater_code = n_tc
-                                        st.session_state.change_theater_mode = False
-                                        sync_query_param("theater", n_tc)
-                                        d_iso = sel_ex_d.strftime("%Y-%m-%d")
-                                        sync_query_param("date", d_iso)
-                                        st.rerun()
+                if not selected_nearby:
+                    st.info("Please select at least one theater from the filter above.")
                 else:
-                    st.info("No exclusive nearby movies found for the selected theaters in the upcoming 7 days.")
+                    selected_theaters_set = set(selected_nearby)
+                    playing_codes = set()
+                    
+                    for date_key in st.session_state.registry['schedule']:
+                        day_flat = st.session_state.registry['schedule'][date_key]
+                        for s in day_flat:
+                            if s['TheaterCode'] in selected_theaters_set:
+                                playing_codes.add(s['master_code'])
+                    
+                    display_movie_codes = sorted(
+                        list(playing_codes),
+                        key=lambda x: st.session_state.global_movie_catalog.get(x, {}).get('title', '')
+                    )
+
+                    if display_movie_codes:
+                        st.caption("🔴 New Release  🎫 Unlimited Excluded  ⭐ IMDB  🍅 Tomatometer  🍿 Popcornmeter  Ⓜ️ Metacritic  🟢 Letterboxd")
+                        cols_per_row = 3
+                        for row_idx in range(0, len(display_movie_codes), cols_per_row):
+                            row_codes = display_movie_codes[row_idx:row_idx + cols_per_row]
+                            row_cols = st.columns(cols_per_row)
+                            for col_idx, m_code in enumerate(row_codes):
+                                theater_dates = {}
+                                for d_str, day_flat in st.session_state.registry['schedule'].items():
+                                    for s in day_flat:
+                                        if s['master_code'] == m_code and s['TheaterCode'] in selected_theaters_set:
+                                            n_tc = s['TheaterCode']
+                                            if n_tc not in theater_dates:
+                                                theater_dates[n_tc] = []
+                                            if d_str not in theater_dates[n_tc]:
+                                                theater_dates[n_tc].append(d_str)
+
+                                m_attrs = set()
+                                for day_flat in st.session_state.registry['schedule'].values():
+                                    for s in day_flat:
+                                        if s['master_code'] == m_code:
+                                            m_attrs.update(s.get('raw_attrs', []))
+
+                                meta = st.session_state.global_movie_catalog.get(m_code, {'title': 'Unknown', 'rating': 'NR', 'duration': 0, 'is_new': False})
+                                new_tag = " 🔴" if meta.get('is_new') else ""
+                                unlimited_tag = " 🎫" if is_unlimited_excluded(m_code, m_attrs) else ""
+                                badges, badges_type = get_rating_badges(m_code)
+                                poster_url = meta.get('poster')
+                                has_poster = is_poster_valid(poster_url)
+                                regal_url = get_movie_regal_url(m_code, meta.get('title'))
+                                badges_line = format_badges_and_regal_link(badges, regal_url, "Regal ↗")
+                                badges_row = f'<div><small>{badges_line}</small></div>' if badges_line else ""
+
+                                with row_cols[col_idx]:
+                                    with st.container(border=True):
+                                        if has_poster:
+                                            img_html = f'<img src="{poster_url}" alt="" style="width:50px; min-width:50px; height:75px; object-fit:cover; border-radius:4px; box-shadow:0 1px 3px rgba(0,0,0,0.2);" onerror="this.style.display=\'none\';" />'
+                                        else:
+                                            img_html = (
+                                                '<div style="width:50px; min-width:50px; height:75px; border-radius:4px; background:linear-gradient(135deg, rgba(151,166,195,0.18) 0%, rgba(151,166,195,0.06) 100%); border:1px dashed rgba(151,166,195,0.3); display:flex; align-items:center; justify-content:center; flex-shrink:0; color:#97a6c3; box-sizing:border-box;">'
+                                                '<span style="font-size:1.5rem; line-height:1;">🎬</span>'
+                                                '</div>'
+                                            )
+                                        card_html = (
+                                            f'<div style="display:flex; gap:10px; align-items:flex-start; margin-bottom:6px;">'
+                                            f'{img_html}'
+                                            f'<div style="flex:1; min-width:0;">'
+                                            f'<div style="font-weight:700; font-size:0.95rem; line-height:1.2;">{meta.get("title", "New Release")} <span style="font-size:0.85rem; font-weight:normal; color:grey;">({meta.get("rating", "NR")})</span>{new_tag}{unlimited_tag}</div>'
+                                            f'{badges_row}'
+                                            f'<div style="font-size:0.75rem; color:grey; margin-top:2px;">⏱️ {meta.get("duration", 120)} min • 🎥 {meta.get("studio", "Unknown")}</div>'
+                                            f'</div>'
+                                            f'</div>'
+                                        )
+                                        st.markdown(card_html, unsafe_allow_html=True)
+
+                                        sorted_tcs = sorted(
+                                            theater_dates.keys(),
+                                            key=lambda x: (0 if x == home_tc else 1, drive_map.get(x, {}).get('dist', 999))
+                                        )
+                                        for n_tc in sorted_tcs:
+                                            dates = theater_dates[n_tc]
+                                            t_name = cluster_theaters.get(n_tc, f"Theater {n_tc}")
+                                            dist = drive_map.get(n_tc, {}).get('dist')
+                                            dist_str = f" • {dist} mi" if (dist and n_tc != home_tc) else (" • Home" if n_tc == home_tc else "")
+                                            sorted_date_objs = sorted([datetime.strptime(d, "%m-%d-%Y") for d in dates])
+                                            
+                                            st.caption(f"📍 **{t_name}**<span style='color:grey;'>{dist_str}</span>", unsafe_allow_html=True)
+                                            sel_ex_d = st.pills(
+                                                f"Dates for {n_tc} {m_code}",
+                                                options=sorted_date_objs,
+                                                format_func=lambda d: d.strftime("%b %d"),
+                                                key=f"ex_pills_{m_code}_{n_tc}",
+                                                label_visibility="collapsed"
+                                            )
+                                            if sel_ex_d:
+                                                st.session_state.active_theater_code = n_tc
+                                                st.session_state.change_theater_mode = False
+                                                sync_query_param("theater", n_tc)
+                                                d_iso = sel_ex_d.strftime("%Y-%m-%d")
+                                                sync_query_param("date", d_iso)
+                                                st.rerun()
+                    else:
+                        st.info("No movies found for the selected theaters in the upcoming week.")
 
         elif sub_nav == "📅 Upcoming":
             scoped_future_movies = st.session_state.registry['theaters'].get(tc, {}).get('future', [])
