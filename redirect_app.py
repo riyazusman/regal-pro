@@ -101,21 +101,17 @@ st.html(f"""
 
 <div class="redirect-card">
     <div class="redirect-badge">🚀 Important Update</div>
-    <div class="redirect-title">RegalPro Has Moved!</div>
+    <div class="redirect-title">RegalPro has moved!</div>
     <div class="redirect-desc">
-        We have upgraded to our permanent standalone domain.<br>
-        Please launch the app below to open the new URL and update your bookmarks:
+        We have moved to a new domain. Please launch the app below to open the new URL and update your bookmarks:
     </div>
     <div>
         <div class="redirect-url-box">{target_url}</div>
     </div>
     <div>
         <a href="{target_url}" target="_blank" rel="noopener noreferrer" class="redirect-btn">
-            Open regalpro.app (New Tab) &rarr;
+            Open regalpro.app &rarr;
         </a>
-    </div>
-    <div class="bookmark-hint">
-        📌 <strong>Bookmark Tip:</strong> Once the new tab opens, press <strong>Ctrl + D</strong> (or <strong>Cmd + D</strong> on Mac) to save your new bookmark!
     </div>
 </div>
 """)
