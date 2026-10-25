@@ -158,18 +158,18 @@ st.markdown("""
     div[data-testid="stHorizontalBlock"]:has(.nearby-card-content) {
         align-items: stretch !important;
     }
-    div[data-testid="stColumn"]:has(.nearby-card-content) {
+    div[data-testid="stHorizontalBlock"]:has(.nearby-card-content) > div[data-testid="stColumn"] {
         display: flex !important;
         flex-direction: column !important;
     }
-    div[data-testid="stColumn"]:has(.nearby-card-content) > div[data-testid="stVerticalBlockBorderWrapper"],
-    div[data-testid="stVerticalBlockBorderWrapper"]:has(.nearby-card-content) {
+    div[data-testid="stHorizontalBlock"]:has(.nearby-card-content) > div[data-testid="stColumn"] > div[data-testid="stVerticalBlock"] {
         height: 100% !important;
         flex: 1 1 auto !important;
         display: flex !important;
         flex-direction: column !important;
     }
-    div[data-testid="stVerticalBlockBorderWrapper"]:has(.nearby-card-content) > div[data-testid="stVerticalBlock"] {
+    div[data-testid="stHorizontalBlock"]:has(.nearby-card-content) div[class*="st-key-nearby_card_"],
+    div[data-testid="stHorizontalBlock"]:has(.nearby-card-content) div[data-testid="stVerticalBlock"]:has(.nearby-card-content) {
         height: 100% !important;
         flex: 1 1 auto !important;
         display: flex !important;
@@ -1703,7 +1703,6 @@ if selected_theater and schedule:
     sync_query_param("tab", TAB_REVERSE_MAP.get(nav_tab, "theater"))
 
     if nav_tab == "🔎 Theater Explorer":
-        sync_query_param("movie", None)
         sync_query_param("targets", None)
         if print_mode: st.markdown("<style>[data-testid='stSidebar'], [data-testid='stHeader'] {display: none;} .stExpander {border: none !important;}</style>", unsafe_allow_html=True)
         st.subheader("🔎 Theater Explorer")
@@ -1738,12 +1737,21 @@ if selected_theater and schedule:
                                             st.session_state.global_movie_catalog.get(x, {}).get('title', '').lower()
                                         )
                     )
+                    if f"f_code_{t_key}" not in st.session_state:
+                        q_movie = st.query_params.get("movie")
+                        if q_movie and q_movie in sorted_codes:
+                            st.session_state[f"f_code_{t_key}"] = [q_movie]
+
                     f_code = st.multiselect("Movie", 
                                             options=sorted_codes,
                                             format_func=format_movie_label_grouped,
                                             placeholder="All",
                                             key=f"f_code_{t_key}",
                                             help = "🔴 New Release  🎬 Regular Release  🎫 Unlimited Excluded")
+                    if f_code and len(f_code) == 1:
+                        sync_query_param("movie", f_code[0])
+                    else:
+                        sync_query_param("movie", None)
                     f_type = st.multiselect("Screen Type", 
                                             options=sorted(list(set(s['ScreenType'] for s in flat_data))), 
                                             placeholder="All",
@@ -1924,6 +1932,7 @@ if selected_theater and schedule:
                                     st.rerun()
 
         elif sub_nav == "🚗 Playing Nearby":
+            sync_query_param("movie", None)
             if len(cluster_theaters) <= 1:
                 st.info(f"No nearby cluster theaters configured for {t_item['name']}.")
             else:
@@ -2009,7 +2018,7 @@ if selected_theater and schedule:
                                 badges_row = f'<div><small>{badges_line}</small></div>' if badges_line else ""
 
                                 with row_cols[col_idx]:
-                                    with st.container(border=True):
+                                    with st.container(border=True, key=f"nearby_card_{m_code}"):
                                         if has_poster:
                                             img_html = f'<img src="{poster_url}" alt="" style="width:50px; min-width:50px; height:75px; object-fit:cover; border-radius:4px; box-shadow:0 1px 3px rgba(0,0,0,0.2);" onerror="this.style.display=\'none\';" />'
                                         else:
@@ -2050,16 +2059,23 @@ if selected_theater and schedule:
                                                 label_visibility="collapsed"
                                             )
                                             if sel_ex_d:
+                                                if f"ex_pills_{m_code}_{n_tc}" in st.session_state:
+                                                    del st.session_state[f"ex_pills_{m_code}_{n_tc}"]
                                                 st.session_state.active_theater_code = n_tc
                                                 st.session_state.change_theater_mode = False
                                                 sync_query_param("theater", n_tc)
                                                 d_iso = sel_ex_d.strftime("%Y-%m-%d")
                                                 sync_query_param("date", d_iso)
+                                                sync_query_param("tview", "now-playing")
+                                                sync_query_param("movie", m_code)
+                                                st.session_state[f"sub_nav_{n_tc}"] = "🍿 Now Playing"
+                                                st.session_state[f"f_code_{n_tc}"] = [m_code]
                                                 st.rerun()
                     else:
                         st.info("No movies found for the selected theaters in the upcoming week.")
 
         elif sub_nav == "📅 Upcoming":
+            sync_query_param("movie", None)
             scoped_future_movies = st.session_state.registry['theaters'].get(tc, {}).get('future', [])
             if scoped_future_movies:
                 specials_config = load_monthly_specials()
