@@ -154,26 +154,13 @@ st.markdown("""
             display: none !important;
         }
     }
-    /* Equal height cards for Playing Nearby grid */
-    div[data-testid="stHorizontalBlock"]:has(.nearby-card-content) {
-        align-items: stretch !important;
-    }
-    div[data-testid="stHorizontalBlock"]:has(.nearby-card-content) > div[data-testid="stColumn"] {
-        display: flex !important;
-        flex-direction: column !important;
-    }
-    div[data-testid="stHorizontalBlock"]:has(.nearby-card-content) > div[data-testid="stColumn"] > div[data-testid="stVerticalBlock"] {
-        height: 100% !important;
-        flex: 1 1 auto !important;
-        display: flex !important;
-        flex-direction: column !important;
-    }
-    div[data-testid="stHorizontalBlock"]:has(.nearby-card-content) div[class*="st-key-nearby_card_"],
-    div[data-testid="stHorizontalBlock"]:has(.nearby-card-content) div[data-testid="stVerticalBlock"]:has(.nearby-card-content) {
-        height: 100% !important;
-        flex: 1 1 auto !important;
-        display: flex !important;
-        flex-direction: column !important;
+    /* Hide borders on empty columns in grid */
+    div[data-testid="stColumn"]:empty,
+    div[data-testid="stColumn"]:not(:has(*)) {
+        border: none !important;
+        padding: 0 !important;
+        background: transparent !important;
+        box-shadow: none !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -1710,7 +1697,10 @@ if selected_theater and schedule:
 
         theater_views = ["🍿 Now Playing", "🚗 Playing Nearby", "📅 Upcoming"]
         sub_nav_key = f"sub_nav_{t_key}"
-        if st.session_state.get(sub_nav_key) not in theater_views:
+        if "sub_nav_redirect" in st.session_state:
+            st.session_state[sub_nav_key] = st.session_state.sub_nav_redirect
+            del st.session_state.sub_nav_redirect
+        elif st.session_state.get(sub_nav_key) not in theater_views:
             raw_view_param = (st.query_params.get("tview") or st.query_params.get("view", "")).lower()
             st.session_state[sub_nav_key] = THEATER_VIEW_MAP.get(raw_view_param, "🍿 Now Playing")
 
@@ -1737,7 +1727,10 @@ if selected_theater and schedule:
                                             st.session_state.global_movie_catalog.get(x, {}).get('title', '').lower()
                                         )
                     )
-                    if f"f_code_{t_key}" not in st.session_state:
+                    if "movie_redirect" in st.session_state:
+                        st.session_state[f"f_code_{t_key}"] = [st.session_state.movie_redirect]
+                        del st.session_state.movie_redirect
+                    elif f"f_code_{t_key}" not in st.session_state:
                         q_movie = st.query_params.get("movie")
                         if q_movie and q_movie in sorted_codes:
                             st.session_state[f"f_code_{t_key}"] = [q_movie]
@@ -1989,7 +1982,7 @@ if selected_theater and schedule:
                         cols_per_row = 3
                         for row_idx in range(0, len(display_movie_codes), cols_per_row):
                             row_codes = display_movie_codes[row_idx:row_idx + cols_per_row]
-                            row_cols = st.columns(cols_per_row)
+                            row_cols = st.columns(cols_per_row, border=True)
                             for col_idx, m_code in enumerate(row_codes):
                                 theater_dates = {}
                                 for d_str, day_flat in st.session_state.registry['schedule'].items():
@@ -2018,59 +2011,58 @@ if selected_theater and schedule:
                                 badges_row = f'<div><small>{badges_line}</small></div>' if badges_line else ""
 
                                 with row_cols[col_idx]:
-                                    with st.container(border=True, key=f"nearby_card_{m_code}"):
-                                        if has_poster:
-                                            img_html = f'<img src="{poster_url}" alt="" style="width:50px; min-width:50px; height:75px; object-fit:cover; border-radius:4px; box-shadow:0 1px 3px rgba(0,0,0,0.2);" onerror="this.style.display=\'none\';" />'
-                                        else:
-                                            img_html = (
-                                                '<div style="width:50px; min-width:50px; height:75px; border-radius:4px; background:linear-gradient(135deg, rgba(151,166,195,0.18) 0%, rgba(151,166,195,0.06) 100%); border:1px dashed rgba(151,166,195,0.3); display:flex; align-items:center; justify-content:center; flex-shrink:0; color:#97a6c3; box-sizing:border-box;">'
-                                                '<span style="font-size:1.5rem; line-height:1;">🎬</span>'
-                                                '</div>'
-                                            )
-                                        card_html = (
-                                            f'<div class="nearby-card-content" style="display:flex; gap:10px; align-items:flex-start; margin-bottom:6px;">'
-                                            f'{img_html}'
-                                            f'<div style="flex:1; min-width:0;">'
-                                            f'<div style="font-weight:700; font-size:0.95rem; line-height:1.2;">{meta.get("title", "New Release")} <span style="font-size:0.85rem; font-weight:normal; color:grey;">({meta.get("rating", "NR")})</span>{new_tag}{unlimited_tag}</div>'
-                                            f'{badges_row}'
-                                            f'<div style="font-size:0.75rem; color:grey; margin-top:2px;">⏱️ {meta.get("duration", 120)} min • 🎥 {meta.get("studio", "Unknown")}</div>'
-                                            f'</div>'
-                                            f'</div>'
+                                    if has_poster:
+                                        img_html = f'<img src="{poster_url}" alt="" style="width:50px; min-width:50px; height:75px; object-fit:cover; border-radius:4px; box-shadow:0 1px 3px rgba(0,0,0,0.2);" onerror="this.style.display=\'none\';" />'
+                                    else:
+                                        img_html = (
+                                            '<div style="width:50px; min-width:50px; height:75px; border-radius:4px; background:linear-gradient(135deg, rgba(151,166,195,0.18) 0%, rgba(151,166,195,0.06) 100%); border:1px dashed rgba(151,166,195,0.3); display:flex; align-items:center; justify-content:center; flex-shrink:0; color:#97a6c3; box-sizing:border-box;">'
+                                            '<span style="font-size:1.5rem; line-height:1;">🎬</span>'
+                                            '</div>'
                                         )
-                                        st.markdown(card_html, unsafe_allow_html=True)
+                                    card_html = (
+                                        f'<div class="nearby-card-content" style="display:flex; gap:10px; align-items:flex-start; margin-bottom:6px;">'
+                                        f'{img_html}'
+                                        f'<div style="flex:1; min-width:0;">'
+                                        f'<div style="font-weight:700; font-size:0.95rem; line-height:1.2;">{meta.get("title", "New Release")} <span style="font-size:0.85rem; font-weight:normal; color:grey;">({meta.get("rating", "NR")})</span>{new_tag}{unlimited_tag}</div>'
+                                        f'{badges_row}'
+                                        f'<div style="font-size:0.75rem; color:grey; margin-top:2px;">⏱️ {meta.get("duration", 120)} min • 🎥 {meta.get("studio", "Unknown")}</div>'
+                                        f'</div>'
+                                        f'</div>'
+                                    )
+                                    st.markdown(card_html, unsafe_allow_html=True)
 
-                                        sorted_tcs = sorted(
-                                            theater_dates.keys(),
-                                            key=lambda x: (0 if x == home_tc else 1, drive_map.get(x, {}).get('dist', 999))
+                                    sorted_tcs = sorted(
+                                        theater_dates.keys(),
+                                        key=lambda x: (0 if x == home_tc else 1, drive_map.get(x, {}).get('dist', 999))
+                                    )
+                                    for n_tc in sorted_tcs:
+                                        dates = theater_dates[n_tc]
+                                        t_name = cluster_theaters.get(n_tc, f"Theater {n_tc}")
+                                        dist = drive_map.get(n_tc, {}).get('dist')
+                                        dist_str = f" • {dist} mi" if (dist and n_tc != home_tc) else (" • Home" if n_tc == home_tc else "")
+                                        sorted_date_objs = sorted([datetime.strptime(d, "%m-%d-%Y") for d in dates])
+                                        
+                                        st.caption(f"📍 **{t_name}**<span style='color:grey;'>{dist_str}</span>", unsafe_allow_html=True)
+                                        sel_ex_d = st.pills(
+                                            f"Dates for {n_tc} {m_code}",
+                                            options=sorted_date_objs,
+                                            format_func=lambda d: d.strftime("%b %d"),
+                                            key=f"ex_pills_{m_code}_{n_tc}",
+                                            label_visibility="collapsed"
                                         )
-                                        for n_tc in sorted_tcs:
-                                            dates = theater_dates[n_tc]
-                                            t_name = cluster_theaters.get(n_tc, f"Theater {n_tc}")
-                                            dist = drive_map.get(n_tc, {}).get('dist')
-                                            dist_str = f" • {dist} mi" if (dist and n_tc != home_tc) else (" • Home" if n_tc == home_tc else "")
-                                            sorted_date_objs = sorted([datetime.strptime(d, "%m-%d-%Y") for d in dates])
-                                            
-                                            st.caption(f"📍 **{t_name}**<span style='color:grey;'>{dist_str}</span>", unsafe_allow_html=True)
-                                            sel_ex_d = st.pills(
-                                                f"Dates for {n_tc} {m_code}",
-                                                options=sorted_date_objs,
-                                                format_func=lambda d: d.strftime("%b %d"),
-                                                key=f"ex_pills_{m_code}_{n_tc}",
-                                                label_visibility="collapsed"
-                                            )
-                                            if sel_ex_d:
-                                                if f"ex_pills_{m_code}_{n_tc}" in st.session_state:
-                                                    del st.session_state[f"ex_pills_{m_code}_{n_tc}"]
-                                                st.session_state.active_theater_code = n_tc
-                                                st.session_state.change_theater_mode = False
-                                                sync_query_param("theater", n_tc)
-                                                d_iso = sel_ex_d.strftime("%Y-%m-%d")
-                                                sync_query_param("date", d_iso)
-                                                sync_query_param("tview", "now-playing")
-                                                sync_query_param("movie", m_code)
-                                                st.session_state[f"sub_nav_{n_tc}"] = "🍿 Now Playing"
-                                                st.session_state[f"f_code_{n_tc}"] = [m_code]
-                                                st.rerun()
+                                        if sel_ex_d:
+                                            if f"ex_pills_{m_code}_{n_tc}" in st.session_state:
+                                                del st.session_state[f"ex_pills_{m_code}_{n_tc}"]
+                                            st.session_state.active_theater_code = n_tc
+                                            st.session_state.change_theater_mode = False
+                                            sync_query_param("theater", n_tc)
+                                            d_iso = sel_ex_d.strftime("%Y-%m-%d")
+                                            sync_query_param("date", d_iso)
+                                            sync_query_param("tview", "now-playing")
+                                            sync_query_param("movie", m_code)
+                                            st.session_state.sub_nav_redirect = "🍿 Now Playing"
+                                            st.session_state.movie_redirect = m_code
+                                            st.rerun()
                     else:
                         st.info("No movies found for the selected theaters in the upcoming week.")
 
