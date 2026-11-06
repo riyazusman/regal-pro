@@ -2427,7 +2427,8 @@ if selected_theater and schedule:
                 return f"{is_w}{pin}{new}{t} ({r}{dur_str})"
 
             select_key = f"nearby_movie_select_{tc}"
-            st.session_state[select_key] = current_sel
+            if st.session_state.get(select_key) != current_sel:
+                st.session_state[select_key] = current_sel
 
             def on_nearby_movie_selected():
                 picked = st.session_state.get(select_key)
@@ -2438,7 +2439,7 @@ if selected_theater and schedule:
             selected_from_dropdown = st.selectbox(
                 "Select Movie",
                 options=active_codes,
-                index=sel_idx,
+                index=None,
                 format_func=format_nearby_movie,
                 key=select_key,
                 on_change=on_nearby_movie_selected,
@@ -2684,7 +2685,8 @@ if selected_theater and schedule:
                     return f"{is_w}{prefix}{title} — {theaters_str}"
 
                 select_key = f"nationwide_movie_select_{tc}"
-                st.session_state[select_key] = current_sel
+                if st.session_state.get(select_key) != current_sel:
+                    st.session_state[select_key] = current_sel
 
                 def on_nationwide_movie_selected():
                     picked = st.session_state.get(select_key)
@@ -2695,7 +2697,7 @@ if selected_theater and schedule:
                 selected_from_dropdown = st.selectbox(
                     "Select Movie",
                     options=active_codes,
-                    index=sel_idx,
+                    index=None,
                     format_func=format_nationwide_movie,
                     key=select_key,
                     on_change=on_nationwide_movie_selected,
