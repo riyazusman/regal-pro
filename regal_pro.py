@@ -895,6 +895,11 @@ def render_movie_header_card(m_code, title=None, extra_tags=""):
     studio = meta.get('studio', 'Unknown Studio')
     poster_url = meta.get('poster')
     has_poster = is_poster_valid(poster_url)
+    if not has_poster and meta.get('tmdb_poster') and meta.get('tmdb_poster') != poster_url:
+        fallback_tmdb = meta.get('tmdb_poster')
+        if is_poster_valid(fallback_tmdb):
+            poster_url = fallback_tmdb
+            has_poster = True
     
     regal_url = get_movie_regal_url(m_code, disp_title)
     badges, badges_type = get_rating_badges(m_code)
@@ -1188,9 +1193,15 @@ def sync_movie_metadata():
     for m_code, m_info in db_metadata.items():
         if m_code in st.session_state.global_movie_catalog:
             cat_entry = st.session_state.global_movie_catalog[m_code]
+            regal_p = m_info.get('poster') or cat_entry.get('poster')
+            tmdb_p = m_info.get('tmdb_poster')
+            effective_poster = regal_p if (regal_p and str(regal_p).strip()) else (tmdb_p if (tmdb_p and str(tmdb_p).strip()) else None)
             update_dict = {
                 'studio': m_info.get('studio') or cat_entry.get('studio'),
-                'poster': m_info.get('poster') or cat_entry.get('poster'),
+                'poster': effective_poster,
+                'tmdb_poster': tmdb_p,
+                'language': m_info.get('language'),
+                'genres': m_info.get('genres'),
                 'regal_url': m_info.get('regal_url') or cat_entry.get('regal_url'),
                 'imdb_score': m_info.get('imdb_score'),
                 'imdb_url': m_info.get('imdb_url'),
@@ -1207,7 +1218,7 @@ def sync_movie_metadata():
             if (cat_entry.get('rating') in (None, 'NR', '')) and m_info.get('rating'):
                 update_dict['rating'] = m_info.get('rating')
             cat_entry.update(update_dict)
-    poster_urls = [m_info.get('poster') for m_info in db_metadata.values() if m_info.get('poster')]
+    poster_urls = [m_info.get('poster') or m_info.get('tmdb_poster') for m_info in db_metadata.values() if m_info.get('poster') or m_info.get('tmdb_poster')]
     if poster_urls:
         prefetch_poster_status(poster_urls)
 
@@ -2075,6 +2086,11 @@ if selected_theater and schedule:
                                 badges, badges_type = get_rating_badges(m_code)
                                 poster_url = meta.get('poster')
                                 has_poster = is_poster_valid(poster_url)
+                                if not has_poster and meta.get('tmdb_poster') and meta.get('tmdb_poster') != poster_url:
+                                    fallback_tmdb = meta.get('tmdb_poster')
+                                    if is_poster_valid(fallback_tmdb):
+                                        poster_url = fallback_tmdb
+                                        has_poster = True
                                 regal_url = get_movie_regal_url(m_code, meta.get('title'))
                                 badges_line = format_badges_and_regal_link(badges, regal_url, "Regal ↗")
                                 badges_row = f'<div><small>{badges_line}</small></div>' if badges_line else ""
@@ -2230,6 +2246,11 @@ if selected_theater and schedule:
 
                             poster_url = meta.get('poster')
                             has_poster = is_poster_valid(poster_url)
+                            if not has_poster and meta.get('tmdb_poster') and meta.get('tmdb_poster') != poster_url:
+                                fallback_tmdb = meta.get('tmdb_poster')
+                                if is_poster_valid(fallback_tmdb):
+                                    poster_url = fallback_tmdb
+                                    has_poster = True
                             regal_url = get_movie_regal_url(m_code, display_title)
                             badges_line = format_badges_and_regal_link(badges, regal_url, "Regal ↗")
                             badges_row = f'<div><small>{badges_line}</small></div>' if badges_line else ""
