@@ -1933,85 +1933,85 @@ if selected_theater and schedule:
                         m_shows = [s for s in filtered if s['master_code'] == m_code]
                         title = m_shows[0]['Title']
                     
-                    other_t_codes = sorted([c for c in set(s['TheaterCode'] for s in all_flat_data if s['master_code'] == m_code) 
-                                           if c != t_item['theater_code'] and c in cluster_theaters])
-                    
-                    valid_date_objs = [datetime.strptime(date_key, "%m-%d-%Y") 
-                        for date_key, day_flat in st.session_state.registry['schedule'].items() 
-                        if any(s['master_code'] == m_code for s in day_flat)]
-                    
-                    meta = movie_meta.get(m_code, {})
-                    new_tag = "| 🔴 New Release" if meta.get('is_new') else ""
-                    unlimited_tag = "| 🎫 No Unlimited" if is_unlimited_excluded(m_code, m_shows[0]['raw_attrs']) else ""
+                        other_t_codes = sorted([c for c in set(s['TheaterCode'] for s in all_flat_data if s['master_code'] == m_code) 
+                                               if c != t_item['theater_code'] and c in cluster_theaters])
+                        
+                        valid_date_objs = [datetime.strptime(date_key, "%m-%d-%Y") 
+                            for date_key, day_flat in st.session_state.registry['schedule'].items() 
+                            if any(s['master_code'] == m_code for s in day_flat)]
+                        
+                        meta = movie_meta.get(m_code, {})
+                        new_tag = "| 🔴 New Release" if meta.get('is_new') else ""
+                        unlimited_tag = "| 🎫 No Unlimited" if is_unlimited_excluded(m_code, m_shows[0]['raw_attrs']) else ""
 
-                    with st.expander(f"🍿 {title} ({m_shows[0]['Rating']}) | 🕒 {m_shows[0]['Duration']} min {new_tag} {unlimited_tag}", expanded=True):
-                        render_movie_header_card(m_code, title=title, extra_tags=f"{new_tag} {unlimited_tag}")
+                        with st.expander(f"🍿 {title} ({m_shows[0]['Rating']}) | 🕒 {m_shows[0]['Duration']} min {new_tag} {unlimited_tag}", expanded=True):
+                            render_movie_header_card(m_code, title=title, extra_tags=f"{new_tag} {unlimited_tag}")
 
-                        for mt in sorted(list(set(s.get('ScreenType') or '2D' for s in m_shows))):
-                            ts = [s for s in m_shows if s['ScreenType'] == mt]
-                            t_common = set.intersection(*(s['raw_attrs'] for s in ts)) if ts else set()
-                            common_attribs = sorted([str(a) for a in (t_common - {mt}) if a])
-                            st.markdown(f'<div style="margin-bottom: 6px;"><span style="background-color: rgba(151, 166, 195, 0.15); padding: 4px 12px; border-radius: 4px; border-left: 4px solid #ff4b4b;"><span style="font-weight: bold;">{mt}</span> <span style="color: grey; font-size: 0.85em; font-weight: normal; margin-left: 10px;">({", ".join(common_attribs) if common_attribs else ""})</span></span></div>', unsafe_allow_html=True)
+                            for mt in sorted(list(set(s.get('ScreenType') or '2D' for s in m_shows))):
+                                ts = [s for s in m_shows if s['ScreenType'] == mt]
+                                t_common = set.intersection(*(s['raw_attrs'] for s in ts)) if ts else set()
+                                common_attribs = sorted([str(a) for a in (t_common - {mt}) if a])
+                                st.markdown(f'<div style="margin-bottom: 6px;"><span style="background-color: rgba(151, 166, 195, 0.15); padding: 4px 12px; border-radius: 4px; border-left: 4px solid #ff4b4b;"><span style="font-weight: bold;">{mt}</span> <span style="color: grey; font-size: 0.85em; font-weight: normal; margin-left: 10px;">({", ".join(common_attribs) if common_attribs else ""})</span></span></div>', unsafe_allow_html=True)
 
-                            row = []
-                            for s in ts:
-                                is_past = (q_date == current_local_time.date() and s['Showtime'] < current_local_time)
-                                delta_attribs = get_attr_diff(s['raw_attrs'], t_common)
-                                t_str = s['Showtime'].strftime('%I:%M %p')
-                                if is_past:
-                                    final_time = f"<del>{t_str}</del>" 
-                                    meta_text = f"  <small style='color:grey'><del>(Audi {s['Auditorium']}) {delta_attribs}</del></small>"
-                                else:
-                                    final_time = f"{t_str}" 
-                                    meta_text = f"  <small style='color:grey'>(Audi {s['Auditorium']}) {delta_attribs}</small>"
-                                row.append(f"{final_time}{meta_text}")
-                            
-                            st.markdown(f"&nbsp;&nbsp;&nbsp;&nbsp;{' | '.join(row)}", unsafe_allow_html=True)
+                                row = []
+                                for s in ts:
+                                    is_past = (q_date == current_local_time.date() and s['Showtime'] < current_local_time)
+                                    delta_attribs = get_attr_diff(s['raw_attrs'], t_common)
+                                    t_str = s['Showtime'].strftime('%I:%M %p')
+                                    if is_past:
+                                        final_time = f"<del>{t_str}</del>" 
+                                        meta_text = f"  <small style='color:grey'><del>(Audi {s['Auditorium']}) {delta_attribs}</del></small>"
+                                    else:
+                                        final_time = f"{t_str}" 
+                                        meta_text = f"  <small style='color:grey'>(Audi {s['Auditorium']}) {delta_attribs}</small>"
+                                    row.append(f"{final_time}{meta_text}")
+                                
+                                st.markdown(f"&nbsp;&nbsp;&nbsp;&nbsp;{' | '.join(row)}", unsafe_allow_html=True)
 
-                        footer_col, link_col = st.columns([4, 1])
-                        with footer_col:
-                            if valid_date_objs:
-                                st.caption("🗓️ **Scheduled Dates:**")
-                                sel_date = st.pills(
-                                    "Scheduled Dates",
-                                    options=sorted(valid_date_objs),
-                                    format_func=lambda d: d.strftime("%b %d"),
-                                    key=f"np_dates_{m_code}_{tc}",
-                                    label_visibility="collapsed"
-                                )
-                                if sel_date and sel_date != q_date:
-                                    d_iso = sel_date.strftime("%Y-%m-%d")
-                                    sync_query_param("date", d_iso)
+                            footer_col, link_col = st.columns([4, 1])
+                            with footer_col:
+                                if valid_date_objs:
+                                    st.caption("🗓️ **Scheduled Dates:**")
+                                    sel_date = st.pills(
+                                        "Scheduled Dates",
+                                        options=sorted(valid_date_objs),
+                                        format_func=lambda d: d.strftime("%b %d"),
+                                        key=f"np_dates_{m_code}_{tc}",
+                                        label_visibility="collapsed"
+                                    )
+                                    if sel_date and sel_date != q_date:
+                                        d_iso = sel_date.strftime("%Y-%m-%d")
+                                        sync_query_param("date", d_iso)
+                                        st.rerun()
+
+                                if other_t_codes:
+                                    st.caption("🚗 **Also Playing at:**")
+                                    sel_nb = st.pills(
+                                        "Also Playing at",
+                                        options=other_t_codes,
+                                        format_func=lambda c: cluster_theaters.get(c, f"Theater {c}"),
+                                        key=f"np_theaters_{m_code}_{tc}",
+                                        label_visibility="collapsed"
+                                    )
+                                    if sel_nb:
+                                        st.session_state.active_theater_code = sel_nb
+                                        st.session_state.change_theater_mode = False
+                                        sync_query_param("theater", sel_nb)
+                                        st.rerun()
+
+                            with link_col:
+                                is_w = is_movie_watched(st.session_state.user_prefs, m_code)
+                                w_btn_label = "✅ Watched" if is_w else "👁️ Mark Watched"
+                                if st.button(w_btn_label, key=f"btn_w_grp_{m_code}_{tc}", use_container_width=True):
+                                    new_prefs = toggle_watched_movie(st.session_state.user_prefs, m_code)
+                                    persist_user_preferences(new_prefs)
                                     st.rerun()
 
-                            if other_t_codes:
-                                st.caption("🚗 **Also Playing at:**")
-                                sel_nb = st.pills(
-                                    "Also Playing at",
-                                    options=other_t_codes,
-                                    format_func=lambda c: cluster_theaters.get(c, f"Theater {c}"),
-                                    key=f"np_theaters_{m_code}_{tc}",
-                                    label_visibility="collapsed"
-                                )
-                                if sel_nb:
-                                    st.session_state.active_theater_code = sel_nb
-                                    st.session_state.change_theater_mode = False
-                                    sync_query_param("theater", sel_nb)
-                                    st.rerun()
-
-                        with link_col:
-                            is_w = is_movie_watched(st.session_state.user_prefs, m_code)
-                            w_btn_label = "✅ Watched" if is_w else "👁️ Mark Watched"
-                            if st.button(w_btn_label, key=f"btn_w_grp_{m_code}_{tc}", use_container_width=True):
-                                new_prefs = toggle_watched_movie(st.session_state.user_prefs, m_code)
-                                persist_user_preferences(new_prefs)
-                                st.rerun()
-
-                            if other_t_codes or valid_date_objs:
-                                if st.button("📅 Full Schedule", key=f"link_{m_code}_{t_item['theater_code']}", use_container_width=True):
-                                    st.session_state.nav_redirect = "🎬 Movie Explorer"
-                                    st.session_state.selected_movie_code = m_code
-                                    st.rerun()
+                                if other_t_codes or valid_date_objs:
+                                    if st.button("📅 Full Schedule", key=f"link_{m_code}_{t_item['theater_code']}", use_container_width=True):
+                                        st.session_state.nav_redirect = "🎬 Movie Explorer"
+                                        st.session_state.selected_movie_code = m_code
+                                        st.rerun()
 
         elif sub_nav == "🚗 Playing Nearby":
             sync_query_param("movie", None)
