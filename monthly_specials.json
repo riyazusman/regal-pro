@@ -30,57 +30,63 @@
             "EndDate": "2026-04-30",
             "Active": false
         },
-		{
+        {
             "Series": "MAYS",
             "Prefix": "MAYS",
             "EndDate": "2026-05-31",
             "Active": false
         },
-		{
+        {
             "Series": "UFO",
             "Prefix": "UFO",
             "EndDate": "2026-05-31",
             "Active": false
         },
-		{
+        {
             "Series": "SMX26",
             "Prefix": "SMX26",
             "EndDate": "2026-08-31",
             "Active": false
         },
-		{
+        {
             "Series": "Pride",
             "Prefix": "Pride",
             "EndDate": "2026-06-30",
             "Active": false
         },
-				{
+        {
             "Series": "HP26",
             "Prefix": "HP26",
             "EndDate": "2026-09-30",
             "Active": false
         },
-		{
+        {
             "Series": "MOM2",
             "Prefix": "MOM2",
             "EndDate": "2026-09-30",
             "Active": false
         },
-		{
+        {
             "Series": "SOS26",
             "Prefix": "SOS26",
             "EndDate": "2026-10-31",
             "Active": true
         },
-		{
+        {
             "Series": "007",
             "Prefix": "007",
             "EndDate": "2026-10-31",
             "Active": true
         },
-        		{
+        {
             "Series": "CUT26",
             "Prefix": "CUT26",
+            "EndDate": "2026-11-30",
+            "Active": true
+        },
+        {
+            "Series": "Vice Films",
+            "Prefix": "Vice Films",
             "EndDate": "2026-11-30",
             "Active": true
         }
