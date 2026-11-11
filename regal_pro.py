@@ -258,7 +258,13 @@ def init_supabase() -> Client:
 def get_db_metadata_cached(codes):
     if not codes: return {}
     res = db.table("movie_metadata").select("*").in_("master_code", list(codes)).execute()
-    return {row['master_code']: row for row in res.data} if res.data else {}
+    result = {}
+    for row in res.data or []:
+        mc = row.get('master_code')
+        if not row.get('title'):
+            row['title'] = row.get('clean_title') or f"Movie ({mc})"
+        result[mc] = row
+    return result
 
 
 def get_db_metadata(codes):
@@ -301,6 +307,7 @@ def registry_ingest(raw_payload):
         for mc, m_info in db_meta.items():
             translated_meta[mc] = {
                 **m_info,
+                'title': m_info.get('title') or m_info.get('clean_title') or f"Movie ({mc})",
                 'rt_critics': m_info.get('rt_critics_score'),
                 'rt_users': m_info.get('rt_users_score'),
                 'metacritic': m_info.get('metacritic_score'),
@@ -889,7 +896,7 @@ def format_badges_and_regal_link(badges, regal_url, link_text="Regal Page ↗"):
 def render_movie_header_card(m_code, title=None, extra_tags=""):
     """Render a uniform, responsive movie card header with desktop/mobile adaptive poster, scores, and links."""
     meta = st.session_state.get('global_movie_catalog', {}).get(m_code, {}) or st.session_state.get('registry', {}).get('movies', {}).get(m_code, {})
-    disp_title = title or meta.get('title', 'Unknown Title')
+    disp_title = title or meta.get('title') or 'Unknown Title'
     duration = meta.get('duration', 0)
     rating = meta.get('rating', 'NR')
     studio = meta.get('studio', 'Unknown Studio')
@@ -998,7 +1005,7 @@ def format_movie_label_grouped(m_code, catalog=None, screenings=None):
     if catalog is None:
         catalog = st.session_state.get('global_movie_catalog', {})
     meta = catalog.get(m_code) or st.session_state.get('registry', {}).get('movies', {}).get(m_code, {})
-    title = meta.get('title', f"Unknown ({m_code})")
+    title = meta.get('title') or f"Unknown ({m_code})"
     _, prefix = get_movie_group_info(m_code, catalog=catalog, screenings=screenings)
     watched_str = " [👁️ Watched]" if is_movie_watched(st.session_state.get('user_prefs', {}), m_code) else ""
     return f"{prefix} {title}{watched_str}"
@@ -1217,6 +1224,8 @@ def sync_movie_metadata():
                 update_dict['duration'] = m_info.get('duration')
             if (cat_entry.get('rating') in (None, 'NR', '')) and m_info.get('rating'):
                 update_dict['rating'] = m_info.get('rating')
+            if not cat_entry.get('title') and (m_info.get('title') or m_info.get('clean_title')):
+                update_dict['title'] = m_info.get('title') or m_info.get('clean_title')
             cat_entry.update(update_dict)
     poster_urls = [m_info.get('poster') or m_info.get('tmdb_poster') for m_info in db_metadata.values() if m_info.get('poster') or m_info.get('tmdb_poster')]
     if poster_urls:
@@ -1735,7 +1744,7 @@ if selected_theater and schedule:
                                         list(list(set(s['master_code'] for s in flat_data))), 
                                         key=lambda x: (
                                             get_movie_group_info(x)[0], 
-                                            st.session_state.global_movie_catalog.get(x, {}).get('title', '').lower()
+                                            (st.session_state.global_movie_catalog.get(x, {}).get('title') or '').lower()
                                         )
                     )
                     q_movie = st.query_params.get("movie")
@@ -1844,8 +1853,8 @@ if selected_theater and schedule:
             if f_new and f_code and not all(movie_meta.get(c, {}).get('is_new', False) for c in f_code):
                 st.caption("ℹ️ *'New Releases Only' is active, but showing your explicitly selected movie.*")
 
-            if sort_by == "Movie Title": filtered.sort(key=lambda x: (x['Title'], x['Showtime']))
-            elif sort_by == "Showtime": filtered.sort(key=lambda x: (x['Showtime'], x['Title']))
+            if sort_by == "Movie Title": filtered.sort(key=lambda x: (x.get('Title') or '', x.get('Showtime')))
+            elif sort_by == "Showtime": filtered.sort(key=lambda x: (x.get('Showtime'), x.get('Title') or ''))
             elif sort_by == "Auditorium": filtered.sort(key=lambda x: (int(x['Auditorium']) if x['Auditorium'].isdigit() else 999, x['Showtime']))
             
             if not filtered:
@@ -1853,7 +1862,7 @@ if selected_theater and schedule:
                     st.warning("⚠️ **No showtimes match your current filter settings.**")
                     active_filters = []
                     if f_code:
-                        titles = [st.session_state.global_movie_catalog.get(c, {}).get('title', c) for c in f_code]
+                        titles = [(st.session_state.global_movie_catalog.get(c, {}).get('title') or c) for c in f_code]
                         active_filters.append(f"Movie: {', '.join(titles)}")
                     if f_new:
                         active_filters.append("🔴 New Releases Only")
@@ -2054,7 +2063,7 @@ if selected_theater and schedule:
                     
                     display_movie_codes = sorted(
                         list(playing_codes),
-                        key=lambda x: st.session_state.global_movie_catalog.get(x, {}).get('title', '')
+                        key=lambda x: (st.session_state.global_movie_catalog.get(x, {}).get('title') or '').lower()
                     )
 
                     if display_movie_codes:
@@ -2183,7 +2192,7 @@ if selected_theater and schedule:
                         m_code = m['master_code']
                         meta = st.session_state.registry['movies'].get(m_code, {})
                         studio = str(meta.get('studio', '')).strip()
-                        title = meta.get('title', '').upper()
+                        title = (meta.get('title') or '').upper()
                         if studio == "Regal Cinemedia" or "FATHOM" in title:
                             display_movies.append(m)
                 elif sel_prefix != "ALL":
@@ -2191,7 +2200,7 @@ if selected_theater and schedule:
                     for m in scoped_future_movies:
                         m_code = m['master_code']
                         meta = st.session_state.registry['movies'].get(m_code, {})
-                        m_title = meta.get('title', '').upper().strip()
+                        m_title = (meta.get('title') or '').upper().strip()
                         if m_title.startswith(f"{sel_prefix}:") or m_title.startswith(f"{sel_prefix} "):
                             display_movies.append(m)
                 else:
@@ -3034,7 +3043,7 @@ if selected_theater and schedule:
                     list(all_display_codes), 
                     key=lambda x: (
                         get_movie_group_info(x)[0], 
-                        st.session_state.global_movie_catalog.get(x, {}).get('title', '').lower()
+                        (st.session_state.global_movie_catalog.get(x, {}).get('title') or '').lower()
                     )
                 )
 
@@ -3172,7 +3181,7 @@ if selected_theater and schedule:
                     day_flat_anchor = st.session_state.registry['schedule'].get(a_day, [])
                     valid_anchor_codes = sorted(
                         [mc for mc in target_movies if any(s['master_code'] == mc and s['TheaterCode'] == a_theater for s in day_flat_anchor)],
-                        key=lambda x: st.session_state.global_movie_catalog.get(x, {}).get('title', '')
+                        key=lambda x: (st.session_state.global_movie_catalog.get(x, {}).get('title') or '').lower()
                     )
                     
                     a_movie_code = st.selectbox("Anchor Movie", options=valid_anchor_codes, format_func=format_movie_label_grouped)
@@ -3301,7 +3310,7 @@ if selected_theater and schedule:
                         if not unscheduled:
                             st.success("✅ **Perfect Match!** All selected movies fit the schedule.")
                         else:
-                            m_names = [st.session_state.global_movie_catalog.get(m, {}).get('title', m) for m in unscheduled]
+                            m_names = [(st.session_state.global_movie_catalog.get(m, {}).get('title') or m) for m in unscheduled]
                             st.warning(f"⚠️ **Incomplete Schedule:** {', '.join(m_names)} could not be fitted.")
 
                         for d_str in sorted_plan_days:
@@ -3380,7 +3389,7 @@ if selected_theater and schedule:
                         if unscheduled:
                             with st.expander("⚠️ Unscheduled Movies"):
                                 for m in unscheduled:
-                                    m_title = st.session_state.global_movie_catalog.get(m, {}).get('title', m)
+                                    m_title = st.session_state.global_movie_catalog.get(m, {}).get('title') or m
                                     st.write(f"❌ **{m_title}**: Could not fit into the selected time windows or theater constraints.")
                 
                 else:
