@@ -761,13 +761,13 @@ def flatten_data(data, theater_code_override=None):
                 flat_list.append({
                     "TheaterCode": t_code, 
                     "master_code": m_code,
-                    "Title": m_meta.get('title', f"Unknown Movie ({m_code})"),
-                    "Rating": m_meta.get('rating', "NR"),
-                    "Duration": m_meta.get('duration', 120),
+                    "Title": m_meta.get('title') or film.get('Title') or f"Unknown Movie ({m_code})",
+                    "Rating": m_meta.get('rating') or film.get('Rating') or "NR",
+                    "Duration": m_meta.get('duration') or film.get('Duration') or 120,
                     "Showtime": datetime.strptime(perf["CalendarShowTime"], "%Y-%m-%dT%H:%M:%S"),
                     "Auditorium": str(perf.get("Auditorium", "?")),
                     "ScreenType": perf.get("PerformanceGroup") or "2D",
-                    "raw_attrs": set(attr_map.get(c.strip(), c) for c in perf.get("PerformanceAttributes", []))
+                    "raw_attrs": set(attr_map.get(str(c).strip(), str(c)) for c in perf.get("PerformanceAttributes", []))
                 })
                 
     theater_future_map = {}
@@ -1783,7 +1783,7 @@ if selected_theater and schedule:
                         sync_query_param("movie", None)
                         st.session_state[last_q_key] = None
                     f_type = st.multiselect("Screen Type", 
-                                            options=sorted(list(set(s['ScreenType'] for s in flat_data))), 
+                                            options=sorted(list(set(s.get('ScreenType') or '2D' for s in flat_data))), 
                                             placeholder="All",
                                             key=f"f_type_{t_key}")
                     t_ranges = {"8AM - 12N": (8, 12), "12N - 4PM": (12, 16), "4PM - 8PM": (16, 20), "8PM - 12M": (20, 24)}
@@ -1815,16 +1815,16 @@ if selected_theater and schedule:
                             st.toast("Saved filter defaults!", icon="💾")
                 with r_c2:
                     f_rating = st.multiselect("Rating", 
-                                            options=sorted(list(set(s['Rating'] for s in flat_data))), 
+                                            options=sorted(list(set(s.get('Rating') or 'NR' for s in flat_data))), 
                                             placeholder="All",
                                             key=f"f_rating_{t_key}")
                     f_audi = st.multiselect("Auditorium", 
-                                            options=sorted(list(set(s['Auditorium'] for s in flat_data)), key=lambda x: int(x) if x.isdigit() else 999), 
+                                            options=sorted(list(set(str(s.get('Auditorium') or '?') for s in flat_data)), key=lambda x: int(x) if str(x).isdigit() else 999), 
                                             placeholder="All",
                                             key=f"f_audi_{t_key}")
-                    current_st = set(f_type) if f_type else set(s['ScreenType'] for s in flat_data)
-                    all_expanded_attrs = set(a for s in flat_data for a in s['raw_attrs'])
-                    deduped_attrs = sorted([a for a in all_expanded_attrs if a not in current_st])
+                    current_st = set(f_type) if f_type else set(s.get('ScreenType') or '2D' for s in flat_data)
+                    all_expanded_attrs = set(str(a) for s in flat_data for a in s.get('raw_attrs', []))
+                    deduped_attrs = sorted([str(a) for a in all_expanded_attrs if a not in current_st])
                     
                     f_attr = st.multiselect("Additional Filters", 
                                             options=deduped_attrs, 
@@ -1841,21 +1841,21 @@ if selected_theater and schedule:
                                                  key=f"view_mode_{t_key}")
                     
             filtered = [s for s in flat_data if (
-                not f_code or s['master_code'] in f_code) and
-                (not f_type or s['ScreenType'] in f_type) and 
-                (not f_rating or s['Rating'] in f_rating) and 
-                (not f_audi or s['Auditorium'] in f_audi) and 
-                (not f_attr or set(f_attr).issubset(s['raw_attrs'])) and 
+                not f_code or s.get('master_code') in f_code) and
+                (not f_type or (s.get('ScreenType') or '2D') in f_type) and 
+                (not f_rating or (s.get('Rating') or 'NR') in f_rating) and 
+                (not f_audi or str(s.get('Auditorium')) in f_audi) and 
+                (not f_attr or set(f_attr).issubset(s.get('raw_attrs', set()))) and 
                 (not f_times or any(t_ranges[t][0] <= s['Showtime'].hour < t_ranges[t][1] for t in f_times)) and 
                 (not f_avail or (current_local_time <= s['Showtime'] + timedelta(minutes=30) if q_date == current_local_time.date() else True)) and
-                (not f_new or (f_code and s['master_code'] in f_code) or movie_meta.get(s['master_code'], {}).get('is_new', False))]
+                (not f_new or (f_code and s.get('master_code') in f_code) or movie_meta.get(s.get('master_code'), {}).get('is_new', False))]
             
             if f_new and f_code and not all(movie_meta.get(c, {}).get('is_new', False) for c in f_code):
                 st.caption("ℹ️ *'New Releases Only' is active, but showing your explicitly selected movie.*")
 
             if sort_by == "Movie Title": filtered.sort(key=lambda x: (x.get('Title') or '', x.get('Showtime')))
             elif sort_by == "Showtime": filtered.sort(key=lambda x: (x.get('Showtime'), x.get('Title') or ''))
-            elif sort_by == "Auditorium": filtered.sort(key=lambda x: (int(x['Auditorium']) if x['Auditorium'].isdigit() else 999, x['Showtime']))
+            elif sort_by == "Auditorium": filtered.sort(key=lambda x: (int(str(x.get('Auditorium', 999))) if str(x.get('Auditorium', '')).isdigit() else 999, x.get('Showtime')))
             
             if not filtered:
                 if flat_data:
@@ -1918,9 +1918,9 @@ if selected_theater and schedule:
                                 attr_list = sorted(list(s['raw_attrs']))
                                 st.markdown(f'<p style="color: grey; font-size: 0.85em; margin-top: -10px;">{", ".join(attr_list)}</p>', unsafe_allow_html=True)
                 elif view_mode == "Group by Auditorium":
-                    for audi in sorted(list(set(s['Auditorium'] for s in filtered)), key=lambda x: int(x) if x.isdigit() else 999):
+                    for audi in sorted(list(set(str(s.get('Auditorium') or '?') for s in filtered)), key=lambda x: int(x) if str(x).isdigit() else 999):
                         with st.expander(f"🖼️ Auditorium {audi}", expanded=True):
-                            for s in sorted([s for s in filtered if s['Auditorium'] == audi], key=lambda x: x['Showtime']):
+                            for s in sorted([s for s in filtered if str(s.get('Auditorium')) == str(audi)], key=lambda x: x['Showtime']):
                                 col_t, col_info = st.columns([1, 5])
                                 is_past = (q_date == current_local_time.date() and s['Showtime'] < current_local_time)
                                 t_str = f"~~{s['Showtime'].strftime('%I:%M %p')}~~" if is_past else f"**{s['Showtime'].strftime('%I:%M %p')}**"
@@ -1947,11 +1947,11 @@ if selected_theater and schedule:
                     with st.expander(f"🍿 {title} ({m_shows[0]['Rating']}) | 🕒 {m_shows[0]['Duration']} min {new_tag} {unlimited_tag}", expanded=True):
                         render_movie_header_card(m_code, title=title, extra_tags=f"{new_tag} {unlimited_tag}")
 
-                        for mt in sorted(list(set(s['ScreenType'] for s in m_shows))):
+                        for mt in sorted(list(set(s.get('ScreenType') or '2D' for s in m_shows))):
                             ts = [s for s in m_shows if s['ScreenType'] == mt]
                             t_common = set.intersection(*(s['raw_attrs'] for s in ts)) if ts else set()
-                            common_attribs = sorted(t_common - {mt})
-                            st.markdown(f'<div style="margin-bottom: 6px;"><span style="background-color: rgba(151, 166, 195, 0.15); padding: 4px 12px; border-radius: 4px; border-left: 4px solid #ff4b4b;"><span style="font-weight: bold;">{mt}</span> <span style="color: grey; font-size: 0.85em; font-weight: normal; margin-left: 10px;">({", ".join(sorted(common_attribs)) if common_attribs else ""})</span></span></div>', unsafe_allow_html=True)
+                            common_attribs = sorted([str(a) for a in (t_common - {mt}) if a])
+                            st.markdown(f'<div style="margin-bottom: 6px;"><span style="background-color: rgba(151, 166, 195, 0.15); padding: 4px 12px; border-radius: 4px; border-left: 4px solid #ff4b4b;"><span style="font-weight: bold;">{mt}</span> <span style="color: grey; font-size: 0.85em; font-weight: normal; margin-left: 10px;">({", ".join(common_attribs) if common_attribs else ""})</span></span></div>', unsafe_allow_html=True)
 
                             row = []
                             for s in ts:
@@ -2543,20 +2543,20 @@ if selected_theater and schedule:
                     with st.expander("🔍 Advanced Filters", expanded=False):
                         f_col1, f_col2, f_col3 = st.columns(3)
                         with f_col1:
-                            m_formats = sorted(list(set(s['ScreenType'] for s in m_today_data)))
+                            m_formats = sorted(list(set(s.get('ScreenType') or '2D' for s in m_today_data)))
                             f_fmt = st.multiselect("Format", options=m_formats, placeholder="All")
                         with f_col2:
                             t_ranges = {"8AM-12N": (8, 12), "12N-4PM": (12, 16), "4PM-8PM": (16, 20), "8PM-12M": (20, 24)}
                             f_win = st.multiselect("Time Window", options=list(t_ranges.keys()))
                         with f_col3:
-                            all_m_attrs = set(a for s in m_today_data for a in s['raw_attrs'])
-                            f_extra = st.multiselect("Attributes", options=sorted(list(all_m_attrs - set(m_formats))))
+                            all_m_attrs = set(str(a) for s in m_today_data for a in s.get('raw_attrs', []))
+                            f_extra = st.multiselect("Attributes", options=sorted([str(a) for a in (all_m_attrs - set(m_formats)) if a]))
                             f_hide = st.checkbox("Hide past shows", value=st.session_state.user_prefs.get('filters', {}).get('hide_past', True), key=f"f_hide_movie_{sel_code}")
 
                     filtered_m = [s for s in m_today_data if 
-                            (not f_fmt or s['ScreenType'] in f_fmt) and
+                            (not f_fmt or (s.get('ScreenType') or '2D') in f_fmt) and
                             (not f_win or any(t_ranges[w][0] <= s['Showtime'].hour < t_ranges[w][1] for w in f_win)) and
-                            (not f_extra or set(f_extra).issubset(s['raw_attrs'])) and
+                            (not f_extra or set(f_extra).issubset(s.get('raw_attrs', set()))) and
                             (not f_hide or (s['Showtime'] > current_local_time + timedelta(minutes=30) if q_date == current_local_time.date() else True))]
 
                     if not filtered_m:
@@ -2564,14 +2564,14 @@ if selected_theater and schedule:
                         if f_hide and q_date == current_local_time.date():
                             st.info("Remaining shows for today may have already passed. Try unchecking **'Hide Past Shows'** in the filters above or selecting a different date.")
                     else:
-                        fmts_to_show = sorted(list(set(s['ScreenType'] for s in filtered_m)))
+                        fmts_to_show = sorted(list(set(s.get('ScreenType') or '2D' for s in filtered_m)))
                         
                         for fmt in fmts_to_show:
-                            fmt_shows = [s for s in filtered_m if s['ScreenType'] == fmt]
+                            fmt_shows = [s for s in filtered_m if (s.get('ScreenType') or '2D') == fmt]
                             
                             with st.expander(f"✨ {fmt}", expanded=True):
                                 t_codes = sorted(list(set(s['TheaterCode'] for s in fmt_shows)), 
-                                                key=lambda x: theater_info.get(x, {}).get('time', 999))
+                                                key=lambda x: (theater_info.get(x, {}).get('time') if theater_info.get(x, {}).get('time') is not None else 999))
                                 cols = st.columns(2)
                                 for idx, curr_tc in enumerate(t_codes):
                                     with cols[idx % 2]:
@@ -3063,14 +3063,14 @@ if selected_theater and schedule:
                 n_movies = len(target_movies)
 
                 available_formats = sorted(list(set(
-                    s['ScreenType'] for s in all_flat_data 
-                    if s['master_code'] in target_movies and s['TheaterCode'] in target_theaters
+                    s.get('ScreenType') or '2D' for s in all_flat_data 
+                    if s.get('master_code') in target_movies and s.get('TheaterCode') in target_theaters
                     ))) if target_movies else sorted(list(set(
-                    s['ScreenType'] for s in all_flat_data 
-                    if s['TheaterCode'] in target_theaters)))
+                    s.get('ScreenType') or '2D' for s in all_flat_data 
+                    if s.get('TheaterCode') in target_theaters)))
                 
                 formats_key = f"target_formats_{t_item['theater_code']}"
-                all_format_options = sorted(list(set(available_formats) | set(st.session_state.get(formats_key, []))))
+                all_format_options = sorted([str(f) for f in (set(available_formats) | set(st.session_state.get(formats_key, []))) if f])
                 target_formats = st.multiselect(
                     "4\\. Preferred Formats", 
                     options=all_format_options, 
