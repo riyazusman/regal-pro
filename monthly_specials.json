@@ -89,6 +89,12 @@
             "Prefix": "Vice Films",
             "EndDate": "2026-11-30",
             "Active": true
+        },
+        {
+            "Series": "HS26",
+            "Prefix": "HS26",
+            "EndDate": "2026-12-31",
+            "Active": true
         }
     ]
 }
