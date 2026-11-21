@@ -24,6 +24,7 @@ class TestPreferences(unittest.TestCase):
         self.assertEqual(prefs["watched_movies"], [])
         self.assertTrue(prefs["filters"]["hide_past"])
         self.assertFalse(prefs["filters"]["new_only"])
+        self.assertFalse(prefs["filters"]["hide_watched"])
         self.assertEqual(prefs["scheduler"]["buffer"], 15)
         self.assertEqual(prefs["scheduler"]["gap_cap"], 120)
         self.assertTrue(prefs["scheduler"]["unlimited"])
@@ -35,7 +36,7 @@ class TestPreferences(unittest.TestCase):
         prefs = toggle_favorite_theater(prefs, "1487")
         prefs = toggle_favorite_theater(prefs, "1794")
         prefs = toggle_watched_movie(prefs, "HO00022597")
-        prefs = update_filter_defaults(prefs, hide_past=False, new_only=True)
+        prefs = update_filter_defaults(prefs, hide_past=False, new_only=True, hide_watched=True)
         prefs = update_scheduler_defaults(prefs, buffer=25, gap_cap=150, unlimited=False, exclude_watched=True)
 
         encoded = encode_preferences(prefs)
@@ -49,6 +50,7 @@ class TestPreferences(unittest.TestCase):
         self.assertEqual(decoded["watched_movies"], ["HO00022597"])
         self.assertFalse(decoded["filters"]["hide_past"])
         self.assertTrue(decoded["filters"]["new_only"])
+        self.assertTrue(decoded["filters"]["hide_watched"])
         self.assertEqual(decoded["scheduler"]["buffer"], 25)
         self.assertEqual(decoded["scheduler"]["gap_cap"], 150)
         self.assertFalse(decoded["scheduler"]["unlimited"])
@@ -87,6 +89,14 @@ class TestPreferences(unittest.TestCase):
         self.assertIn("1487", prefs["favorite_theaters"])
         prefs = toggle_favorite_theater(prefs, "1487")
         self.assertNotIn("1487", prefs["favorite_theaters"])
+
+    def test_update_filter_defaults(self):
+        prefs = get_default_preferences()
+        self.assertFalse(prefs["filters"]["hide_watched"])
+        updated = update_filter_defaults(prefs, hide_watched=True)
+        self.assertTrue(updated["filters"]["hide_watched"])
+        updated2 = update_filter_defaults(updated, hide_watched=False)
+        self.assertFalse(updated2["filters"]["hide_watched"])
 
     def test_sanitize_bounds(self):
         prefs = {

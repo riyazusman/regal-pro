@@ -448,9 +448,14 @@ def load_user_preferences(prefs_cookie_raw=None):
     if "user_prefs" not in st.session_state:
         st.session_state.user_prefs = decode_preferences(prefs_cookie_raw)
         st.session_state._prefs_cookie_raw = prefs_cookie_raw
-    elif prefs_cookie_raw and st.session_state.get("_prefs_cookie_raw") != prefs_cookie_raw:
-        st.session_state.user_prefs = decode_preferences(prefs_cookie_raw)
-        st.session_state._prefs_cookie_raw = prefs_cookie_raw
+        if prefs_cookie_raw:
+            st.session_state._cookie_initialized = True
+    elif not st.session_state.get("_prefs_dirty", False):
+        # If the user has not modified preferences in this session, accept incoming cookie from browser
+        if prefs_cookie_raw and st.session_state.get("_prefs_cookie_raw") != prefs_cookie_raw:
+            st.session_state.user_prefs = decode_preferences(prefs_cookie_raw)
+            st.session_state._prefs_cookie_raw = prefs_cookie_raw
+            st.session_state._cookie_initialized = True
     return st.session_state.user_prefs
 
 def persist_user_preferences(prefs):
@@ -459,6 +464,8 @@ def persist_user_preferences(prefs):
     st.session_state.user_prefs = clean
     encoded = encode_preferences(clean)
     st.session_state._prefs_cookie_raw = encoded
+    st.session_state._prefs_dirty = True
+    st.session_state._pending_cookie_save = encoded
     with st.container(height=1, border=False):
         st.html("<style>div[height='1']{display:none;}</style>")
         set_cookie(COOKIE_NAME, encoded, 400, component_key=f"set_prefs_{uuid.uuid4().hex[:8]}")
@@ -467,6 +474,8 @@ def clear_all_cookies_and_preferences():
     """Wipe all client-side preferences and geolocation cookies."""
     st.session_state.user_prefs = get_default_preferences()
     st.session_state._prefs_cookie_raw = None
+    st.session_state._prefs_dirty = True
+    st.session_state._pending_cookie_save = None
     if "active_theater_code" in st.session_state:
         st.session_state.active_theater_code = None
     with st.container(height=1, border=False):
@@ -554,6 +563,12 @@ def get_location_cookie():
         longitude = get_cookie('RegalProUserGeoLongitude')
         zip_code = get_cookie('RegalProUserZipCode')
         prefs_cookie = get_cookie(COOKIE_NAME)
+
+        # If an in-session preference update was queued, ensure it's written to client cookie
+        pending_save = st.session_state.get("_pending_cookie_save")
+        if pending_save:
+            set_cookie(COOKIE_NAME, pending_save, 400, component_key=f"flush_prefs_{uuid.uuid4().hex[:8]}")
+            st.session_state._pending_cookie_save = None
 
     if prefs_cookie:
         load_user_preferences(prefs_cookie)
@@ -1231,15 +1246,39 @@ def sync_movie_metadata():
     if poster_urls:
         prefetch_poster_status(poster_urls)
 
+def is_mobile_client():
+    """Detect if the current visitor is on a mobile device via HTTP client hints and User-Agent."""
+    try:
+        headers = getattr(st.context, "headers", None)
+        if headers:
+            ch_mobile = headers.get("sec-ch-ua-mobile") or headers.get("Sec-Ch-Ua-Mobile")
+            if ch_mobile and "?1" in ch_mobile:
+                return True
+            ch_plat = (headers.get("sec-ch-ua-platform") or headers.get("Sec-Ch-Ua-Platform") or "").lower()
+            if any(p in ch_plat for p in ["android", "ios"]):
+                return True
+            ua = headers.get("user-agent") or headers.get("User-Agent") or headers.get("sec-ch-ua") or ""
+            if ua and re.search(r"mobi|android|iphone|ipad|ipod|blackberry|iemobile|opera mini|webos", ua, re.I):
+                return True
+    except Exception:
+        pass
+    return False
+
 def log_visit(t_item, metadata_gaps=None):
     try:
         if not st.session_state.get('logged_this_session'):
-            db.table("visitor_log").insert({
+            is_mob = is_mobile_client()
+            payload = {
                 "theater_code": t_item['theater_code'],
                 "theater_name": t_item['name'],
-                "is_mobile": IS_CLOUD,
+                "is_mobile": is_mob,
                 "metadata_gaps": list(metadata_gaps) if metadata_gaps else []
-            }).execute()
+            }
+            if t_item.get('zip_code'):
+                payload["zip_code"] = str(t_item['zip_code'])
+            elif st.session_state.get('zip_code'):
+                payload["zip_code"] = str(st.session_state.zip_code)
+            db.table("visitor_log").insert(payload).execute()
             st.session_state.logged_this_session = True
     except Exception as e:
         if debug_mode: print(f"Log error: {e}")
@@ -1484,20 +1523,35 @@ if selected_theater:
 
     schedule = st.session_state.registry['schedule'].get(d_str, [])
     if schedule:
+        attempted_hydration = st.session_state.registry.setdefault('_hydration_attempted', set())
         hollow = [s['master_code'] for s in schedule 
-                     if s['master_code'] not in st.session_state.registry['movies'] 
-                     or not st.session_state.registry['movies'][s['master_code']].get('studio')
-                     or st.session_state.registry['movies'][s['master_code']].get('duration') == 0]
+                     if s['master_code'] not in attempted_hydration
+                     and (s['master_code'] not in st.session_state.registry['movies'] 
+                          or not st.session_state.registry['movies'][s['master_code']].get('studio')
+                          or st.session_state.registry['movies'][s['master_code']].get('duration') == 0)]
         
         if hollow:
-            log_msg = "🩹 Hydrating missing metadata..."
-            if msg:
-                msg.toast(log_msg)
-            else:
-                msg = st.toast(log_msg)
-            if status_context: status_context.write(log_msg)
+            attempted_hydration.update(hollow)
+            if is_new_cluster or is_date_missing or debug_mode:
+                log_msg = "🩹 Hydrating missing metadata..."
+                if msg:
+                    msg.toast(log_msg)
+                elif debug_mode:
+                    msg = st.toast(log_msg)
+                if status_context: status_context.write(log_msg)
             
-            st.session_state.registry['movies'].update(get_db_metadata(hollow))
+            fetched_meta = get_db_metadata(hollow)
+            for mc in hollow:
+                if mc in fetched_meta:
+                    st.session_state.registry['movies'][mc] = fetched_meta[mc]
+                elif mc not in st.session_state.registry['movies']:
+                    st.session_state.registry['movies'][mc] = {
+                        'title': f"Movie ({mc})",
+                        'rating': "NR",
+                        'duration': 120,
+                        'studio': 'Unknown Studio',
+                        'is_new': False
+                    }
 
     if tc not in st.session_state.registry['theaters']:
         st.session_state.registry['theaters'][tc] = {}
@@ -1791,7 +1845,7 @@ if selected_theater and schedule:
                                             options=list(t_ranges.keys()), 
                                             placeholder="All",
                                             key=f"f_times_{t_key}")
-                    chk_c1, chk_c2, chk_c3 = st.columns([1, 1, 1])
+                    chk_c1, chk_c2, chk_c3, chk_c4 = st.columns([1, 1, 1, 1])
                     with chk_c1:
                         def_hide_past = st.session_state.user_prefs.get('filters', {}).get('hide_past', True)
                         k_avail = f"f_avail_{t_key}"
@@ -1809,8 +1863,14 @@ if selected_theater and schedule:
                                 st.session_state[k_new] = def_new_only
                         f_new = st.checkbox("New Releases Only", key=k_new)
                     with chk_c3:
+                        def_hide_watched = st.session_state.user_prefs.get('filters', {}).get('hide_watched', False)
+                        k_watched = f"f_watched_{t_key}"
+                        if k_watched not in st.session_state:
+                            st.session_state[k_watched] = def_hide_watched
+                        f_hide_watched = st.checkbox("Hide Watched", key=k_watched, help="Hide movies marked as watched/viewed")
+                    with chk_c4:
                         if st.button("💾 Save Defaults", key=f"save_def_filt_{t_key}", help="Save current filter settings as defaults"):
-                            new_p = update_filter_defaults(st.session_state.user_prefs, hide_past=f_avail, new_only=f_new)
+                            new_p = update_filter_defaults(st.session_state.user_prefs, hide_past=f_avail, new_only=f_new, hide_watched=f_hide_watched)
                             persist_user_preferences(new_p)
                             st.toast("Saved filter defaults!", icon="💾")
                 with r_c2:
@@ -1840,6 +1900,7 @@ if selected_theater and schedule:
                                                  ["Group by Movie", "Group by Auditorium", "Full Schedule"],
                                                  key=f"view_mode_{t_key}")
                     
+            watched_codes = set(st.session_state.user_prefs.get('watched_movies', []))
             filtered = [s for s in flat_data if (
                 not f_code or s.get('master_code') in f_code) and
                 (not f_type or (s.get('ScreenType') or '2D') in f_type) and 
@@ -1848,7 +1909,8 @@ if selected_theater and schedule:
                 (not f_attr or set(f_attr).issubset(s.get('raw_attrs', set()))) and 
                 (not f_times or any(t_ranges[t][0] <= s['Showtime'].hour < t_ranges[t][1] for t in f_times)) and 
                 (not f_avail or (current_local_time <= s['Showtime'] + timedelta(minutes=30) if q_date == current_local_time.date() else True)) and
-                (not f_new or (f_code and s.get('master_code') in f_code) or movie_meta.get(s.get('master_code'), {}).get('is_new', False))]
+                (not f_new or (f_code and s.get('master_code') in f_code) or movie_meta.get(s.get('master_code'), {}).get('is_new', False)) and
+                (not f_hide_watched or (f_code and s.get('master_code') in f_code) or s.get('master_code') not in watched_codes)]
             
             if f_new and f_code and not all(movie_meta.get(c, {}).get('is_new', False) for c in f_code):
                 st.caption("ℹ️ *'New Releases Only' is active, but showing your explicitly selected movie.*")
@@ -1868,6 +1930,8 @@ if selected_theater and schedule:
                         active_filters.append("🔴 New Releases Only")
                     if f_avail:
                         active_filters.append("⏳ Hide Past Shows")
+                    if f_hide_watched:
+                        active_filters.append("👁️ Hide Watched")
                     if f_type:
                         active_filters.append(f"Screen Type: {', '.join(f_type)}")
                     if f_times:
@@ -2002,7 +2066,7 @@ if selected_theater and schedule:
                             with link_col:
                                 is_w = is_movie_watched(st.session_state.user_prefs, m_code)
                                 w_btn_label = "✅ Watched" if is_w else "👁️ Mark Watched"
-                                if st.button(w_btn_label, key=f"btn_w_grp_{m_code}_{tc}", use_container_width=True):
+                                if st.button(w_btn_label, key=f"btn_w_grp_{m_code}_{tc}", help="Toggle watched / viewed status for this movie", use_container_width=True):
                                     new_prefs = toggle_watched_movie(st.session_state.user_prefs, m_code)
                                     persist_user_preferences(new_prefs)
                                     st.rerun()
@@ -2512,7 +2576,7 @@ if selected_theater and schedule:
                 with w_c1:
                     is_w = is_movie_watched(st.session_state.user_prefs, sel_code)
                     w_btn_label = "✅ Watched" if is_w else "👁️ Mark Watched"
-                    if st.button(w_btn_label, key=f"btn_w_nearby_{sel_code}", use_container_width=True):
+                    if st.button(w_btn_label, key=f"btn_w_nearby_{sel_code}", help="Toggle watched / viewed status for this movie", use_container_width=True):
                         new_prefs = toggle_watched_movie(st.session_state.user_prefs, sel_code)
                         persist_user_preferences(new_prefs)
                         st.rerun()
@@ -2764,7 +2828,7 @@ if selected_theater and schedule:
                     with w_c1:
                         is_w = is_movie_watched(st.session_state.user_prefs, sel_code)
                         w_btn_label = "✅ Watched" if is_w else "👁️ Mark Watched"
-                        if st.button(w_btn_label, key=f"btn_w_nationwide_{sel_code}", use_container_width=True):
+                        if st.button(w_btn_label, key=f"btn_w_nationwide_{sel_code}", help="Toggle watched / viewed status for this movie", use_container_width=True):
                             new_prefs = toggle_watched_movie(st.session_state.user_prefs, sel_code)
                             persist_user_preferences(new_prefs)
                             st.rerun()

@@ -15,6 +15,7 @@ DEFAULT_PREFERENCES: Dict[str, Any] = {
     "filters": {
         "hide_past": True,         # bool
         "new_only": False,         # bool
+        "hide_watched": False,     # bool
     },
     "scheduler": {
         "buffer": 15,              # int (0 to 60)
@@ -99,6 +100,8 @@ def sanitize_preferences(prefs: Optional[Dict[str, Any]]) -> Dict[str, Any]:
             base["filters"]["hide_past"] = bool(filters_in["hide_past"])
         if "new_only" in filters_in:
             base["filters"]["new_only"] = bool(filters_in["new_only"])
+        if "hide_watched" in filters_in:
+            base["filters"]["hide_watched"] = bool(filters_in["hide_watched"])
 
     # Scheduler defaults
     sched_in = prefs.get("scheduler", {})
@@ -161,13 +164,20 @@ def is_movie_watched(prefs: Dict[str, Any], movie_code: str) -> bool:
     return str(movie_code).strip() in prefs.get("watched_movies", [])
 
 
-def update_filter_defaults(prefs: Dict[str, Any], hide_past: Optional[bool] = None, new_only: Optional[bool] = None) -> Dict[str, Any]:
+def update_filter_defaults(
+    prefs: Dict[str, Any],
+    hide_past: Optional[bool] = None,
+    new_only: Optional[bool] = None,
+    hide_watched: Optional[bool] = None
+) -> Dict[str, Any]:
     """Update default filter values."""
     updated = copy.deepcopy(prefs)
     if hide_past is not None:
         updated.setdefault("filters", {})["hide_past"] = bool(hide_past)
     if new_only is not None:
         updated.setdefault("filters", {})["new_only"] = bool(new_only)
+    if hide_watched is not None:
+        updated.setdefault("filters", {})["hide_watched"] = bool(hide_watched)
     return sanitize_preferences(updated)
 
 
