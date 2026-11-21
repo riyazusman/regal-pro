@@ -74,8 +74,8 @@ def generate_regal_url(title: Optional[str], master_code: Optional[str]) -> str:
     if not title or not master_code:
         return ""
 
-    # Drop ', /, ., ,, &, -, and !
-    url_slug = re.sub(r"['/.,!&-]", "", title.lower())
+    # Drop ', ", /, ., ,, !, &, |, <, >, and -
+    url_slug = re.sub(r'[\'\"/.,!&|<>\-]', '', title.lower())
     # Replace runs of whitespace, colons, parentheses, and plus signs with a single hyphen
     url_slug = re.sub(r"[\s():+]+", "-", url_slug).strip("-")
     # Force master_code to lower case

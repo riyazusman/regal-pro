@@ -56,6 +56,10 @@ class TestTextUtils(unittest.TestCase):
             generate_regal_url("A Complete Unknown (2024)", "0512"),
             "https://www.regmovies.com/movies/a-complete-unknown-2024-0512"
         )
+        self.assertEqual(
+            generate_regal_url('Movie | "Quoted" <Tag>', "0999"),
+            "https://www.regmovies.com/movies/movie-quoted-tag-0999"
+        )
         self.assertEqual(generate_regal_url("", "0512"), "")
         self.assertEqual(generate_regal_url("Dune", None), "")
 
