@@ -1845,13 +1845,20 @@ if selected_theater and schedule:
                                             options=list(t_ranges.keys()), 
                                             placeholder="All",
                                             key=f"f_times_{t_key}")
-                    chk_c1, chk_c2, chk_c3, chk_c4 = st.columns([1, 1, 1, 1])
+                    has_cluster_peers = len(cluster_theaters) > 1
+                    chk_c1, chk_c2 = st.columns(2)
                     with chk_c1:
                         def_hide_past = st.session_state.user_prefs.get('filters', {}).get('hide_past', True)
                         k_avail = f"f_avail_{t_key}"
                         if k_avail not in st.session_state:
                             st.session_state[k_avail] = def_hide_past
                         f_avail = st.checkbox("Hide past shows", key=k_avail)
+
+                        def_hide_watched = st.session_state.user_prefs.get('filters', {}).get('hide_watched', False)
+                        k_watched = f"f_watched_{t_key}"
+                        if k_watched not in st.session_state:
+                            st.session_state[k_watched] = def_hide_watched
+                        f_hide_watched = st.checkbox("Hide Watched", key=k_watched, help="Hide movies marked as watched/viewed")
                     with chk_c2:
                         def_new_only = st.session_state.user_prefs.get('filters', {}).get('new_only', False)
                         k_new = f"f_new_{t_key}"
@@ -1862,17 +1869,17 @@ if selected_theater and schedule:
                             else:
                                 st.session_state[k_new] = def_new_only
                         f_new = st.checkbox("New Releases Only", key=k_new)
-                    with chk_c3:
-                        def_hide_watched = st.session_state.user_prefs.get('filters', {}).get('hide_watched', False)
-                        k_watched = f"f_watched_{t_key}"
-                        if k_watched not in st.session_state:
-                            st.session_state[k_watched] = def_hide_watched
-                        f_hide_watched = st.checkbox("Hide Watched", key=k_watched, help="Hide movies marked as watched/viewed")
-                    with chk_c4:
-                        if st.button("💾 Save Defaults", key=f"save_def_filt_{t_key}", help="Save current filter settings as defaults"):
-                            new_p = update_filter_defaults(st.session_state.user_prefs, hide_past=f_avail, new_only=f_new, hide_watched=f_hide_watched)
-                            persist_user_preferences(new_p)
-                            st.toast("Saved filter defaults!", icon="💾")
+
+                        def_only_here = st.session_state.user_prefs.get('filters', {}).get('only_here', False) if has_cluster_peers else False
+                        k_only_here = f"f_only_here_{t_key}"
+                        if k_only_here not in st.session_state:
+                            st.session_state[k_only_here] = def_only_here
+                        f_only_here = st.checkbox("🎯 Only Playing Here", key=k_only_here, disabled=not has_cluster_peers, help="Show only movies exclusive to this theater today among nearby cluster theaters")
+
+                    if st.button("💾 Save Filter Defaults", key=f"save_def_filt_{t_key}", help="Save current filter settings as defaults"):
+                        new_p = update_filter_defaults(st.session_state.user_prefs, hide_past=f_avail, new_only=f_new, hide_watched=f_hide_watched, only_here=f_only_here)
+                        persist_user_preferences(new_p)
+                        st.toast("Saved filter defaults!", icon="💾")
                 with r_c2:
                     f_rating = st.multiselect("Rating", 
                                             options=sorted(list(set(s.get('Rating') or 'NR' for s in flat_data))), 
@@ -1900,6 +1907,14 @@ if selected_theater and schedule:
                                                  ["Group by Movie", "Group by Auditorium", "Full Schedule"],
                                                  key=f"view_mode_{t_key}")
                     
+            cluster_other_tcs = {c for c in cluster_theaters if c != tc}
+            playing_elsewhere_today = set()
+            if cluster_other_tcs:
+                for s in all_flat_data:
+                    if s.get('TheaterCode') in cluster_other_tcs:
+                        playing_elsewhere_today.add(s['master_code'])
+            only_here_codes = {s['master_code'] for s in flat_data if s['master_code'] not in playing_elsewhere_today} if cluster_other_tcs else set()
+
             watched_codes = set(st.session_state.user_prefs.get('watched_movies', []))
             filtered = [s for s in flat_data if (
                 not f_code or s.get('master_code') in f_code) and
@@ -1910,10 +1925,13 @@ if selected_theater and schedule:
                 (not f_times or any(t_ranges[t][0] <= s['Showtime'].hour < t_ranges[t][1] for t in f_times)) and 
                 (not f_avail or (current_local_time <= s['Showtime'] + timedelta(minutes=30) if q_date == current_local_time.date() else True)) and
                 (not f_new or (f_code and s.get('master_code') in f_code) or movie_meta.get(s.get('master_code'), {}).get('is_new', False)) and
-                (not f_hide_watched or (f_code and s.get('master_code') in f_code) or s.get('master_code') not in watched_codes)]
+                (not f_hide_watched or (f_code and s.get('master_code') in f_code) or s.get('master_code') not in watched_codes) and
+                (not f_only_here or (f_code and s.get('master_code') in f_code) or s.get('master_code') in only_here_codes)]
             
             if f_new and f_code and not all(movie_meta.get(c, {}).get('is_new', False) for c in f_code):
                 st.caption("ℹ️ *'New Releases Only' is active, but showing your explicitly selected movie.*")
+            if f_only_here and f_code and not all(c in only_here_codes for c in f_code):
+                st.caption("ℹ️ *'Only Playing Here' is active, but showing your explicitly selected movie.*")
 
             if sort_by == "Movie Title": filtered.sort(key=lambda x: (x.get('Title') or '', x.get('Showtime')))
             elif sort_by == "Showtime": filtered.sort(key=lambda x: (x.get('Showtime'), x.get('Title') or ''))
@@ -1928,6 +1946,8 @@ if selected_theater and schedule:
                         active_filters.append(f"Movie: {', '.join(titles)}")
                     if f_new:
                         active_filters.append("🔴 New Releases Only")
+                    if f_only_here:
+                        active_filters.append("🎯 Only Playing Here")
                     if f_avail:
                         active_filters.append("⏳ Hide Past Shows")
                     if f_hide_watched:
@@ -1992,7 +2012,7 @@ if selected_theater and schedule:
                                 col_t.markdown(t_str)
                                 col_info.markdown(d_str)
                 else: # Group by Movie
-                    st.caption("🔴 New Release  🎫 Unlimited Excluded  ⭐ IMDB  🍅 Tomatometer  🍿 Popcornmeter  Ⓜ️ Metacritic  🟢 Letterboxd")
+                    st.caption("🔴 New Release  🎯 Only Playing Here  🎫 Unlimited Excluded  ⭐ IMDB  🍅 Tomatometer  🍿 Popcornmeter  Ⓜ️ Metacritic  🟢 Letterboxd")
                     for m_code in list(dict.fromkeys([s['master_code'] for s in filtered])):
                         m_shows = [s for s in filtered if s['master_code'] == m_code]
                         title = m_shows[0]['Title']
@@ -2000,6 +2020,18 @@ if selected_theater and schedule:
                         other_t_codes = sorted([c for c in set(s['TheaterCode'] for s in all_flat_data if s['master_code'] == m_code) 
                                                if c != t_item['theater_code'] and c in cluster_theaters])
                         
+                        is_exclusive_today = (len(cluster_theaters) > 1 and not other_t_codes)
+                        is_exclusive_week = False
+                        if is_exclusive_today:
+                            other_weekly = any(
+                                s['master_code'] == m_code and s.get('TheaterCode') in cluster_other_tcs
+                                for day_flat in st.session_state.registry['schedule'].values()
+                                for s in day_flat
+                            )
+                            is_exclusive_week = not other_weekly
+                        
+                        only_here_tag = "| 🎯 Only Playing Here" if is_exclusive_week else ("| 🎯 Only Here Today" if is_exclusive_today else "")
+
                         valid_date_objs = [datetime.strptime(date_key, "%m-%d-%Y") 
                             for date_key, day_flat in st.session_state.registry['schedule'].items() 
                             if any(s['master_code'] == m_code for s in day_flat)]
@@ -2007,9 +2039,10 @@ if selected_theater and schedule:
                         meta = movie_meta.get(m_code, {})
                         new_tag = "| 🔴 New Release" if meta.get('is_new') else ""
                         unlimited_tag = "| 🎫 No Unlimited" if is_unlimited_excluded(m_code, m_shows[0]['raw_attrs']) else ""
+                        extra_tags_str = f"{new_tag} {unlimited_tag} {only_here_tag}".strip()
 
-                        with st.expander(f"🍿 {title} ({m_shows[0]['Rating']}) | 🕒 {m_shows[0]['Duration']} min {new_tag} {unlimited_tag}", expanded=True):
-                            render_movie_header_card(m_code, title=title, extra_tags=f"{new_tag} {unlimited_tag}")
+                        with st.expander(f"🍿 {title} ({m_shows[0]['Rating']}) | 🕒 {m_shows[0]['Duration']} min {extra_tags_str}".strip(), expanded=True):
+                            render_movie_header_card(m_code, title=title, extra_tags=extra_tags_str)
 
                             for mt in sorted(list(set(s.get('ScreenType') or '2D' for s in m_shows))):
                                 ts = [s for s in m_shows if s['ScreenType'] == mt]
@@ -2062,6 +2095,11 @@ if selected_theater and schedule:
                                         st.session_state.change_theater_mode = False
                                         sync_query_param("theater", sel_nb)
                                         st.rerun()
+                                elif is_exclusive_today:
+                                    if is_exclusive_week:
+                                        st.caption("🎯 **Playing Only Here:** *Not playing at any other nearby theater this week.*")
+                                    else:
+                                        st.caption("🎯 **Playing Only Here Today:** *Exclusive to this theater today among nearby cluster theaters.*")
 
                             with link_col:
                                 is_w = is_movie_watched(st.session_state.user_prefs, m_code)
@@ -2131,7 +2169,7 @@ if selected_theater and schedule:
                     )
 
                     if display_movie_codes:
-                        st.caption("🔴 New Release  🎫 Unlimited Excluded  ⭐ IMDB  🍅 Tomatometer  🍿 Popcornmeter  Ⓜ️ Metacritic  🟢 Letterboxd")
+                        st.caption("🔴 New Release  🎯 Only at 1 Theater  🎫 Unlimited Excluded  ⭐ IMDB  🍅 Tomatometer  🍿 Popcornmeter  Ⓜ️ Metacritic  🟢 Letterboxd")
                         cols_per_row = 3
                         for row_idx in range(0, len(display_movie_codes), cols_per_row):
                             row_codes = display_movie_codes[row_idx:row_idx + cols_per_row]
@@ -2155,6 +2193,7 @@ if selected_theater and schedule:
 
                                 meta = st.session_state.global_movie_catalog.get(m_code, {'title': 'Unknown', 'rating': 'NR', 'duration': 0, 'is_new': False})
                                 new_tag = " 🔴" if meta.get('is_new') else ""
+                                only_here_tag = " 🎯" if (len(selected_theaters_set) > 1 and len(theater_dates) == 1) else ""
                                 unlimited_tag = " 🎫" if is_unlimited_excluded(m_code, m_attrs) else ""
                                 badges, badges_type = get_rating_badges(m_code)
                                 poster_url = meta.get('poster')
@@ -2181,7 +2220,7 @@ if selected_theater and schedule:
                                         f'<div class="nearby-card-content" style="display:flex; gap:10px; align-items:flex-start; margin-bottom:6px;">'
                                         f'{img_html}'
                                         f'<div style="flex:1; min-width:0;">'
-                                        f'<div style="font-weight:700; font-size:0.95rem; line-height:1.2;">{meta.get("title", "New Release")} <span style="font-size:0.85rem; font-weight:normal; color:grey;">({meta.get("rating", "NR")})</span>{new_tag}{unlimited_tag}</div>'
+                                        f'<div style="font-weight:700; font-size:0.95rem; line-height:1.2;">{meta.get("title", "New Release")} <span style="font-size:0.85rem; font-weight:normal; color:grey;">({meta.get("rating", "NR")})</span>{new_tag}{only_here_tag}{unlimited_tag}</div>'
                                         f'{badges_row}'
                                         f'<div style="font-size:0.75rem; color:grey; margin-top:2px;">⏱️ {meta.get("duration", 120)} min • 🎥 {meta.get("studio", "Unknown")}</div>'
                                         f'</div>'
