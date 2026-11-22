@@ -95,6 +95,12 @@
             "Prefix": "HS26",
             "EndDate": "2026-12-31",
             "Active": true
+        },
+        {
+            "Series": "Naughty List",
+            "Prefix": "Naughty List",
+            "EndDate": "2026-12-31",
+            "Active": true
         }
     ]
 }
