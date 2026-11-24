@@ -1,5 +1,8 @@
 """Domain constants for Regal Pro scheduling engine and business rules."""
 
+# Primary application domain for generating share links
+APP_BASE_URL: str = "https://regalpro.app"
+
 # Regal Unlimited membership requires minimum 91 minutes between start times
 UNLIMITED_GAP_MINS: int = 91
 

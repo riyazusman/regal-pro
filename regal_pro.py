@@ -37,6 +37,7 @@ from core.preferences import (
     update_filter_defaults,
     update_scheduler_defaults,
 )
+from core.constants import APP_BASE_URL
 from core.share_utils import (
     serialize_showing,
     deserialize_showing,
@@ -50,6 +51,7 @@ from core.share_utils import (
 
 IS_CLOUD = "STREAMLIT_SERVER_ENABLE_XSRF_PROTECTION" in os.environ
 #IS_CLOUD = True # For local Proxy Testing
+SHARE_BASE_URL = APP_BASE_URL
 
 debug_mode = st.query_params.get("debug") if st.query_params.get("debug") else False
 
@@ -3375,7 +3377,7 @@ if selected_theater and schedule:
                             )
                         with full_col2:
                             with st.popover("🔗 Share Full Marathon", use_container_width=True):
-                                base_url = "https://regalpro.streamlit.app" if IS_CLOUD else "http://localhost:8501"
+                                base_url = SHARE_BASE_URL
                                 all_multi_shows = [serialize_showing(s, cluster_theaters) for d in sorted_plan_days for s in multi_itinerary[d]]
                                 full_label = f"Full Marathon ({len(sorted_plan_days)} Days, {total_movies} Movies)"
                                 full_date_range = f"{sorted_plan_days[0]} to {sorted_plan_days[-1]}"
@@ -3452,7 +3454,7 @@ if selected_theater and schedule:
                                                     key=f"dl_multi_{d_str}")
                                 with m_c2:
                                     with st.popover("🔗 Share Day Plan", use_container_width=True):
-                                        base_url = "https://regalpro.streamlit.app" if IS_CLOUD else "http://localhost:8501"
+                                        base_url = SHARE_BASE_URL
                                         day_primary = path[0]['TheaterCode'] if path and path[0].get('TheaterCode') else params['primary_code']
                                         day_theaters = list(dict.fromkeys([s['TheaterCode'] for s in path if s.get('TheaterCode')]))
                                         if day_primary not in day_theaters:
@@ -3588,7 +3590,7 @@ if selected_theater and schedule:
                                                     key=f"dl_{i}_{entry['id']}")
                                 with dl_col2:
                                     with st.popover("🔗 Share Plan", use_container_width=True):
-                                        base_url = "https://regalpro.streamlit.app" if IS_CLOUD else "http://localhost:8501"
+                                        base_url = SHARE_BASE_URL
                                         opt_primary = path[0]['TheaterCode'] if path and path[0].get('TheaterCode') else primary_code
                                         opt_theaters = list(dict.fromkeys([s['TheaterCode'] for s in path if s.get('TheaterCode')]))
                                         if opt_primary not in opt_theaters:

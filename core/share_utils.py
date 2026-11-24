@@ -7,6 +7,8 @@ import zlib
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
+from core.constants import APP_BASE_URL
+
 
 def serialize_showing(showing: Dict[str, Any], theater_name_map: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
     """Convert a showing dictionary to a compact serializable representation."""
@@ -170,7 +172,7 @@ def format_multi_day_summary(
     return "\n".join(lines).strip()
 
 
-def build_plan_share_url(base_url: str, plan_token: str, theater_code: Optional[str] = None, date_str: Optional[str] = None) -> str:
+def build_plan_share_url(base_url: Optional[str] = None, plan_token: str = "", theater_code: Optional[str] = None, date_str: Optional[str] = None) -> str:
     """Build a complete deep-link URL pointing to the shared plan."""
     params = {'tab': 'scheduler', 'plan': plan_token}
     if theater_code:
@@ -179,15 +181,15 @@ def build_plan_share_url(base_url: str, plan_token: str, theater_code: Optional[
         params['date'] = str(date_str)
 
     query = urllib.parse.urlencode(params)
-    clean_base = base_url.split('?')[0].rstrip('/')
+    clean_base = (base_url or APP_BASE_URL).split('?')[0].rstrip('/')
     return f"{clean_base}?{query}"
 
 
 def build_search_share_url(
-    base_url: str,
-    theater_code: str,
-    date_str: str,
-    target_movies: List[str],
+    base_url: Optional[str] = None,
+    theater_code: str = "",
+    date_str: str = "",
+    target_movies: Optional[List[str]] = None,
     target_theaters: Optional[List[str]] = None,
     target_days: Optional[List[str]] = None,
 ) -> str:
@@ -205,5 +207,5 @@ def build_search_share_url(
         params['sched_days'] = ','.join(target_days)
 
     query = urllib.parse.urlencode(params)
-    clean_base = base_url.split('?')[0].rstrip('/')
+    clean_base = (base_url or APP_BASE_URL).split('?')[0].rstrip('/')
     return f"{clean_base}?{query}"
